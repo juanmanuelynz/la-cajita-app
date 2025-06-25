@@ -21,6 +21,8 @@ import {
 } from "chart.js"
 import { DatabaseService } from "../lib/database"
 import type { Player, MatchWithPlayers, PlayerStats } from "../lib/supabase"
+import { PWAInstall } from "@/components/pwa-install"
+import { OfflineIndicator } from "@/components/offline-indicator"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -925,6 +927,10 @@ export default function LaCajitaPoker() {
           </div>
         )}
       </div>
+
+      {/* PWA Components */}
+      <PWAInstall />
+      <OfflineIndicator />
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
