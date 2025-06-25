@@ -1,5 +1,7 @@
 "use client"
 
+import { useRef } from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Trophy, Medal, Award, Plus, Loader2 } from "lucide-react"
+import { Trash2, Trophy, Medal, Award, Plus, Loader2, Menu, X } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -40,6 +42,7 @@ export default function LaCajitaPoker() {
   const [activeTab, setActiveTab] = useState("sistema")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
@@ -262,8 +265,8 @@ export default function LaCajitaPoker() {
             <p className="text-xl text-gray-300">Torneo Anual de Poker</p>
           </div>
 
-          {/* Navigation */}
-          <div className="flex flex-wrap justify-center gap-2">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex flex-wrap justify-center gap-2">
             {tabs.map((tab) => (
               <Button
                 key={tab.id}
@@ -278,6 +281,50 @@ export default function LaCajitaPoker() {
                 {tab.label}
               </Button>
             ))}
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="md:hidden">
+            <div className="flex justify-between items-center">
+              <div className="text-lg font-semibold text-green-400">
+                {tabs.find((tab) => tab.id === activeTab)?.label}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="bg-gray-800/50 border-gray-600 text-gray-300"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+            </div>
+
+            {/* Mobile Menu Dropdown */}
+            {mobileMenuOpen && (
+              <div className="fixed inset-0 top-[180px] bg-gray-900 z-40">
+                <div className="container mx-auto px-4 py-8">
+                  <div className="flex flex-col space-y-4">
+                    {tabs.map((tab) => (
+                      <Button
+                        key={tab.id}
+                        variant={activeTab === tab.id ? "default" : "outline"}
+                        onClick={() => {
+                          setActiveTab(tab.id)
+                          setMobileMenuOpen(false)
+                        }}
+                        className={`${
+                          activeTab === tab.id
+                            ? "bg-green-600 hover:bg-green-700 text-white border-green-500"
+                            : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border-gray-600"
+                        } backdrop-blur-sm transition-all duration-200 text-lg py-4 h-auto`}
+                      >
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -931,23 +978,29 @@ export default function LaCajitaPoker() {
       {/* PWA Components */}
       <PWAInstall />
       <OfflineIndicator />
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #374151;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #22c55e;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #16a34a;
-        }
-      `}</style>
     </div>
   )
+}
+
+// Close mobile menu when clicking outside
+const useOutsideClick = (ref, handler) => {
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        handler()
+      }
+    }
+
+    document.addEventListener("click", handleClickOutside)
+    return () => document.removeEventListener("click", handleClickOutside)
+  }, [ref, handler])
+}
+
+const LaCajitaPokerComponent = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const mobileMenuRef = useRef(null)
+
+  useOutsideClick(mobileMenuRef, () => setMobileMenuOpen(false))
+
+  return <div ref={mobileMenuRef}>{/* Your component code here */}</div>
 }
