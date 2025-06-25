@@ -1,7 +1,5 @@
 "use client"
 
-import { useRef } from "react"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -292,42 +290,64 @@ export default function LaCajitaPoker() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => setMobileMenuOpen(true)}
                 className="bg-gray-800/50 border-gray-600 text-gray-300"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <Menu className="w-5 h-5" />
               </Button>
             </div>
-
-            {/* Mobile Menu Dropdown */}
-            {mobileMenuOpen && (
-              <div className="fixed inset-0 top-[180px] bg-gray-900 z-40">
-                <div className="container mx-auto px-4 py-8">
-                  <div className="flex flex-col space-y-4">
-                    {tabs.map((tab) => (
-                      <Button
-                        key={tab.id}
-                        variant={activeTab === tab.id ? "default" : "outline"}
-                        onClick={() => {
-                          setActiveTab(tab.id)
-                          setMobileMenuOpen(false)
-                        }}
-                        className={`${
-                          activeTab === tab.id
-                            ? "bg-green-600 hover:bg-green-700 text-white border-green-500"
-                            : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border-gray-600"
-                        } backdrop-blur-sm transition-all duration-200 text-lg py-4 h-auto`}
-                      >
-                        {tab.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black z-50 flex flex-col"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          {/* Header del menú */}
+          <div className="flex justify-between items-center p-6 border-b border-gray-700/50">
+            <h2 className="text-2xl font-bold text-yellow-400">♠️ La Cajita</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-white hover:text-yellow-400"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+
+          {/* Lista de opciones */}
+          <div className="flex-1 flex flex-col justify-center px-8">
+            <div className="space-y-4">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setActiveTab(tab.id)
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left py-4 px-6 rounded-lg text-xl font-semibold transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-green-600 text-white"
+                      : "text-white hover:text-yellow-400 hover:bg-gray-800/50"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer del menú */}
+          <div className="p-6 text-center text-gray-400 text-sm border-t border-gray-700/50">
+            Toca fuera del menú para cerrar
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         {error && (
@@ -980,27 +1000,4 @@ export default function LaCajitaPoker() {
       <OfflineIndicator />
     </div>
   )
-}
-
-// Close mobile menu when clicking outside
-const useOutsideClick = (ref, handler) => {
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
-        handler()
-      }
-    }
-
-    document.addEventListener("click", handleClickOutside)
-    return () => document.removeEventListener("click", handleClickOutside)
-  }, [ref, handler])
-}
-
-const LaCajitaPokerComponent = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const mobileMenuRef = useRef(null)
-
-  useOutsideClick(mobileMenuRef, () => setMobileMenuOpen(false))
-
-  return <div ref={mobileMenuRef}>{/* Your component code here */}</div>
 }
