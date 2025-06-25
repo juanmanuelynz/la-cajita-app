@@ -87,7 +87,7 @@ export function PWAInstall() {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">🎰</span>
+              <span className="text-2xl">♠️</span>
               <h3 className="font-semibold text-green-400">Instalar La Cajita</h3>
             </div>
             <p className="text-sm text-gray-300 mb-3">Instala la app para acceso rápido y uso sin conexión</p>

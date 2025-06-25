@@ -257,7 +257,7 @@ export default function LaCajitaPoker() {
         <div className="container mx-auto px-4 py-6">
           <div className="text-center mb-6">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent mb-2">
-              🎰 La Cajita
+              ♠️ La Cajita
             </h1>
             <p className="text-xl text-gray-300">Torneo Anual de Poker</p>
           </div>
