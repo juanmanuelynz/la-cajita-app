@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Trophy, Medal, Award, Plus, Loader2, Menu, X } from "lucide-react"
+import { Trash2, Trophy, Medal, Award, Plus, Loader2, Menu, X, ArrowLeft, Edit } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -33,19 +33,32 @@ interface FormPlayer {
   moneyWon: number
 }
 
+interface ActiveMatch {
+  id: string
+  date: string
+  cajiValue: number
+  playerCount: number
+  players: FormPlayer[]
+  createdAt: Date
+}
+
 const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
 const PLAYER_COLORS = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3", "#54a0ff", "#5f27cd"]
 
 export default function LaCajitaPoker() {
-  const [activeTab, setActiveTab] = useState("sistema")
+  const [activeTab, setActiveTab] = useState("ranking")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showRegisterForm, setShowRegisterForm] = useState(false)
+  const [matchToDelete, setMatchToDelete] = useState<string | null>(null)
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null)
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
   const [matches, setMatches] = useState<MatchWithPlayers[]>([])
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([])
+  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([])
   const [overallStats, setOverallStats] = useState({
     totalMatches: 0,
     totalCajitas: 0,
@@ -70,6 +83,7 @@ export default function LaCajitaPoker() {
   // Load initial data
   useEffect(() => {
     loadAllData()
+    loadActiveMatches()
   }, [])
 
   const loadAllData = async () => {
@@ -94,6 +108,102 @@ export default function LaCajitaPoker() {
     }
   }
 
+  // Load active matches from localStorage
+  const loadActiveMatches = () => {
+    const saved = localStorage.getItem("activeMatches")
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setActiveMatches(
+          parsed.map((match: any) => ({
+            ...match,
+            createdAt: new Date(match.createdAt),
+          })),
+        )
+      } catch (err) {
+        console.error("Error loading active matches:", err)
+      }
+    }
+  }
+
+  // Save active matches to localStorage
+  const saveActiveMatches = (matches: ActiveMatch[]) => {
+    localStorage.setItem("activeMatches", JSON.stringify(matches))
+    setActiveMatches(matches)
+  }
+
+  // Create new active match
+  const createNewActiveMatch = () => {
+    const newMatch: ActiveMatch = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split("T")[0],
+      cajiValue: 2000,
+      playerCount: 4,
+      players: Array(4)
+        .fill(null)
+        .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
+      createdAt: new Date(),
+    }
+
+    const updatedMatches = [...activeMatches, newMatch]
+    saveActiveMatches(updatedMatches)
+
+    // Set form data and show form
+    setFormData({
+      date: newMatch.date,
+      cajiValue: newMatch.cajiValue,
+      playerCount: newMatch.playerCount,
+      players: newMatch.players,
+    })
+    setEditingMatchId(newMatch.id)
+    setShowRegisterForm(true)
+  }
+
+  // Load active match for editing
+  const editActiveMatch = (matchId: string) => {
+    const match = activeMatches.find((m) => m.id === matchId)
+    if (match) {
+      setFormData({
+        date: match.date,
+        cajiValue: match.cajiValue,
+        playerCount: match.playerCount,
+        players: match.players,
+      })
+      setEditingMatchId(matchId)
+      setShowRegisterForm(true)
+    }
+  }
+
+  // Delete active match
+  const deleteActiveMatch = (matchId: string) => {
+    const updatedMatches = activeMatches.filter((m) => m.id !== matchId)
+    saveActiveMatches(updatedMatches)
+
+    // If we're editing this match, close the form
+    if (editingMatchId === matchId) {
+      setShowRegisterForm(false)
+      setEditingMatchId(null)
+    }
+  }
+
+  // Update active match
+  const updateActiveMatch = () => {
+    if (!editingMatchId) return
+
+    const updatedMatches = activeMatches.map((match) =>
+      match.id === editingMatchId
+        ? {
+            ...match,
+            date: formData.date,
+            cajiValue: formData.cajiValue,
+            playerCount: formData.playerCount,
+            players: formData.players,
+          }
+        : match,
+    )
+    saveActiveMatches(updatedMatches)
+  }
+
   // Update players array when player count changes
   useEffect(() => {
     const newPlayers = Array(formData.playerCount)
@@ -101,6 +211,13 @@ export default function LaCajitaPoker() {
       .map((_, i) => formData.players[i] || { name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })
     setFormData((prev) => ({ ...prev, players: newPlayers }))
   }, [formData.playerCount])
+
+  // Update active match when form data changes
+  useEffect(() => {
+    if (editingMatchId && showRegisterForm) {
+      updateActiveMatch()
+    }
+  }, [formData])
 
   // Calculate money won/lost based on investment and final chips
   const updatePlayerMoney = (index: number, field: string, value: any) => {
@@ -124,9 +241,9 @@ export default function LaCajitaPoker() {
     return Math.abs(totalInvestment - totalFinalChips) < 0.01
   }
 
-  // Register match
+  // Register match (convert active match to real match)
   const registerMatch = async () => {
-    if (!validateBalance()) return
+    if (!validateBalance() || !editingMatchId) return
 
     setLoading(true)
     setError(null)
@@ -137,17 +254,12 @@ export default function LaCajitaPoker() {
         players: formData.players,
       })
 
-      // Reset form
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        cajiValue: 2000,
-        playerCount: 4,
-        players: Array(4)
-          .fill(null)
-          .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
-      })
+      // Remove from active matches
+      deleteActiveMatch(editingMatchId)
 
-      // Reload data
+      // Close form and reload data
+      setShowRegisterForm(false)
+      setEditingMatchId(null)
       await loadAllData()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error registering match")
@@ -176,12 +288,19 @@ export default function LaCajitaPoker() {
     }
   }
 
-  // Delete match
-  const deleteMatch = async (matchId: string) => {
+  // Delete match with confirmation (for completed matches in historial)
+  const confirmDeleteMatch = (matchId: string) => {
+    setMatchToDelete(matchId)
+  }
+
+  const deleteMatch = async () => {
+    if (!matchToDelete) return
+
     setLoading(true)
     try {
-      await DatabaseService.deleteMatch(matchId)
+      await DatabaseService.deleteMatch(matchToDelete)
       await loadAllData()
+      setMatchToDelete(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting match")
     } finally {
@@ -233,12 +352,11 @@ export default function LaCajitaPoker() {
   }
 
   const tabs = [
-    { id: "sistema", label: "Sistema de Puntos" },
-    { id: "registrar", label: "Registrar Partida" },
     { id: "ranking", label: "Ranking Anual" },
+    { id: "partidas", label: "Partidas" },
     { id: "estadisticas", label: "Estadísticas" },
-    { id: "evolucion", label: "Evolución" },
-    { id: "analisis", label: "Análisis" },
+    { id: "historial", label: "Historial" },
+    { id: "reglas", label: "Reglas" },
   ]
 
   if (loading && matches.length === 0) {
@@ -270,7 +388,11 @@ export default function LaCajitaPoker() {
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "outline"}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setShowRegisterForm(false)
+                  setEditingMatchId(null)
+                }}
                 className={`${
                   activeTab === tab.id
                     ? "bg-green-600 hover:bg-green-700 text-white border-green-500"
@@ -286,7 +408,11 @@ export default function LaCajitaPoker() {
           <div className="md:hidden">
             <div className="flex justify-between items-center">
               <div className="text-lg font-semibold text-green-400">
-                {tabs.find((tab) => tab.id === activeTab)?.label}
+                {showRegisterForm && activeTab === "partidas"
+                  ? editingMatchId
+                    ? "Editando Partida"
+                    : "Nueva Partida"
+                  : tabs.find((tab) => tab.id === activeTab)?.label}
               </div>
               <Button
                 variant="outline"
@@ -329,6 +455,8 @@ export default function LaCajitaPoker() {
                   onClick={(e) => {
                     e.stopPropagation()
                     setActiveTab(tab.id)
+                    setShowRegisterForm(false)
+                    setEditingMatchId(null)
                     setMobileMenuOpen(false)
                   }}
                   className={`w-full text-left py-4 px-6 rounded-lg text-xl font-semibold transition-colors ${
@@ -367,283 +495,36 @@ export default function LaCajitaPoker() {
           </Card>
         )}
 
-        {/* Sistema de Puntos Tab */}
-        {activeTab === "sistema" && (
-          <div className="space-y-6">
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+        {/* Confirmation Dialog */}
+        {matchToDelete && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="bg-gray-800 border-gray-600 max-w-md w-full">
               <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Sistema de Puntos</CardTitle>
+                <CardTitle className="text-xl text-red-400">Confirmar Eliminación</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-center">
-                    <thead>
-                      <tr className="border-b border-gray-600">
-                        <th className="py-3 px-4 text-yellow-400">Posición</th>
-                        <th className="py-3 px-4 text-yellow-400">Puntos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
-                        <tr key={position} className="border-b border-gray-700/50">
-                          <td className="py-3 px-4 font-semibold text-green-400">{position}°</td>
-                          <td className="py-3 px-4 text-slate-400 font-bold text-lg">
-                            {POINTS_DISTRIBUTION[position - 1]}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <CardContent className="space-y-4">
+                <p className="text-gray-300">
+                  ¿Estás seguro de que quieres eliminar esta partida? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMatchToDelete(null)}
+                    className="border-gray-600 text-gray-300"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={deleteMatch} disabled={loading} className="bg-red-600 hover:bg-red-700 text-white">
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Eliminando...
+                      </>
+                    ) : (
+                      "Eliminar"
+                    )}
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-yellow-400">Reglas del Sistema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-gray-300">
-                  <li>• Los puntos se asignan según la posición final en cada partida</li>
-                  <li>• En caso de empate en puntos, gana quien tenga más dinero ganado</li>
-                  <li>• Solo se consideran partidas con mínimo 4 jugadores</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Registrar Partida Tab */}
-        {activeTab === "registrar" && (
-          <div className="space-y-6">
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Registrar Nueva Partida</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="date" className="text-gray-300">
-                      Fecha
-                    </Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                      className="bg-gray-700/50 border-gray-600 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cajiValue" className="text-gray-300">
-                      Valor de una Cajita
-                    </Label>
-                    <Input
-                      id="cajiValue"
-                      type="number"
-                      value={formData.cajiValue}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, cajiValue: Number(e.target.value) }))}
-                      className="bg-gray-700/50 border-gray-600 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="playerCount" className="text-gray-300">
-                      Número de Jugadores
-                    </Label>
-                    <Select
-                      value={formData.playerCount.toString()}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, playerCount: Number(value) }))}
-                    >
-                      <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600 text-white">
-                        {[4, 5, 6, 7, 8].map((count) => (
-                          <SelectItem
-                            key={count}
-                            value={count.toString()}
-                            className="hover:bg-green-600 hover:text-white"
-                          >
-                            {count} jugadores
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-green-400">Jugadores</h3>
-                  {formData.players.map((player, index) => (
-                    <Card key={index} className="bg-gray-700/30 border-gray-600/50">
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <Label className="text-gray-300">Jugador {index + 1}</Label>
-                            {showNewPlayerInput === index ? (
-                              <div className="flex gap-2">
-                                <Input
-                                  value={newPlayerName}
-                                  onChange={(e) => setNewPlayerName(e.target.value)}
-                                  className="bg-gray-600/50 border-gray-500 text-white"
-                                  placeholder="Nombre del nuevo jugador"
-                                />
-                                <Button
-                                  onClick={() => createNewPlayer(index)}
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700"
-                                  disabled={!newPlayerName.trim() || loading}
-                                >
-                                  {loading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Plus className="w-4 h-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    setShowNewPlayerInput(null)
-                                    setNewPlayerName("")
-                                  }}
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-gray-500"
-                                >
-                                  ✕
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2">
-                                <Select
-                                  value={player.name}
-                                  onValueChange={(value) => {
-                                    if (value === "new") {
-                                      setShowNewPlayerInput(index)
-                                    } else {
-                                      updatePlayerMoney(index, "name", value)
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="bg-gray-600/50 border-gray-500 text-white">
-                                    <SelectValue placeholder="Seleccionar jugador" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-gray-800 border-gray-600 text-white">
-                                    {players
-                                      .filter(
-                                        (p) =>
-                                          !formData.players.some(
-                                            (fp, fpIndex) => fpIndex !== index && fp.name === p.name,
-                                          ),
-                                      )
-                                      .map((p) => (
-                                        <SelectItem
-                                          key={p.id}
-                                          value={p.name}
-                                          className="hover:bg-green-600 hover:text-white"
-                                        >
-                                          {p.name}
-                                        </SelectItem>
-                                      ))}
-                                    <SelectItem
-                                      value="new"
-                                      className="text-green-400 hover:bg-green-600 hover:text-white"
-                                    >
-                                      + Crear nuevo jugador
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <Label className="text-gray-300">Cajitas</Label>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={player.cajitas.toString()}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, "")
-                                if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
-                                  updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
-                                }
-                              }}
-                              onFocus={(e) => e.target.select()}
-                              className="bg-gray-600/50 border-gray-500 text-white text-center"
-                              min="1"
-                              placeholder="1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-gray-300">Fichas Finales</Label>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={player.finalChips === 0 ? "" : player.finalChips.toString()}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, "")
-                                updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
-                              }}
-                              onFocus={(e) => e.target.select()}
-                              className="bg-gray-600/50 border-gray-500 text-white text-center"
-                              min="0"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-gray-300">Dinero Ganado/Perdido</Label>
-                            <div
-                              className={`p-2 rounded text-center font-semibold ${
-                                player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
-                              }`}
-                            >
-                              ${player.moneyWon.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-400">
-                          Inversión: ${(player.cajitas * formData.cajiValue).toLocaleString()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <Card
-                  className={`border-2 ${validateBalance() ? "border-green-500 bg-green-900/20" : "border-red-500 bg-red-900/20"}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="text-center">
-                      <div className={`text-lg font-semibold ${validateBalance() ? "text-green-400" : "text-red-400"}`}>
-                        {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
-                      </div>
-                      <div className="text-sm text-gray-300 mt-2">
-                        Total Invertido: $
-                        {formData.players.reduce((sum, p) => sum + p.cajitas * formData.cajiValue, 0).toLocaleString()}
-                      </div>
-                      <div className="text-sm text-gray-300">
-                        Total Fichas Finales: $
-                        {formData.players.reduce((sum, p) => sum + p.finalChips, 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Button
-                  onClick={registerMatch}
-                  disabled={!validateBalance() || formData.players.some((p) => !p.name) || loading}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Registrando...
-                    </>
-                  ) : (
-                    "Validar y Registrar Partida"
-                  )}
-                </Button>
               </CardContent>
             </Card>
           </div>
@@ -718,41 +599,421 @@ export default function LaCajitaPoker() {
           </Card>
         )}
 
-        {/* Estadísticas Tab */}
-        {activeTab === "estadisticas" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-              <CardContent className="p-6 text-center bg-slate-700 border-0 rounded-xl shadow-none">
-                <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalMatches}</div>
-                <div className="text-gray-300">Total Partidas Jugadas</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-              <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalCajitas}</div>
-                <div className="text-gray-300">Total Cajitas</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-              <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                <div className="text-3xl font-bold text-yellow-400 mb-2">
-                  ${overallStats.totalMoney.toLocaleString()}
-                </div>
-                <div className="text-gray-300">Dinero en Juego</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-              <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.activePlayers}</div>
-                <div className="text-gray-300">Jugadores Activos</div>
-              </CardContent>
-            </Card>
+        {/* Partidas Tab */}
+        {activeTab === "partidas" && (
+          <div className="space-y-6">
+            {!showRegisterForm ? (
+              <>
+                {/* Partidas Activas */}
+                <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-2xl text-yellow-400">Partidas Activas</CardTitle>
+                    <Button onClick={createNewActiveMatch} className="bg-green-600 hover:bg-green-700 text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Nueva Partida
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {activeMatches.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-400 mb-4">No hay partidas activas</p>
+                        <Button onClick={createNewActiveMatch} className="bg-green-600 hover:bg-green-700 text-white">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Crear Primera Partida
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {activeMatches
+                          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                          .map((match) => {
+                            const playersWithNames = match.players.filter((p) => p.name.trim() !== "")
+                            const totalInvestment = match.players.reduce(
+                              (sum, p) => sum + p.cajitas * match.cajiValue,
+                              0,
+                            )
+                            const isComplete =
+                              playersWithNames.length === match.playerCount &&
+                              playersWithNames.every((p) => p.finalChips > 0)
+
+                            return (
+                              <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                                <CardContent className="p-4">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <div className="text-lg font-semibold text-green-400">{match.date}</div>
+                                        <div
+                                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                                            isComplete
+                                              ? "bg-green-600/20 text-green-400"
+                                              : "bg-yellow-600/20 text-yellow-400"
+                                          }`}
+                                        >
+                                          {isComplete ? "Lista para registrar" : "En progreso"}
+                                        </div>
+                                      </div>
+                                      <div className="text-sm text-gray-400">
+                                        {playersWithNames.length}/{match.playerCount} jugadores - $
+                                        {totalInvestment.toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => editActiveMatch(match.id)}
+                                        className="bg-blue-600/20 border-blue-500 text-blue-400 hover:bg-blue-600/40"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => deleteActiveMatch(match.id)}
+                                        className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {playersWithNames.length > 0 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                                      {playersWithNames.map((player, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between p-2 bg-gray-600/30 rounded"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold text-white">
+                                              {index + 1}
+                                            </div>
+                                            <span className="text-sm">{player.name}</span>
+                                          </div>
+                                          <span
+                                            className={`text-sm font-semibold ${
+                                              player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
+                                            }`}
+                                          >
+                                            {player.finalChips > 0
+                                              ? `$${player.moneyWon.toLocaleString()}`
+                                              : "Pendiente"}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )
+                          })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              /* Formulario de Registro */
+              <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowRegisterForm(false)
+                        setEditingMatchId(null)
+                      }}
+                      className="bg-gray-700/50 border-gray-600 text-gray-300"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                    <CardTitle className="text-2xl text-yellow-400">
+                      {editingMatchId ? "Editando Partida" : "Nueva Partida"}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="date" className="text-gray-300">
+                        Fecha
+                      </Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
+                        className="bg-gray-700/50 border-gray-600 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cajiValue" className="text-gray-300">
+                        Valor de una Cajita
+                      </Label>
+                      <Input
+                        id="cajiValue"
+                        type="number"
+                        value={formData.cajiValue}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, cajiValue: Number(e.target.value) }))}
+                        className="bg-gray-700/50 border-gray-600 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="playerCount" className="text-gray-300">
+                        Número de Jugadores
+                      </Label>
+                      <Select
+                        value={formData.playerCount.toString()}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, playerCount: Number(value) }))}
+                      >
+                        <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600 text-white">
+                          {[4, 5, 6, 7, 8].map((count) => (
+                            <SelectItem
+                              key={count}
+                              value={count.toString()}
+                              className="hover:bg-green-600 hover:text-white"
+                            >
+                              {count} jugadores
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-green-400">Jugadores</h3>
+                    {formData.players.map((player, index) => (
+                      <Card key={index} className="bg-gray-700/30 border-gray-600/50">
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <Label className="text-gray-300">Jugador {index + 1}</Label>
+                              {showNewPlayerInput === index ? (
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={newPlayerName}
+                                    onChange={(e) => setNewPlayerName(e.target.value)}
+                                    className="bg-gray-600/50 border-gray-500 text-white"
+                                    placeholder="Nombre del nuevo jugador"
+                                  />
+                                  <Button
+                                    onClick={() => createNewPlayer(index)}
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    disabled={!newPlayerName.trim() || loading}
+                                  >
+                                    {loading ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Plus className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      setShowNewPlayerInput(null)
+                                      setNewPlayerName("")
+                                    }}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-gray-500"
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <Select
+                                    value={player.name}
+                                    onValueChange={(value) => {
+                                      if (value === "new") {
+                                        setShowNewPlayerInput(index)
+                                      } else {
+                                        updatePlayerMoney(index, "name", value)
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="bg-gray-600/50 border-gray-500 text-white">
+                                      <SelectValue placeholder="Seleccionar jugador" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
+                                      {players
+                                        .filter(
+                                          (p) =>
+                                            !formData.players.some(
+                                              (fp, fpIndex) => fpIndex !== index && fp.name === p.name,
+                                            ),
+                                        )
+                                        .map((p) => (
+                                          <SelectItem
+                                            key={p.id}
+                                            value={p.name}
+                                            className="hover:bg-green-600 hover:text-white"
+                                          >
+                                            {p.name}
+                                          </SelectItem>
+                                        ))}
+                                      <SelectItem
+                                        value="new"
+                                        className="text-green-400 hover:bg-green-600 hover:text-white"
+                                      >
+                                        + Crear nuevo jugador
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Label className="text-gray-300">Cajitas</Label>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={player.cajitas.toString()}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9]/g, "")
+                                  if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
+                                    updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
+                                  }
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                min="1"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-gray-300">Fichas Finales</Label>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={player.finalChips === 0 ? "" : player.finalChips.toString()}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9]/g, "")
+                                  updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                min="0"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-gray-300">Dinero Ganado/Perdido</Label>
+                              <div
+                                className={`p-2 rounded text-center font-semibold ${
+                                  player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
+                                }`}
+                              >
+                                ${player.moneyWon.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-sm text-gray-400">
+                            Inversión: ${(player.cajitas * formData.cajiValue).toLocaleString()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  <Card
+                    className={`border-2 ${validateBalance() ? "border-green-500 bg-green-900/20" : "border-red-500 bg-red-900/20"}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <div
+                          className={`text-lg font-semibold ${validateBalance() ? "text-green-400" : "text-red-400"}`}
+                        >
+                          {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
+                        </div>
+                        <div className="text-sm text-gray-300 mt-2">
+                          Total Invertido: $
+                          {formData.players
+                            .reduce((sum, p) => sum + p.cajitas * formData.cajiValue, 0)
+                            .toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-300">
+                          Total Fichas Finales: $
+                          {formData.players.reduce((sum, p) => sum + p.finalChips, 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => {
+                        setShowRegisterForm(false)
+                        setEditingMatchId(null)
+                      }}
+                      variant="outline"
+                      className="flex-1 border-gray-600 text-gray-300"
+                    >
+                      Volver
+                    </Button>
+                    <Button
+                      onClick={registerMatch}
+                      disabled={!validateBalance() || formData.players.some((p) => !p.name) || loading}
+                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Registrando...
+                        </>
+                      ) : (
+                        "Validar y Registrar Partida"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
-        {/* Evolución Tab */}
-        {activeTab === "evolucion" && (
+        {/* Estadísticas Tab */}
+        {activeTab === "estadisticas" && (
           <div className="space-y-6">
+            {/* Estadísticas generales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
+                <CardContent className="p-6 text-center bg-slate-700 border-0 rounded-xl shadow-none">
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalMatches}</div>
+                  <div className="text-gray-300">Total Partidas Jugadas</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
+                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalCajitas}</div>
+                  <div className="text-gray-300">Total Cajitas</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
+                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">
+                    ${overallStats.totalMoney.toLocaleString()}
+                  </div>
+                  <div className="text-gray-300">Dinero en Juego</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
+                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.activePlayers}</div>
+                  <div className="text-gray-300">Jugadores Activos</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Evolución de Puntos */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl text-yellow-400">Evolución de Puntos</CardTitle>
@@ -815,75 +1076,7 @@ export default function LaCajitaPoker() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
-                  {matches.map((match) => (
-                    <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                            <div className="text-sm text-gray-400">
-                              {match.player_count} jugadores - ${match.total_money.toLocaleString()}
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteMatch(match.id)}
-                            className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
-                            disabled={loading}
-                          >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                          {match.match_players
-                            .sort((a, b) => a.position - b.position)
-                            .map((mp) => (
-                              <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                      mp.position === 1
-                                        ? "bg-yellow-500 text-black"
-                                        : mp.position === 2
-                                          ? "bg-gray-400 text-black"
-                                          : mp.position === 3
-                                            ? "bg-orange-500 text-black"
-                                            : "bg-gray-600 text-white"
-                                    }`}
-                                  >
-                                    {mp.position}
-                                  </div>
-                                  <span className="text-sm">{mp.players?.name}</span>
-                                </div>
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    mp.money_won >= 0 ? "text-green-400" : "text-red-400"
-                                  }`}
-                                >
-                                  ${mp.money_won.toLocaleString()}
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Análisis Tab */}
-        {activeTab === "analisis" && (
-          <div className="space-y-6">
+            {/* Últimas 5 Partidas */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl text-yellow-400">Últimas 5 Partidas</CardTitle>
@@ -928,6 +1121,7 @@ export default function LaCajitaPoker() {
               </CardContent>
             </Card>
 
+            {/* Análisis Individual */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl text-yellow-400">Análisis Individual</CardTitle>
@@ -1006,6 +1200,119 @@ export default function LaCajitaPoker() {
                     })()}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Historial Tab */}
+        {activeTab === "historial" && (
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
+                {matches.map((match) => (
+                  <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="text-lg font-semibold text-green-400">{match.date}</div>
+                          <div className="text-sm text-gray-400">
+                            {match.player_count} jugadores - ${match.total_money.toLocaleString()}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => confirmDeleteMatch(match.id)}
+                          className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
+                          disabled={loading}
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {match.match_players
+                          .sort((a, b) => a.position - b.position)
+                          .map((mp) => (
+                            <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                    mp.position === 1
+                                      ? "bg-yellow-500 text-black"
+                                      : mp.position === 2
+                                        ? "bg-gray-400 text-black"
+                                        : mp.position === 3
+                                          ? "bg-orange-500 text-black"
+                                          : "bg-gray-600 text-white"
+                                  }`}
+                                >
+                                  {mp.position}
+                                </div>
+                                <span className="text-sm">{mp.players?.name}</span>
+                              </div>
+                              <span
+                                className={`text-sm font-semibold ${
+                                  mp.money_won >= 0 ? "text-green-400" : "text-red-400"
+                                }`}
+                              >
+                                ${mp.money_won.toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Reglas Tab */}
+        {activeTab === "reglas" && (
+          <div className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl text-yellow-400">Sistema de Puntos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-center">
+                    <thead>
+                      <tr className="border-b border-gray-600">
+                        <th className="py-3 px-4 text-yellow-400">Posición</th>
+                        <th className="py-3 px-4 text-yellow-400">Puntos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
+                        <tr key={position} className="border-b border-gray-700/50">
+                          <td className="py-3 px-4 font-semibold text-green-400">{position}°</td>
+                          <td className="py-3 px-4 text-slate-400 font-bold text-lg">
+                            {POINTS_DISTRIBUTION[position - 1]}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-xl text-yellow-400">Reglas del Sistema</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-gray-300">
+                  <li>• Los puntos se asignan según la posición final en cada partida</li>
+                  <li>• En caso de empate en puntos, gana quien tenga más dinero ganado</li>
+                  <li>• Solo se consideran partidas con mínimo 4 jugadores</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
