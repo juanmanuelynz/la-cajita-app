@@ -52,10 +52,17 @@ export class DatabaseService {
       moneyWon: number
     }>
   }): Promise<MatchWithPlayers> {
-    // Sort players by final chips (descending) to determine positions
+    // Sort players by money won (descending), then by cajitas (ascending) for tie-breaking
     const sortedPlayers = [...matchData.players]
       .map((player, index) => ({ ...player, originalIndex: index }))
-      .sort((a, b) => b.finalChips - a.finalChips)
+      .sort((a, b) => {
+        // First sort by money won (descending)
+        if (b.moneyWon !== a.moneyWon) {
+          return b.moneyWon - a.moneyWon
+        }
+        // If tied, sort by cajitas (ascending - fewer cajitas = better position)
+        return a.cajitas - b.cajitas
+      })
 
     const totalMoney = matchData.players.reduce((sum, p) => sum + p.cajitas * matchData.cajiValue, 0)
 
@@ -209,6 +216,53 @@ export class DatabaseService {
       totalCajitas,
       totalMoney,
       activePlayers,
+    }
+  }
+
+  // Fix existing matches ranking
+  static async fixMatchRankings(): Promise<void> {
+    // Get all matches with their players
+    const { data: matches, error: matchesError } = await supabase.from("matches").select(`
+        id,
+        caji_value,
+        match_players (
+          id,
+          cajitas,
+          final_chips,
+          money_won
+        )
+      `)
+
+    if (matchesError) throw matchesError
+
+    for (const match of matches || []) {
+      // Sort players by money won (descending), then by cajitas (ascending)
+      const sortedPlayers = [...match.match_players].sort((a, b) => {
+        // First sort by money won (descending)
+        if (b.money_won !== a.money_won) {
+          return b.money_won - a.money_won
+        }
+        // If tied, sort by cajitas (ascending - fewer cajitas = better position)
+        return a.cajitas - b.cajitas
+      })
+
+      // Update positions and points
+      const updatePromises = sortedPlayers.map(async (player, index) => {
+        const newPosition = index + 1
+        const newPoints = POINTS_DISTRIBUTION[index] || 0
+
+        const { error: updateError } = await supabase
+          .from("match_players")
+          .update({
+            position: newPosition,
+            points: newPoints,
+          })
+          .eq("id", player.id)
+
+        if (updateError) throw updateError
+      })
+
+      await Promise.all(updatePromises)
     }
   }
 }

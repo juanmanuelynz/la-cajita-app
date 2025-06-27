@@ -108,9 +108,10 @@ export default function LaCajitaPoker() {
     newPlayers[index] = { ...newPlayers[index], [field]: value }
 
     if (field === "cajitas" || field === "finalChips") {
-      const investment = newPlayers[index].cajitas * formData.cajiValue
-      const finalValue = newPlayers[index].finalChips
-      newPlayers[index].moneyWon = finalValue - investment
+      const cajitas = newPlayers[index].cajitas || 1
+      const finalChips = newPlayers[index].finalChips || 0
+      const investment = cajitas * formData.cajiValue
+      newPlayers[index].moneyWon = finalChips - investment
     }
 
     setFormData((prev) => ({ ...prev, players: newPlayers }))
@@ -557,21 +558,37 @@ export default function LaCajitaPoker() {
                           <div>
                             <Label className="text-gray-300">Cajitas</Label>
                             <Input
-                              type="number"
-                              value={player.cajitas}
-                              onChange={(e) => updatePlayerMoney(index, "cajitas", Number(e.target.value))}
-                              className="bg-gray-600/50 border-gray-500 text-white"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={player.cajitas.toString()}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9]/g, "")
+                                if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
+                                  updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
+                                }
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-gray-600/50 border-gray-500 text-white text-center"
                               min="1"
+                              placeholder="1"
                             />
                           </div>
                           <div>
                             <Label className="text-gray-300">Fichas Finales</Label>
                             <Input
-                              type="number"
-                              value={player.finalChips}
-                              onChange={(e) => updatePlayerMoney(index, "finalChips", Number(e.target.value))}
-                              className="bg-gray-600/50 border-gray-500 text-white"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={player.finalChips === 0 ? "" : player.finalChips.toString()}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9]/g, "")
+                                updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-gray-600/50 border-gray-500 text-white text-center"
                               min="0"
+                              placeholder="0"
                             />
                           </div>
                           <div>
