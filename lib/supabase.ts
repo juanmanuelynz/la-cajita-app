@@ -46,3 +46,18 @@ export interface PlayerStats {
   moneyWon: number
   averagePerMatch: number
 }
+
+export interface ActiveMatch {
+  id: string
+  date: string
+  caji_value: number
+  player_count: number
+  players: Array<{
+    name: string
+    cajitas: number
+    finalChips: number
+    moneyWon: number
+  }>
+  created_at: string
+  updated_at: string
+}

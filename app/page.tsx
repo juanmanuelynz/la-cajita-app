@@ -20,7 +20,7 @@ import {
   Legend,
 } from "chart.js"
 import { DatabaseService } from "../lib/database"
-import type { Player, MatchWithPlayers, PlayerStats } from "../lib/supabase"
+import type { Player, MatchWithPlayers, PlayerStats, ActiveMatch } from "../lib/supabase"
 import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
 
@@ -31,15 +31,6 @@ interface FormPlayer {
   cajitas: number
   finalChips: number
   moneyWon: number
-}
-
-interface ActiveMatch {
-  id: string
-  date: string
-  cajiValue: number
-  playerCount: number
-  players: FormPlayer[]
-  createdAt: Date
 }
 
 const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
@@ -83,24 +74,25 @@ export default function LaCajitaPoker() {
   // Load initial data
   useEffect(() => {
     loadAllData()
-    loadActiveMatches()
   }, [])
 
   const loadAllData = async () => {
     setLoading(true)
     setError(null)
     try {
-      const [playersData, matchesData, statsData, overallData] = await Promise.all([
+      const [playersData, matchesData, statsData, overallData, activeMatchesData] = await Promise.all([
         DatabaseService.getAllPlayers(),
         DatabaseService.getAllMatches(),
         DatabaseService.getPlayerStats(),
         DatabaseService.getOverallStats(),
+        DatabaseService.getAllActiveMatches(),
       ])
 
       setPlayers(playersData)
       setMatches(matchesData)
       setPlayerStats(statsData)
       setOverallStats(overallData)
+      setActiveMatches(activeMatchesData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data")
     } finally {
@@ -108,55 +100,38 @@ export default function LaCajitaPoker() {
     }
   }
 
-  // Load active matches from localStorage
-  const loadActiveMatches = () => {
-    const saved = localStorage.getItem("activeMatches")
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setActiveMatches(
-          parsed.map((match: any) => ({
-            ...match,
-            createdAt: new Date(match.createdAt),
-          })),
-        )
-      } catch (err) {
-        console.error("Error loading active matches:", err)
-      }
-    }
-  }
-
-  // Save active matches to localStorage
-  const saveActiveMatches = (matches: ActiveMatch[]) => {
-    localStorage.setItem("activeMatches", JSON.stringify(matches))
-    setActiveMatches(matches)
-  }
-
   // Create new active match
-  const createNewActiveMatch = () => {
-    const newMatch: ActiveMatch = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split("T")[0],
-      cajiValue: 2000,
-      playerCount: 4,
-      players: Array(4)
-        .fill(null)
-        .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
-      createdAt: new Date(),
+  const createNewActiveMatch = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const newMatch = await DatabaseService.createActiveMatch({
+        date: new Date().toISOString().split("T")[0],
+        cajiValue: 2000,
+        playerCount: 4,
+        players: Array(4)
+          .fill(null)
+          .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
+      })
+
+      // Reload active matches
+      const activeMatchesData = await DatabaseService.getAllActiveMatches()
+      setActiveMatches(activeMatchesData)
+
+      // Set form data and show form
+      setFormData({
+        date: newMatch.date,
+        cajiValue: newMatch.caji_value,
+        playerCount: newMatch.player_count,
+        players: newMatch.players,
+      })
+      setEditingMatchId(newMatch.id)
+      setShowRegisterForm(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error creating active match")
+    } finally {
+      setLoading(false)
     }
-
-    const updatedMatches = [...activeMatches, newMatch]
-    saveActiveMatches(updatedMatches)
-
-    // Set form data and show form
-    setFormData({
-      date: newMatch.date,
-      cajiValue: newMatch.cajiValue,
-      playerCount: newMatch.playerCount,
-      players: newMatch.players,
-    })
-    setEditingMatchId(newMatch.id)
-    setShowRegisterForm(true)
   }
 
   // Load active match for editing
@@ -165,8 +140,8 @@ export default function LaCajitaPoker() {
     if (match) {
       setFormData({
         date: match.date,
-        cajiValue: match.cajiValue,
-        playerCount: match.playerCount,
+        cajiValue: match.caji_value,
+        playerCount: match.player_count,
         players: match.players,
       })
       setEditingMatchId(matchId)
@@ -175,33 +150,46 @@ export default function LaCajitaPoker() {
   }
 
   // Delete active match
-  const deleteActiveMatch = (matchId: string) => {
-    const updatedMatches = activeMatches.filter((m) => m.id !== matchId)
-    saveActiveMatches(updatedMatches)
+  const deleteActiveMatch = async (matchId: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await DatabaseService.deleteActiveMatch(matchId)
 
-    // If we're editing this match, close the form
-    if (editingMatchId === matchId) {
-      setShowRegisterForm(false)
-      setEditingMatchId(null)
+      // Reload active matches
+      const activeMatchesData = await DatabaseService.getAllActiveMatches()
+      setActiveMatches(activeMatchesData)
+
+      // If we're editing this match, close the form
+      if (editingMatchId === matchId) {
+        setShowRegisterForm(false)
+        setEditingMatchId(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error deleting active match")
+    } finally {
+      setLoading(false)
     }
   }
 
   // Update active match
-  const updateActiveMatch = () => {
+  const updateActiveMatch = async () => {
     if (!editingMatchId) return
 
-    const updatedMatches = activeMatches.map((match) =>
-      match.id === editingMatchId
-        ? {
-            ...match,
-            date: formData.date,
-            cajiValue: formData.cajiValue,
-            playerCount: formData.playerCount,
-            players: formData.players,
-          }
-        : match,
-    )
-    saveActiveMatches(updatedMatches)
+    try {
+      await DatabaseService.updateActiveMatch(editingMatchId, {
+        date: formData.date,
+        cajiValue: formData.cajiValue,
+        playerCount: formData.playerCount,
+        players: formData.players,
+      })
+
+      // Reload active matches to get updated data
+      const activeMatchesData = await DatabaseService.getAllActiveMatches()
+      setActiveMatches(activeMatchesData)
+    } catch (err) {
+      console.error("Error updating active match:", err)
+    }
   }
 
   // Update players array when player count changes
@@ -212,12 +200,16 @@ export default function LaCajitaPoker() {
     setFormData((prev) => ({ ...prev, players: newPlayers }))
   }, [formData.playerCount])
 
-  // Update active match when form data changes
+  // Update active match when form data changes (debounced)
   useEffect(() => {
     if (editingMatchId && showRegisterForm) {
-      updateActiveMatch()
+      const timeoutId = setTimeout(() => {
+        updateActiveMatch()
+      }, 500) // Debounce for 500ms
+
+      return () => clearTimeout(timeoutId)
     }
-  }, [formData])
+  }, [formData, editingMatchId, showRegisterForm])
 
   // Calculate money won/lost based on investment and final chips
   const updatePlayerMoney = (index: number, field: string, value: any) => {
@@ -248,16 +240,9 @@ export default function LaCajitaPoker() {
     setLoading(true)
     setError(null)
     try {
-      await DatabaseService.createMatch({
-        date: formData.date,
-        cajiValue: formData.cajiValue,
-        players: formData.players,
-      })
+      await DatabaseService.registerActiveMatch(editingMatchId)
 
-      // Remove from active matches
-      deleteActiveMatch(editingMatchId)
-
-      // Close form and reload data
+      // Close form and reload all data
       setShowRegisterForm(false)
       setEditingMatchId(null)
       await loadAllData()
@@ -359,7 +344,7 @@ export default function LaCajitaPoker() {
     { id: "reglas", label: "Reglas" },
   ]
 
-  if (loading && matches.length === 0) {
+  if (loading && matches.length === 0 && activeMatches.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -608,8 +593,12 @@ export default function LaCajitaPoker() {
                 <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-2xl text-yellow-400">Partidas Activas</CardTitle>
-                    <Button onClick={createNewActiveMatch} className="bg-green-600 hover:bg-green-700 text-white">
-                      <Plus className="w-4 h-4 mr-2" />
+                    <Button
+                      onClick={createNewActiveMatch}
+                      disabled={loading}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                       Nueva Partida
                     </Button>
                   </CardHeader>
@@ -617,97 +606,106 @@ export default function LaCajitaPoker() {
                     {activeMatches.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-400 mb-4">No hay partidas activas</p>
-                        <Button onClick={createNewActiveMatch} className="bg-green-600 hover:bg-green-700 text-white">
-                          <Plus className="w-4 h-4 mr-2" />
+                        <Button
+                          onClick={createNewActiveMatch}
+                          disabled={loading}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : (
+                            <Plus className="w-4 h-4 mr-2" />
+                          )}
                           Crear Primera Partida
                         </Button>
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {activeMatches
-                          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-                          .map((match) => {
-                            const playersWithNames = match.players.filter((p) => p.name.trim() !== "")
-                            const totalInvestment = match.players.reduce(
-                              (sum, p) => sum + p.cajitas * match.cajiValue,
-                              0,
-                            )
-                            const isComplete =
-                              playersWithNames.length === match.playerCount &&
-                              playersWithNames.every((p) => p.finalChips > 0)
+                        {activeMatches.map((match) => {
+                          const playersWithNames = match.players.filter((p) => p.name.trim() !== "")
+                          const totalInvestment = match.players.reduce(
+                            (sum, p) => sum + p.cajitas * match.caji_value,
+                            0,
+                          )
+                          const isComplete =
+                            playersWithNames.length === match.player_count &&
+                            playersWithNames.every((p) => p.finalChips > 0)
 
-                            return (
-                              <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
-                                <CardContent className="p-4">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                                        <div
-                                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                                            isComplete
-                                              ? "bg-green-600/20 text-green-400"
-                                              : "bg-yellow-600/20 text-yellow-400"
-                                          }`}
-                                        >
-                                          {isComplete ? "Lista para registrar" : "En progreso"}
-                                        </div>
-                                      </div>
-                                      <div className="text-sm text-gray-400">
-                                        {playersWithNames.length}/{match.playerCount} jugadores - $
-                                        {totalInvestment.toLocaleString()}
+                          return (
+                            <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                              <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-lg font-semibold text-green-400">{match.date}</div>
+                                      <div
+                                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                                          isComplete
+                                            ? "bg-green-600/20 text-green-400"
+                                            : "bg-yellow-600/20 text-yellow-400"
+                                        }`}
+                                      >
+                                        {isComplete ? "Lista para registrar" : "En progreso"}
                                       </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => editActiveMatch(match.id)}
-                                        className="bg-blue-600/20 border-blue-500 text-blue-400 hover:bg-blue-600/40"
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => deleteActiveMatch(match.id)}
-                                        className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
+                                    <div className="text-sm text-gray-400">
+                                      {playersWithNames.length}/{match.player_count} jugadores - $
+                                      {totalInvestment.toLocaleString()}
                                     </div>
                                   </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => editActiveMatch(match.id)}
+                                      className="bg-blue-600/20 border-blue-500 text-blue-400 hover:bg-blue-600/40"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => deleteActiveMatch(match.id)}
+                                      disabled={loading}
+                                      className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
+                                    >
+                                      {loading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
 
-                                  {playersWithNames.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                                      {playersWithNames.map((player, index) => (
-                                        <div
-                                          key={index}
-                                          className="flex items-center justify-between p-2 bg-gray-600/30 rounded"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold text-white">
-                                              {index + 1}
-                                            </div>
-                                            <span className="text-sm">{player.name}</span>
+                                {playersWithNames.length > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                                    {playersWithNames.map((player, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between p-2 bg-gray-600/30 rounded"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold text-white">
+                                            {index + 1}
                                           </div>
-                                          <span
-                                            className={`text-sm font-semibold ${
-                                              player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
-                                            }`}
-                                          >
-                                            {player.finalChips > 0
-                                              ? `$${player.moneyWon.toLocaleString()}`
-                                              : "Pendiente"}
-                                          </span>
+                                          <span className="text-sm">{player.name}</span>
                                         </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            )
-                          })}
+                                        <span
+                                          className={`text-sm font-semibold ${
+                                            player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
+                                          }`}
+                                        >
+                                          {player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
                       </div>
                     )}
                   </CardContent>

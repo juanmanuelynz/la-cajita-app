@@ -265,4 +265,112 @@ export class DatabaseService {
       await Promise.all(updatePromises)
     }
   }
+
+  // Active Match operations
+  static async getAllActiveMatches(): Promise<ActiveMatch[]> {
+    const { data, error } = await supabase.from("active_matches").select("*").order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async createActiveMatch(matchData: {
+    date: string
+    cajiValue: number
+    playerCount: number
+    players: Array<{
+      name: string
+      cajitas: number
+      finalChips: number
+      moneyWon: number
+    }>
+  }): Promise<ActiveMatch> {
+    const { data, error } = await supabase
+      .from("active_matches")
+      .insert({
+        date: matchData.date,
+        caji_value: matchData.cajiValue,
+        player_count: matchData.playerCount,
+        players: matchData.players,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateActiveMatch(
+    matchId: string,
+    matchData: {
+      date: string
+      cajiValue: number
+      playerCount: number
+      players: Array<{
+        name: string
+        cajitas: number
+        finalChips: number
+        moneyWon: number
+      }>
+    },
+  ): Promise<ActiveMatch> {
+    const { data, error } = await supabase
+      .from("active_matches")
+      .update({
+        date: matchData.date,
+        caji_value: matchData.cajiValue,
+        player_count: matchData.playerCount,
+        players: matchData.players,
+      })
+      .eq("id", matchId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteActiveMatch(matchId: string): Promise<void> {
+    const { error } = await supabase.from("active_matches").delete().eq("id", matchId)
+
+    if (error) throw error
+  }
+
+  static async registerActiveMatch(matchId: string): Promise<MatchWithPlayers> {
+    // Get the active match
+    const { data: activeMatch, error: fetchError } = await supabase
+      .from("active_matches")
+      .select("*")
+      .eq("id", matchId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    // Create the real match
+    const realMatch = await this.createMatch({
+      date: activeMatch.date,
+      cajiValue: activeMatch.caji_value,
+      players: activeMatch.players,
+    })
+
+    // Delete the active match
+    await this.deleteActiveMatch(matchId)
+
+    return realMatch
+  }
+}
+
+export interface ActiveMatch {
+  id: string
+  date: string
+  caji_value: number
+  player_count: number
+  players: Array<{
+    name: string
+    cajitas: number
+    finalChips: number
+    moneyWon: number
+  }>
+  created_at: string
+  updated_at: string
 }
