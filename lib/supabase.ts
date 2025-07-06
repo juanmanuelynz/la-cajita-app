@@ -11,20 +11,12 @@ export interface Player {
   created_at: string
 }
 
-export interface Tournament {
-  id: string
-  name: string
-  year: number
-  created_at: string
-}
-
 export interface Match {
   id: string
   date: string
   caji_value: number
   total_money: number
   player_count: number
-  tournament_id: string | null
   created_at: string
 }
 
@@ -43,7 +35,6 @@ export interface MatchPlayer {
 
 export interface MatchWithPlayers extends Match {
   match_players: (MatchPlayer & { players: Player })[]
-  tournaments?: Tournament
 }
 
 export interface PlayerStats {
@@ -61,7 +52,6 @@ export interface ActiveMatch {
   date: string
   caji_value: number
   player_count: number
-  tournament_id: string | null
   players: Array<{
     name: string
     cajitas: number
