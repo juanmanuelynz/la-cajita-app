@@ -80,7 +80,7 @@ export default function LaCajitaPoker() {
     playerCount: 4,
     players: Array(4)
       .fill(null)
-      .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
+      .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 })),
   })
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([])
   const [selectedAnalysisPlayer, setSelectedAnalysisPlayer] = useState("")
@@ -166,7 +166,7 @@ export default function LaCajitaPoker() {
         playerCount: 4,
         players: Array(4)
           .fill(null)
-          .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })),
+          .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 })),
       })
 
       console.log("✅ New active match created:", newMatch)
@@ -254,7 +254,13 @@ export default function LaCajitaPoker() {
   useEffect(() => {
     const newPlayers = Array(formData.playerCount)
       .fill(null)
-      .map((_, i) => formData.players[i] || { name: "", cajitas: 1, finalChips: 0, moneyWon: 0 })
+      .map((_, i) => {
+        const existingPlayer = formData.players[i]
+        if (existingPlayer) {
+          return existingPlayer
+        }
+        return { name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 }
+      })
     setFormData((prev) => ({ ...prev, players: newPlayers }))
   }, [formData.playerCount])
 
@@ -696,7 +702,7 @@ export default function LaCajitaPoker() {
                                       onClick={() => editActiveMatch(match.id)}
                                       className="bg-blue-600/20 border-blue-500 text-blue-400 hover:bg-blue-600/40"
                                     >
-                                      <Edit className="w-4 h-4" />
+                                      <NotebookPen className="w-4 h-4" />
                                     </Button>
                                     <Button
                                       variant="outline"
@@ -923,7 +929,7 @@ export default function LaCajitaPoker() {
                               />
                             </div>
                             <div>
-                              <Label className="text-gray-300">Fichas Finales</Label>
+                              <Label className="text-gray-300">Fichas Totales</Label>
                               <Input
                                 type="text"
                                 inputMode="numeric"
