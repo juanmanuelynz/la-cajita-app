@@ -649,9 +649,9 @@ export default function LaCajitaPoker() {
                       <th className="py-3 px-4 text-left text-yellow-400">Pos</th>
                       <th className="py-3 px-4 text-left text-yellow-400">Jugador</th>
                       <th className="py-3 px-4 text-center text-yellow-400">Puntos</th>
-                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
-                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>
                       <th className="py-3 px-4 text-center text-yellow-400">Dinero Ganado</th>
+                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
+                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
                       <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
                     </tr>
                   </thead>
@@ -679,8 +679,6 @@ export default function LaCajitaPoker() {
                         </td>
                         <td className="py-3 px-4 font-semibold text-green-400">{player.name}</td>
                         <td className="py-3 px-4 text-center font-bold text-yellow-400">{player.points}</td>
-                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.matches}</td>
-                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.cajitas}</td>
                         <td
                           className={`py-3 px-4 text-center font-semibold ${
                             player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
@@ -688,6 +686,8 @@ export default function LaCajitaPoker() {
                         >
                           ${player.moneyWon.toLocaleString()}
                         </td>
+                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.matches}</td>
+                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.cajitas}</td>                        
                         <td
                           className={`py-3 px-4 text-center hidden md:table-cell ${
                             player.averagePerMatch >= 0 ? "text-green-400" : "text-red-400"
