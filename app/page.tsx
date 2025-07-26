@@ -14,14 +14,14 @@ import {
   Award,
   Plus,
   Loader2,
-  Menu,
-  X,
   ArrowLeft,
-  Edit,
+  NotebookPen,
   RefreshCw,
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  BarChart3,
+  BookOpen,
 } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -55,7 +55,6 @@ export default function LaCajitaPoker() {
   const [activeTab, setActiveTab] = useState("ranking")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
   const [matchToDelete, setMatchToDelete] = useState<string | null>(null)
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null)
@@ -423,17 +422,17 @@ export default function LaCajitaPoker() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white pb-16">
       {/* Header */}
       <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center mb-6">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent mb-2">
+        <div className="container mx-auto px-4 py-4">
+          <div className="text-center">
+            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent mb-2">
               ♠️ La Cajita
             </h1>
 
             {/* Connection Status & Refresh Button */}
-            <div className="flex items-center justify-center gap-2 mt-2">
+            <div className="flex items-center justify-center gap-2">
               <div
                 className={`w-2 h-2 rounded-full ${connectionStatus === true ? "bg-green-400" : connectionStatus === false ? "bg-red-400" : "bg-yellow-400"}`}
               ></div>
@@ -455,102 +454,10 @@ export default function LaCajitaPoker() {
               </Button>
             </div>
           </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex flex-wrap justify-center gap-2">
-            {tabs.map((tab) => (
-              <Button
-                key={tab.id}
-                variant={activeTab === tab.id ? "default" : "outline"}
-                onClick={() => {
-                  setActiveTab(tab.id)
-                  setShowRegisterForm(false)
-                  setEditingMatchId(null)
-                }}
-                className={`${
-                  activeTab === tab.id
-                    ? "bg-green-600 hover:bg-green-700 text-white border-green-500"
-                    : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border-gray-600"
-                } backdrop-blur-sm transition-all duration-200`}
-              >
-                {tab.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Mobile Navigation */}
-          <div className="md:hidden">
-            <div className="flex justify-between items-center">
-              <div className="text-lg font-semibold text-green-400">
-                {showRegisterForm && activeTab === "partidas"
-                  ? editingMatchId
-                    ? "Editando Partida"
-                    : "Nueva Partida"
-                  : tabs.find((tab) => tab.id === activeTab)?.label}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setMobileMenuOpen(true)}
-                className="bg-gray-800/50 border-gray-600 text-gray-300"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black z-50 flex flex-col"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          {/* Header del menú */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-700/50">
-            <h2 className="text-2xl font-bold text-yellow-400">♠️ La Cajita</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-white hover:text-yellow-400"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          </div>
 
-          {/* Lista de opciones */}
-          <div className="flex-1 flex flex-col justify-center px-8">
-            <div className="space-y-4">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setActiveTab(tab.id)
-                    setShowRegisterForm(false)
-                    setEditingMatchId(null)
-                    setMobileMenuOpen(false)
-                  }}
-                  className={`w-full text-left py-4 px-6 rounded-lg text-xl font-semibold transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-green-600 text-white"
-                      : "text-white hover:text-yellow-400 hover:bg-gray-800/50"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer del menú */}
-          <div className="p-6 text-center text-gray-400 text-sm border-t border-gray-700/50">
-            Toca fuera del menú para cerrar
-          </div>
-        </div>
-      )}
 
       <div className="container mx-auto px-4 py-8">
         {error && (
@@ -1468,6 +1375,32 @@ export default function LaCajitaPoker() {
             </Card>
           </div>
         )}
+      </div>
+
+      {/* Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-sm border-t border-gray-700/50 z-50">
+        <div className="flex justify-around items-center h-full px-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id)
+                setShowRegisterForm(false)
+                setEditingMatchId(null)
+              }}
+              className={`flex items-center justify-center w-32 h-16 transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "text-yellow-400 bg-yellow-400/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
+              }`}
+            >
+              {tab.id === "ranking" && <Trophy className="w-7 h-7" />}
+              {tab.id === "partidas" && <NotebookPen className="w-7 h-7" />}
+              {tab.id === "estadisticas" && <BarChart3 className="w-7 h-7" />}
+              {tab.id === "reglas" && <BookOpen className="w-7 h-7" />}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* PWA Components */}
