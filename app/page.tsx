@@ -399,7 +399,6 @@ export default function LaCajitaPoker() {
     { id: "ranking", label: "Ranking Anual" },
     { id: "partidas", label: "Partidas" },
     { id: "estadisticas", label: "Estadísticas" },
-    { id: "historial", label: "Historial" },
     { id: "reglas", label: "Reglas" },
   ]
 
@@ -650,10 +649,10 @@ export default function LaCajitaPoker() {
                       <th className="py-3 px-4 text-left text-yellow-400">Pos</th>
                       <th className="py-3 px-4 text-left text-yellow-400">Jugador</th>
                       <th className="py-3 px-4 text-center text-yellow-400">Puntos</th>
-                      <th className="py-3 px-4 text-center text-yellow-400">Partidas</th>
-                      <th className="py-3 px-4 text-center text-yellow-400">Cajitas</th>
+                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
+                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>
                       <th className="py-3 px-4 text-center text-yellow-400">Dinero Ganado</th>
-                      <th className="py-3 px-4 text-center text-yellow-400">Promedio/Partida</th>
+                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -680,8 +679,8 @@ export default function LaCajitaPoker() {
                         </td>
                         <td className="py-3 px-4 font-semibold text-green-400">{player.name}</td>
                         <td className="py-3 px-4 text-center font-bold text-yellow-400">{player.points}</td>
-                        <td className="py-3 px-4 text-center text-slate-300">{player.matches}</td>
-                        <td className="py-3 px-4 text-center text-slate-300">{player.cajitas}</td>
+                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.matches}</td>
+                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.cajitas}</td>
                         <td
                           className={`py-3 px-4 text-center font-semibold ${
                             player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
@@ -690,7 +689,7 @@ export default function LaCajitaPoker() {
                           ${player.moneyWon.toLocaleString()}
                         </td>
                         <td
-                          className={`py-3 px-4 text-center ${
+                          className={`py-3 px-4 text-center hidden md:table-cell ${
                             player.averagePerMatch >= 0 ? "text-green-400" : "text-red-400"
                           }`}
                         >
@@ -744,18 +743,6 @@ export default function LaCajitaPoker() {
                     {activeMatches.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-400 mb-4">No hay partidas activas</p>
-                        <Button
-                          onClick={createNewActiveMatch}
-                          disabled={loading}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {loading ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          ) : (
-                            <Plus className="w-4 h-4 mr-2" />
-                          )}
-                          Crear Primera Partida
-                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1117,6 +1104,71 @@ export default function LaCajitaPoker() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Historial de Partidas */}
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
+                  {matches.map((match) => (
+                    <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="text-lg font-semibold text-green-400">{match.date}</div>
+                            <div className="text-sm text-gray-400">
+                              {match.player_count} jugadores - ${match.total_money.toLocaleString()}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => confirmDeleteMatch(match.id)}
+                            className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
+                            disabled={loading}
+                          >
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                          {match.match_players
+                            .sort((a, b) => a.position - b.position)
+                            .map((mp) => (
+                              <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                      mp.position === 1
+                                        ? "bg-yellow-500 text-black"
+                                        : mp.position === 2
+                                          ? "bg-gray-400 text-black"
+                                          : mp.position === 3
+                                            ? "bg-orange-500 text-black"
+                                            : "bg-gray-600 text-white"
+                                    }`}
+                                  >
+                                    {mp.position}
+                                  </div>
+                                  <span className="text-sm">{mp.players?.name}</span>
+                                </div>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    mp.money_won >= 0 ? "text-green-400" : "text-red-400"
+                                  }`}
+                                >
+                                  ${mp.money_won.toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -1357,72 +1409,7 @@ export default function LaCajitaPoker() {
           </div>
         )}
 
-        {/* Historial Tab */}
-        {activeTab === "historial" && (
-          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
-                {matches.map((match) => (
-                  <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                          <div className="text-sm text-gray-400">
-                            {match.player_count} jugadores - ${match.total_money.toLocaleString()}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => confirmDeleteMatch(match.id)}
-                          className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
-                          disabled={loading}
-                        >
-                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                        {match.match_players
-                          .sort((a, b) => a.position - b.position)
-                          .map((mp) => (
-                            <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                    mp.position === 1
-                                      ? "bg-yellow-500 text-black"
-                                      : mp.position === 2
-                                        ? "bg-gray-400 text-black"
-                                        : mp.position === 3
-                                          ? "bg-orange-500 text-black"
-                                          : "bg-gray-600 text-white"
-                                  }`}
-                                >
-                                  {mp.position}
-                                </div>
-                                <span className="text-sm">{mp.players?.name}</span>
-                              </div>
-                              <span
-                                className={`text-sm font-semibold ${
-                                  mp.money_won >= 0 ? "text-green-400" : "text-red-400"
-                                }`}
-                              >
-                                ${mp.money_won.toLocaleString()}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Reglas Tab */}
         {activeTab === "reglas" && (
