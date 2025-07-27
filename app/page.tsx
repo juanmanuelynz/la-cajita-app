@@ -1418,7 +1418,7 @@ export default function LaCajitaPoker() {
                 setShowRegisterForm(false)
                 setEditingMatchId(null)
               }}
-              className={`flex items-center justify-center w-32 h-16 transition-all duration-200 ${
+              className={`flex items-center justify-center w-32 h-full transition-all duration-200 ${
                 activeTab === tab.id
                   ? "text-yellow-400 bg-yellow-400/10"
                   : "text-gray-400 hover:text-white hover:bg-gray-700/50"
