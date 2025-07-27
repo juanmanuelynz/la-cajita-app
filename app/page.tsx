@@ -65,6 +65,7 @@ export default function LaCajitaPoker() {
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null)
   const [showEvolutionChart, setShowEvolutionChart] = useState(true)
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
+  const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">("points")
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
@@ -470,6 +471,17 @@ export default function LaCajitaPoker() {
     }
   }
 
+  // Get sorted player stats based on current sort criteria
+  const getSortedPlayerStats = () => {
+    return [...playerStats].sort((a, b) => {
+      if (rankingSortBy === "points") {
+        return b.points - a.points
+      } else {
+        return b.moneyWon - a.moneyWon
+      }
+    })
+  }
+
   const tabs = [
     { id: "ranking", label: "Ranking Anual" },
     { id: "partidas", label: "Partidas" },
@@ -618,25 +630,48 @@ export default function LaCajitaPoker() {
           </div>
         )}
 
-        {/* Ranking Anual Tab */}
+                {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-yellow-400">Ranking Anual</h2>
+          <div className="space-y-5">
+            <h2 className="text-2xl font-bold text-yellow-400 text-center">Tabla Anual</h2>
+            
+            {/* Sort Toggle Switch */}
+            <div className="flex items-center justify-center gap-4">
+              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "text-white" : "text-gray-400"}`}>
+                Puntos
+              </span>
+              <button
+                onClick={() => setRankingSortBy(rankingSortBy === "points" ? "money" : "points")}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  rankingSortBy === "money" ? "bg-yellow-400" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    rankingSortBy === "money" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "text-white" : "text-gray-400"}`}>
+                Dinero
+              </span>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full">
-                                  <thead>
-                    <tr className="border-b border-gray-600">
-                      <th className="py-2 px-2 text-left text-yellow-400">Pos</th>
-                      <th className="py-2 px-2 text-left text-yellow-400">Jugador</th>
-                      <th className="py-2 px-2 text-center text-yellow-400">Puntos</th>
-                      <th className="py-2 px-2 text-center text-yellow-400">Dinero Ganado</th>
-                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
-                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
-                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
-                    </tr>
-                  </thead>
+                <thead>
+                  <tr className="border-b border-gray-600">
+                    <th className="py-2 px-2 text-left text-yellow-400">Pos</th>
+                    <th className="py-2 px-2 text-left text-yellow-400">Jugador</th>
+                    <th className="py-2 px-2 text-center text-yellow-400">Puntos</th>
+                    <th className="py-2 px-2 text-center text-yellow-400">Dinero Ganado</th>
+                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
+                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
+                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {playerStats.map((player, index) => (
+                  {getSortedPlayerStats().map((player, index) => (
                     <tr
                       key={player.id}
                       className={`border-b border-gray-700/50 ${
