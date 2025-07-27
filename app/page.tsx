@@ -620,71 +620,67 @@ export default function LaCajitaPoker() {
 
         {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
-          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl text-yellow-400">Ranking Anual</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-yellow-400">Ranking Anual</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                                  <thead>
                     <tr className="border-b border-gray-600">
-                      <th className="py-3 px-4 text-left text-yellow-400">Pos</th>
-                      <th className="py-3 px-4 text-left text-yellow-400">Jugador</th>
-                      <th className="py-3 px-4 text-center text-yellow-400">Puntos</th>
-                      <th className="py-3 px-4 text-center text-yellow-400">Dinero Ganado</th>
-                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
-                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
-                      <th className="py-3 px-4 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
+                      <th className="py-2 px-2 text-left text-yellow-400">Pos</th>
+                      <th className="py-2 px-2 text-left text-yellow-400">Jugador</th>
+                      <th className="py-2 px-2 text-center text-yellow-400">Puntos</th>
+                      <th className="py-2 px-2 text-center text-yellow-400">Dinero Ganado</th>
+                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
+                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
+                      <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {playerStats.map((player, index) => (
-                      <tr
-                        key={player.id}
-                        className={`border-b border-gray-700/50 ${
-                          index === 0
-                            ? "bg-gradient-to-r from-yellow-900/30 to-yellow-800/20"
-                            : index === 1
-                              ? "bg-gradient-to-r from-gray-400/20 to-gray-500/10"
-                              : index === 2
-                                ? "bg-gradient-to-r from-orange-900/30 to-orange-800/20"
-                                : ""
-                        }`}
-                      >
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            {index === 0 && <Trophy className="w-5 h-5 text-yellow-400" />}
-                            {index === 1 && <Medal className="w-5 h-5 text-gray-400" />}
-                            {index === 2 && <Award className="w-5 h-5 text-orange-400" />}
-                            <span className="font-semibold text-white">{index + 1}</span>
+                <tbody>
+                  {playerStats.map((player, index) => (
+                    <tr
+                      key={player.id}
+                      className={`border-b border-gray-700/50 ${
+                        index === 0
+                          ? "bg-gradient-to-r from-yellow-900/30 to-yellow-800/20"
+                          : index === 1
+                            ? "bg-gradient-to-r from-gray-400/20 to-gray-500/10"
+                            : index === 2
+                              ? "bg-gradient-to-r from-orange-900/30 to-orange-800/20"
+                              : ""
+                      }`}
+                    >
+                                              <td className="py-2 px-2">
+                          <div className="flex items-center gap-1">
+                          <span className="font-semibold text-slate-200 text-sm">{index + 1}</span>
+                            {index === 0 && <Trophy className="w-4 h-4 text-yellow-400" />}
+                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                            {index === 2 && <Award className="w-4 h-4 text-orange-400" />}                            
                           </div>
                         </td>
-                        <td className="py-3 px-4 font-semibold text-green-400">{player.name}</td>
-                        <td className="py-3 px-4 text-center font-bold text-yellow-400">{player.points}</td>
+                        <td className="py-3 px-2 font-semibold text-white text-sm">{player.name}</td>
+                        <td className="py-3 px-2 text-center font-bold text-white text-sm">{player.points}</td>
                         <td
-                          className={`py-3 px-4 text-center font-semibold ${
+                          className={`py-3 px-2 text-center font-semibold text-sm ${
                             player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
                           }`}
                         >
                           ${player.moneyWon.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.matches}</td>
-                        <td className="py-3 px-4 text-center text-slate-300 hidden md:table-cell">{player.cajitas}</td>                        
+                        <td className="py-3 px-2 text-center text-slate-300 hidden md:table-cell text-sm">{player.matches}</td>
+                        <td className="py-3 px-2 text-center text-slate-300 hidden md:table-cell text-sm">{player.cajitas}</td>                        
                         <td
-                          className={`py-3 px-4 text-center hidden md:table-cell ${
+                          className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
                             player.averagePerMatch >= 0 ? "text-green-400" : "text-red-400"
                           }`}
                         >
                           ${Math.round(player.averagePerMatch).toLocaleString()}
                         </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {/* Partidas Tab */}
@@ -1196,7 +1192,7 @@ export default function LaCajitaPoker() {
             {/* Análisis Individual */}
             <div className="space-y-4">
               {playerStats.map((player) => (
-                <Card key={player.id} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                <Card key={player.id} className="bg-gray-800/80 border-gray-700/80 backdrop-blur-sm">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <div className="text-xl font-semibold text-white">{player.name}</div>
@@ -1223,8 +1219,8 @@ export default function LaCajitaPoker() {
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       {getPlayerBestMatch(player.name) && (
-                        <div className="p-3 border border-green-500/50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col items-center p-2 border border-green-500/50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-4 h-4 text-green-400" />
                               <span className="text-sm text-green-400 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
@@ -1238,8 +1234,8 @@ export default function LaCajitaPoker() {
                         </div>
                       )}
                       {getPlayerWorstMatch(player.name) && (
-                        <div className="p-3 border border-red-500/50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col items-center p-2 border border-red-500/50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
                               <TrendingDown className="w-4 h-4 text-red-400" />
                               <span className="text-sm text-red-400 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
