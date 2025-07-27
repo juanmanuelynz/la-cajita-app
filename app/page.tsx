@@ -698,25 +698,16 @@ export default function LaCajitaPoker() {
                     <CardTitle className="text-2xl text-yellow-400">
                       Partidas ({activeMatches.length})
                     </CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={refreshData}
-                        disabled={loading}
-                        variant="outline"
-                        size="sm"
-                        className="bg-gray-700/50 border-gray-600 text-gray-300"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                      </Button>
+                    <div className="flex gap-2">                      
                       <Button
                         onClick={createNewActiveMatch}
                         disabled={loading}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
                         ) : (
-                          <Plus className="w-4 h-4 mr-2" />
+                          <Plus className="w-4 h-4 mr-1" />
                         )}
                         Nueva Partida
                       </Button>
@@ -1090,8 +1081,17 @@ export default function LaCajitaPoker() {
 
             {/* Historial de Partidas */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
+                <Button
+                        onClick={refreshData}
+                        disabled={loading}
+                        variant="outline"
+                        size="sm"
+                        className="bg-gray-700/50 border-gray-600 text-gray-300"
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                      </Button>
               </CardHeader>
               <CardContent>
                 <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
