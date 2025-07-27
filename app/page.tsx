@@ -1266,7 +1266,7 @@ export default function LaCajitaPoker() {
 
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-300">{getPlayerBestMatch(player.name)?.date}</div>
+                            <div className="text-xs text-slate-400">{getPlayerBestMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
@@ -1280,14 +1280,14 @@ export default function LaCajitaPoker() {
                             <div className="text-sm text-red-400 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-300">{getPlayerWorstMatch(player.name)?.date}</div>
+                            <div className="text-xs text-slate-400">{getPlayerWorstMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
                     </div>
                     
-                                          <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Últimas 5 partidas</span>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">Últimas 5 partidas</span>
                         <div className="flex gap-1">
                           {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
                             <div
