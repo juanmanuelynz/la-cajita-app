@@ -1197,24 +1197,24 @@ export default function LaCajitaPoker() {
                 <Card key={player.id} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <div className="text-xl font-semibold text-green-400">{player.name}</div>
-                      <div className="text-xl font-semibold text-yellow-400">${player.moneyWon.toLocaleString()}</div>
+                      <div className="text-xl font-semibold text-white">{player.name}</div>
+                      <div className="text-xl font-semibold text-white">${player.moneyWon.toLocaleString()}</div>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="text-center">
                         <Trophy className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                        <div className="text-2xl font-bold text-yellow-400">{player.points}</div>
+                        <div className="text-xl font-bold text-yellow-400">{player.points}</div>
                         <div className="text-xs text-gray-400">Puntos</div>
                       </div>
                       <div className="text-center">
                         <Cannabis className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                        <div className="text-2xl font-bold text-yellow-400">{player.matches}</div>
+                        <div className="text-xl font-bold text-yellow-400">{player.matches}</div>
                         <div className="text-xs text-gray-400">Partidas</div>
                       </div>
                       <div className="text-center">
                         <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                        <div className="text-2xl font-bold text-yellow-400">{player.cajitas}</div>
+                        <div className="text-xl font-bold text-yellow-400">{player.cajitas}</div>
                         <div className="text-xs text-gray-400">Cajitas</div>
                       </div>
                     </div>
@@ -1227,10 +1227,11 @@ export default function LaCajitaPoker() {
                               <TrendingUp className="w-4 h-4 text-green-400" />
                               <span className="text-sm text-green-400 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
                             </div>
+                            <div className="text-sm text-green-400 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
+
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-300">{getPlayerBestMatch(player.name)?.date}</div>
-                            <div className="text-sm text-green-400 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-xs text-gray-300">{getPlayerBestMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
@@ -1241,10 +1242,10 @@ export default function LaCajitaPoker() {
                               <TrendingDown className="w-4 h-4 text-red-400" />
                               <span className="text-sm text-red-400 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
                             </div>
+                            <div className="text-sm text-red-400 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-300">{getPlayerWorstMatch(player.name)?.date}</div>
-                            <div className="text-sm text-red-400 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-xs text-gray-300">{getPlayerWorstMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
