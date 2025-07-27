@@ -60,6 +60,7 @@ export default function LaCajitaPoker() {
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null)
   const [showEvolutionChart, setShowEvolutionChart] = useState(true)
+  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
@@ -400,6 +401,19 @@ export default function LaCajitaPoker() {
       })
   }
 
+  // Toggle match expansion
+  const toggleMatchExpansion = (matchId: string) => {
+    setExpandedMatches(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(matchId)) {
+        newSet.delete(matchId)
+      } else {
+        newSet.add(matchId)
+      }
+      return newSet
+    })
+  }
+
   const tabs = [
     { id: "ranking", label: "Ranking Anual" },
     { id: "partidas", label: "Partidas" },
@@ -428,7 +442,7 @@ export default function LaCajitaPoker() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white pb-20">
       {/* Header */}
       <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -1025,60 +1039,93 @@ export default function LaCajitaPoker() {
               </CardHeader>
               <CardContent>
                 <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
-                  {matches.map((match) => (
-                    <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                            <div className="text-sm text-gray-400">
-                              {match.player_count} jugadores - ${match.total_money.toLocaleString()}
+                  {matches.map((match) => {
+                    const isExpanded = expandedMatches.has(match.id)
+                    const winner = match.match_players.find(mp => mp.position === 1)
+                    
+                    return (
+                      <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                        <CardContent className="p-4">
+                          <div 
+                            className="flex justify-between items-start cursor-pointer hover:bg-gray-600/20 rounded p-2 -m-2 transition-colors"
+                            onClick={() => toggleMatchExpansion(match.id)}
+                          >
+                            <div className="flex-1">
+                              <div className="text-lg font-semibold text-green-400">{match.date}</div>
+                              <div className="text-sm text-gray-400">
+                                {match.player_count} jugadores - ${match.total_money.toLocaleString()}
+                              </div>
+                              {winner && (
+                                <div className="text-sm text-yellow-400 mt-1">
+                                  🏆 Ganador: {winner.players?.name}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                              )}
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => confirmDeleteMatch(match.id)}
-                            className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
-                            disabled={loading}
-                          >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                          {match.match_players
-                            .sort((a, b) => a.position - b.position)
-                            .map((mp) => (
-                              <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                      mp.position === 1
-                                        ? "bg-yellow-500 text-black"
-                                        : mp.position === 2
-                                          ? "bg-gray-400 text-black"
-                                          : mp.position === 3
-                                            ? "bg-orange-500 text-black"
-                                            : "bg-gray-600 text-white"
-                                    }`}
-                                  >
-                                    {mp.position}
-                                  </div>
-                                  <span className="text-sm">{mp.players?.name}</span>
+                          
+                          {isExpanded && (
+                            <div className="mt-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <div className="text-sm text-gray-300">
+                                  Dinero total jugado: <span className="text-yellow-400 font-semibold">${match.total_money.toLocaleString()}</span>
                                 </div>
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    mp.money_won >= 0 ? "text-green-400" : "text-red-400"
-                                  }`}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    confirmDeleteMatch(match.id)
+                                  }}
+                                  className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
+                                  disabled={loading}
                                 >
-                                  ${mp.money_won.toLocaleString()}
-                                </span>
+                                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                </Button>
                               </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                                {match.match_players
+                                  .sort((a, b) => a.position - b.position)
+                                  .map((mp) => (
+                                    <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                            mp.position === 1
+                                              ? "bg-yellow-500 text-black"
+                                              : mp.position === 2
+                                                ? "bg-gray-400 text-black"
+                                                : mp.position === 3
+                                                  ? "bg-orange-500 text-black"
+                                                  : "bg-gray-600 text-white"
+                                          }`}
+                                        >
+                                          {mp.position}
+                                        </div>
+                                        <span className="text-sm">{mp.players?.name}</span>
+                                      </div>
+                                      <span
+                                        className={`text-sm font-semibold ${
+                                          mp.money_won >= 0 ? "text-green-400" : "text-red-400"
+                                        }`}
+                                      >
+                                        ${mp.money_won.toLocaleString()}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -1384,8 +1431,8 @@ export default function LaCajitaPoker() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-sm border-t border-gray-700/50 z-50">
-        <div className="flex justify-around items-center h-full px-4">
+      <div className="fixed p-0 bottom-0 left-0 right-0 h-20 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-sm border-t border-gray-700/50 z-50">
+        <div className="flex justify-around items-center h-full p-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
