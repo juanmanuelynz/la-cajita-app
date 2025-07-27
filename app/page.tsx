@@ -970,43 +970,45 @@ export default function LaCajitaPoker() {
                                 </div>
                               )}
                             </div>
-                            <div>
-                              <Label className="text-gray-300">Cajitas</Label>
-                              <Input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                value={player.cajitas.toString()}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/[^0-9]/g, "")
-                                  if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
-                                    updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
-                                  }
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                className="bg-gray-600/50 border-gray-500 text-white text-center"
-                                min="1"
-                                placeholder="1"
-                              />
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <Label className="text-gray-300">Cajitas</Label>
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={player.cajitas.toString()}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[^0-9]/g, "")
+                                    if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
+                                      updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
+                                    }
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                  min="1"
+                                  placeholder="1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-gray-300">Fichas Totales</Label>
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={player.finalChips === 0 ? "" : player.finalChips.toString()}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[^0-9]/g, "")
+                                    updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                  min="0"
+                                  placeholder="0"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <Label className="text-gray-300">Fichas Totales</Label>
-                              <Input
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                value={player.finalChips === 0 ? "" : player.finalChips.toString()}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/[^0-9]/g, "")
-                                  updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                className="bg-gray-600/50 border-gray-500 text-white text-center"
-                                min="0"
-                                placeholder="0"
-                              />
-                            </div>
-                            <div>
+                            <div className="flex items-center justify-between">
                               <Label className="text-gray-300">Dinero Ganado/Perdido</Label>
                               <div
                                 className={`p-2 rounded text-center font-semibold ${
@@ -1017,9 +1019,9 @@ export default function LaCajitaPoker() {
                               </div>
                             </div>
                           </div>
-                          <div className="mt-2 text-sm text-gray-400">
+                          {/* <div className="mt-2 text-sm text-gray-400">
                             Inversión: ${(player.cajitas * formData.cajiValue).toLocaleString()}
-                          </div>
+                          </div> */}
                         </CardContent>
                       </Card>
                     ))}
