@@ -1193,7 +1193,7 @@ export default function LaCajitaPoker() {
             <div className="space-y-4">
               {playerStats.map((player) => (
                 <Card key={player.id} className="bg-gray-800/80 border-gray-700/80 backdrop-blur-sm">
-                  <CardContent className="p-6">
+                  <CardContent className="p-5">
                     <div className="flex justify-between items-center mb-4">
                       <div className="text-xl font-semibold text-white">{player.name}</div>
                       <div className="text-xl font-semibold text-white">${player.moneyWon.toLocaleString()}</div>
