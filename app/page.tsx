@@ -22,6 +22,10 @@ import {
   ChevronUp,
   BarChart3,
   BookOpen,
+  Cannabis,
+  Coins,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -412,6 +416,58 @@ export default function LaCajitaPoker() {
       }
       return newSet
     })
+  }
+
+  // Get player's best match
+  const getPlayerBestMatch = (playerName: string) => {
+    const playerMatches = matches.filter((match) =>
+      match.match_players.some((mp) => mp.players?.name === playerName)
+    )
+    
+    if (playerMatches.length === 0) return null
+    
+    let bestMatch = playerMatches[0]
+    let bestMp = bestMatch.match_players.find((mp) => mp.players?.name === playerName)!
+    
+    for (const match of playerMatches) {
+      const mp = match.match_players.find((mp) => mp.players?.name === playerName)!
+      if (mp.money_won > bestMp.money_won) {
+        bestMatch = match
+        bestMp = mp
+      }
+    }
+    
+    return {
+      date: bestMatch.date,
+      position: bestMp.position,
+      moneyWon: bestMp.money_won
+    }
+  }
+
+  // Get player's worst match
+  const getPlayerWorstMatch = (playerName: string) => {
+    const playerMatches = matches.filter((match) =>
+      match.match_players.some((mp) => mp.players?.name === playerName)
+    )
+    
+    if (playerMatches.length === 0) return null
+    
+    let worstMatch = playerMatches[0]
+    let worstMp = worstMatch.match_players.find((mp) => mp.players?.name === playerName)!
+    
+    for (const match of playerMatches) {
+      const mp = match.match_players.find((mp) => mp.players?.name === playerName)!
+      if (mp.money_won < worstMp.money_won) {
+        worstMatch = match
+        worstMp = mp
+      }
+    }
+    
+    return {
+      date: worstMatch.date,
+      position: worstMp.position,
+      moneyWon: worstMp.money_won
+    }
   }
 
   const tabs = [
@@ -1135,162 +1191,82 @@ export default function LaCajitaPoker() {
         {/* Estadísticas Tab */}
         {activeTab === "estadisticas" && (
           <div className="space-y-6">
-            {/* Estadísticas generales */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-                <CardContent className="p-6 text-center bg-slate-700 border-0 rounded-xl shadow-none">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalMatches}</div>
-                  <div className="text-gray-300">Total Partidas Jugadas</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalCajitas}</div>
-                  <div className="text-gray-300">Total Cajitas</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">
-                    ${overallStats.totalMoney.toLocaleString()}
-                  </div>
-                  <div className="text-gray-300">Dinero en Juego</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
-                <CardContent className="p-6 text-center rounded-xl bg-slate-700">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.activePlayers}</div>
-                  <div className="text-gray-300">Jugadores Activos</div>
-                </CardContent>
-              </Card>
-            </div> */}
-
-            {/* Últimas 5 Partidas */}
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Últimas 5 Partidas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {playerStats.map((player) => {
-                    const lastMatches = getPlayerLastMatches(player.name)
-                    const positiveCount = lastMatches.filter((m) => m.moneyWon > 0).length
-                    const totalMoney = lastMatches.reduce((sum, m) => sum + m.moneyWon, 0)
-
-                    return (
-                      <Card key={player.id} className="bg-gray-700/30 border-gray-600/50">
-                        <CardContent className="p-4">
-                          <div className="text-lg font-semibold text-green-400 mb-3">{player.name}</div>
-                          <div className="flex gap-1 mb-3">
-                            {lastMatches.map((match, index) => (
-                              <div
-                                key={index}
-                                className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${
-                                  match.moneyWon > 0 ? "bg-green-600" : "bg-red-600"
-                                } text-white`}
-                              >
-                                {match.position}
-                              </div>
-                            ))}
-                            {Array.from({ length: 5 - lastMatches.length }).map((_, index) => (
-                              <div key={`empty-${index}`} className="w-8 h-8 rounded bg-gray-600/50"></div>
-                            ))}
-                          </div>
-                          <div className="text-sm space-y-1">
-                            <div className="text-slate-400">Sesiones positivas: {positiveCount}/5</div>
-                            <div className={`font-semibold ${totalMoney >= 0 ? "text-green-400" : "text-red-400"}`}>
-                              Total: ${totalMoney.toLocaleString()}
+            {/* Análisis Individual */}
+            <div className="space-y-4">
+              {playerStats.map((player) => (
+                <Card key={player.id} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="text-xl font-semibold text-green-400">{player.name}</div>
+                      <div className="text-xl font-semibold text-yellow-400">${player.moneyWon.toLocaleString()}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="text-center">
+                        <Trophy className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                        <div className="text-2xl font-bold text-yellow-400">{player.points}</div>
+                        <div className="text-xs text-gray-400">Puntos</div>
+                      </div>
+                      <div className="text-center">
+                        <Cannabis className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                        <div className="text-2xl font-bold text-yellow-400">{player.matches}</div>
+                        <div className="text-xs text-gray-400">Partidas</div>
+                      </div>
+                      <div className="text-center">
+                        <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                        <div className="text-2xl font-bold text-yellow-400">{player.cajitas}</div>
+                        <div className="text-xs text-gray-400">Cajitas</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {getPlayerBestMatch(player.name) && (
+                        <div className="p-3 bg-green-600/20 border border-green-500/30 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-green-400" />
+                              <span className="text-sm text-green-400 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Análisis Individual */}
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Análisis Individual</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6">
-                  <Label className="text-gray-300">Seleccionar Jugador</Label>
-                  <Select value={selectedAnalysisPlayer} onValueChange={setSelectedAnalysisPlayer}>
-                    <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white">
-                      <SelectValue placeholder="Selecciona un jugador" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
-                      {playerStats.map((player) => (
-                        <SelectItem key={player.id} value={player.name} className="hover:bg-green-600 hover:text-white">
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedAnalysisPlayer && (
-                  <div className="space-y-4">
-                    {(() => {
-                      const playerMatches = matches.filter((match) =>
-                        match.match_players.some((mp) => mp.players?.name === selectedAnalysisPlayer),
-                      )
-                      const playerResults = playerMatches.map((match) => {
-                        const mp = match.match_players.find((mp) => mp.players?.name === selectedAnalysisPlayer)!
-                        return { match, mp }
-                      })
-
-                      if (playerResults.length === 0) {
-                        return <p className="text-gray-400">No hay datos para este jugador</p>
-                      }
-
-                      const bestGame = playerResults.reduce(
-                        (best, current) => (current.mp.money_won > best.mp.money_won ? current : best),
-                        playerResults[0],
-                      )
-
-                      const worstGame = playerResults.reduce(
-                        (worst, current) => (current.mp.money_won < worst.mp.money_won ? current : worst),
-                        playerResults[0],
-                      )
-
-                      return (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card className="bg-green-900/20 border-green-600/50">
-                            <CardContent className="p-4">
-                              <h3 className="text-lg font-semibold text-green-400 mb-2">Mejor Partida</h3>
-                              <div className="space-y-1 text-sm">
-                                <div className="text-white">Fecha: {bestGame.match.date}</div>
-                                <div className="text-white">Posición: {bestGame.mp.position}°</div>
-                                <div className="text-green-400 font-semibold">
-                                  Ganancia: ${bestGame.mp.money_won.toLocaleString()}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card className="bg-red-900/20 border-red-600/50">
-                            <CardContent className="p-4">
-                              <h3 className="text-lg font-semibold text-red-400 mb-2">Peor Partida</h3>
-                              <div className="space-y-1 text-sm">
-                                <div className="text-white">Fecha: {worstGame.match.date}</div>
-                                <div className="text-white">Posición: {worstGame.mp.position}°</div>
-                                <div className="text-red-400 font-semibold">
-                                  Pérdida: ${worstGame.mp.money_won.toLocaleString()}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-300">{getPlayerBestMatch(player.name)?.date}</div>
+                            <div className="text-sm text-green-400 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                          </div>
                         </div>
-                      )
-                    })()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      )}
+                      {getPlayerWorstMatch(player.name) && (
+                        <div className="p-3 bg-red-600/20 border border-red-500/30 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <TrendingDown className="w-4 h-4 text-red-400" />
+                              <span className="text-sm text-red-400 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-300">{getPlayerWorstMatch(player.name)?.date}</div>
+                            <div className="text-sm text-red-400 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Últimas 5 partidas</span>
+                      <div className="flex gap-1">
+                        {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
+                          <div
+                            key={index}
+                            className={`w-3 h-3 rounded-sm ${
+                              match.moneyWon >= 0 ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             {/* Evolución de Puntos */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
@@ -1356,7 +1332,7 @@ export default function LaCajitaPoker() {
                             },
                             y: {
                               ticks: { color: "#ffffff" },
-                              grid: { color: "#374151" },
+                              grid: { color: "#ffffff" },
                             },
                           },
                         }}
