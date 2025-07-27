@@ -452,7 +452,7 @@ export default function LaCajitaPoker() {
             </h1>
 
             {/* Connection Status & Refresh Button */}
-            <div className="flex items-center justify-center gap-2">
+            {/* <div className="flex items-center justify-center gap-2">
               <div
                 className={`w-2 h-2 rounded-full ${connectionStatus === true ? "bg-green-400" : connectionStatus === false ? "bg-red-400" : "bg-yellow-400"}`}
               ></div>
@@ -472,7 +472,7 @@ export default function LaCajitaPoker() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -640,7 +640,7 @@ export default function LaCajitaPoker() {
                 <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-2xl text-yellow-400">
-                      Partidas Activas ({activeMatches.length})
+                      Partidas ({activeMatches.length})
                     </CardTitle>
                     <div className="flex gap-2">
                       <Button
@@ -1136,7 +1136,7 @@ export default function LaCajitaPoker() {
         {activeTab === "estadisticas" && (
           <div className="space-y-6">
             {/* Estadísticas generales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 border-gray-600/50 backdrop-blur-sm hover:scale-105 transition-transform rounded-xl">
                 <CardContent className="p-6 text-center bg-slate-700 border-0 rounded-xl shadow-none">
                   <div className="text-3xl font-bold text-yellow-400 mb-2">{overallStats.totalMatches}</div>
@@ -1163,82 +1163,7 @@ export default function LaCajitaPoker() {
                   <div className="text-gray-300">Jugadores Activos</div>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Evolución de Puntos */}
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader
-                className="cursor-pointer hover:bg-gray-700/30 transition-colors"
-                onClick={() => setShowEvolutionChart(!showEvolutionChart)}
-              >
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-2xl text-yellow-400">Evolución de Puntos</CardTitle>
-                  {showEvolutionChart ? (
-                    <ChevronUp className="w-6 h-6 text-yellow-400" />
-                  ) : (
-                    <ChevronDown className="w-6 h-6 text-yellow-400" />
-                  )}
-                </div>
-              </CardHeader>
-              {showEvolutionChart && (
-                <CardContent>
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-green-400 mb-3">Seleccionar Jugadores</h3>
-                    <div className="flex flex-wrap gap-3">
-                      {playerStats.map((player, index) => (
-                        <div key={player.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={player.id}
-                            checked={selectedPlayers.includes(player.name)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedPlayers((prev) => [...prev, player.name])
-                              } else {
-                                setSelectedPlayers((prev) => prev.filter((p) => p !== player.name))
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={player.id}
-                            className="cursor-pointer"
-                            style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}
-                          >
-                            {player.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {selectedPlayers.length > 0 && (
-                    <div className="h-96 mb-6">
-                      <Line
-                        data={getChartData()}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              labels: { color: "#ffffff" },
-                            },
-                          },
-                          scales: {
-                            x: {
-                              ticks: { color: "#ffffff" },
-                              grid: { color: "#374151" },
-                            },
-                            y: {
-                              ticks: { color: "#ffffff" },
-                              grid: { color: "#374151" },
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
+            </div> */}
 
             {/* Últimas 5 Partidas */}
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
@@ -1365,6 +1290,81 @@ export default function LaCajitaPoker() {
                   </div>
                 )}
               </CardContent>
+            </Card>
+
+            {/* Evolución de Puntos */}
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader
+                className="cursor-pointer hover:bg-gray-700/30 transition-colors"
+                onClick={() => setShowEvolutionChart(!showEvolutionChart)}
+              >
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-2xl text-yellow-400">Evolución de Puntos</CardTitle>
+                  {showEvolutionChart ? (
+                    <ChevronUp className="w-6 h-6 text-yellow-400" />
+                  ) : (
+                    <ChevronDown className="w-6 h-6 text-yellow-400" />
+                  )}
+                </div>
+              </CardHeader>
+              {showEvolutionChart && (
+                <CardContent>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-green-400 mb-3">Seleccionar Jugadores</h3>
+                    <div className="flex flex-wrap gap-3">
+                      {playerStats.map((player, index) => (
+                        <div key={player.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={player.id}
+                            checked={selectedPlayers.includes(player.name)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedPlayers((prev) => [...prev, player.name])
+                              } else {
+                                setSelectedPlayers((prev) => prev.filter((p) => p !== player.name))
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={player.id}
+                            className="cursor-pointer"
+                            style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}
+                          >
+                            {player.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedPlayers.length > 0 && (
+                    <div className="h-96 mb-6">
+                      <Line
+                        data={getChartData()}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              labels: { color: "#ffffff" },
+                            },
+                          },
+                          scales: {
+                            x: {
+                              ticks: { color: "#ffffff" },
+                              grid: { color: "#374151" },
+                            },
+                            y: {
+                              ticks: { color: "#ffffff" },
+                              grid: { color: "#374151" },
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              )}
             </Card>
           </div>
         )}
