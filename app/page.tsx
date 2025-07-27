@@ -1286,19 +1286,21 @@ export default function LaCajitaPoker() {
                       )}
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-400">Últimas 5 partidas</span>
-                      <div className="flex gap-1">
-                        {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
-                          <div
-                            key={index}
-                            className={`w-3 h-3 rounded-sm ${
-                              match.moneyWon >= 0 ? "bg-green-500" : "bg-red-500"
-                            }`}
-                          />
-                        ))}
+                                          <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Últimas 5 partidas</span>
+                        <div className="flex gap-1">
+                          {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
+                            <div
+                              key={index}
+                              className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal text-white ${
+                                match.moneyWon >= 0 ? "bg-green-500" : "bg-red-500"
+                              }`}
+                            >
+                              {match.position}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
