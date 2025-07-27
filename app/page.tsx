@@ -632,30 +632,8 @@ export default function LaCajitaPoker() {
 
                 {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
-          <div className="space-y-5">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center">Tabla Anual</h2>
-            
-            {/* Sort Toggle Switch */}
-            <div className="flex items-center justify-center gap-4">
-              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "text-white" : "text-gray-400"}`}>
-                Puntos
-              </span>
-              <button
-                onClick={() => setRankingSortBy(rankingSortBy === "points" ? "money" : "points")}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  rankingSortBy === "money" ? "bg-yellow-400" : "bg-gray-600"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    rankingSortBy === "money" ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "text-white" : "text-gray-400"}`}>
-                Dinero
-              </span>
-            </div>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-yellow-400 text-center">Tabla Anual</h2>                      
 
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -714,6 +692,28 @@ export default function LaCajitaPoker() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Sort Toggle Switch */}
+            <div className="flex items-center justify-center gap-4">
+              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "text-white" : "text-gray-400"}`}>
+                Puntos
+              </span>
+              <button
+                onClick={() => setRankingSortBy(rankingSortBy === "points" ? "money" : "points")}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  rankingSortBy === "money" ? "bg-yellow-400" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    rankingSortBy === "money" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "text-white" : "text-gray-400"}`}>
+                Dinero
+              </span>
             </div>
           </div>
         )}
