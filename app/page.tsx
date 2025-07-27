@@ -473,13 +473,15 @@ export default function LaCajitaPoker() {
 
   // Get sorted player stats based on current sort criteria
   const getSortedPlayerStats = () => {
-    return [...playerStats].sort((a, b) => {
-      if (rankingSortBy === "points") {
-        return b.points - a.points
-      } else {
-        return b.moneyWon - a.moneyWon
-      }
-    })
+    return [...playerStats]
+      .filter(player => player.matches > 0) // Only show players who have played matches
+      .sort((a, b) => {
+        if (rankingSortBy === "points") {
+          return b.points - a.points
+        } else {
+          return b.moneyWon - a.moneyWon
+        }
+      })
   }
 
   const tabs = [
@@ -1226,7 +1228,7 @@ export default function LaCajitaPoker() {
           <div className="space-y-6">
             {/* Análisis Individual */}
             <div className="space-y-4">
-              {playerStats.map((player) => (
+              {playerStats.filter(player => player.matches > 0).map((player) => (
                 <Card key={player.id} className="bg-gray-800/80 border-gray-700/80 backdrop-blur-sm">
                   <CardContent className="p-5">
                     <div className="flex justify-between items-center mb-4">
@@ -1322,7 +1324,7 @@ export default function LaCajitaPoker() {
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-green-400 mb-3">Seleccionar Jugadores</h3>
                     <div className="flex flex-wrap gap-3">
-                      {playerStats.map((player, index) => (
+                      {playerStats.filter(player => player.matches > 0).map((player, index) => (
                         <div key={player.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={player.id}
