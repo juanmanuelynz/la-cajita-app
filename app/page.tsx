@@ -734,11 +734,12 @@ export default function LaCajitaPoker() {
                             <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-start mb-3">
-                                  <div>
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex flex-col gap-2">
+                                    
                                       <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                                      <div
-                                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                                    
+                                    <div
+                                        className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
                                           isComplete
                                             ? "bg-green-600/20 text-green-400"
                                             : "bg-yellow-600/20 text-yellow-400"
@@ -746,13 +747,12 @@ export default function LaCajitaPoker() {
                                       >
                                         {isComplete ? "Lista para registrar" : "En progreso"}
                                       </div>
-                                    </div>
                                     <div className="text-sm text-gray-400">
                                       {playersWithNames.length}/{match.player_count} jugadores - $
                                       {totalInvestment.toLocaleString()}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                      ID: {match.id.slice(0, 8)}... | Actualizado:{" "}
+                                      Actualizado:{" "}
                                       {new Date(match.updated_at).toLocaleTimeString()}
                                     </div>
                                   </div>
