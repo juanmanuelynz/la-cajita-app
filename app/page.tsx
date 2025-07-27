@@ -1384,9 +1384,34 @@ export default function LaCajitaPoker() {
         {/* Reglas Tab */}
         {activeTab === "reglas" && (
           <div className="space-y-6">
+            
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-2xl text-yellow-400">Sistema de Puntos</CardTitle>
+                <CardTitle className="text-xl text-yellow-400">Reglas del Sistema</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-gray-300">
+                  <li>• Los puntos se asignan según la posición final en cada partida</li>
+                  <li>
+                    •{" "}
+                    <strong className="text-yellow-400">
+                      Las posiciones se determinan por dinero ganado neto (de mayor a menor)
+                    </strong>
+                  </li>
+                  <li>
+                    •{" "}
+                    <strong className="text-yellow-400">
+                      En caso de empate en dinero ganado, gana quien pidió menos cajitas
+                    </strong>
+                  </li>
+                  <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>                  
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-xl text-yellow-400">Sistema de Puntos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -1409,31 +1434,6 @@ export default function LaCajitaPoker() {
                     </tbody>
                   </table>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-yellow-400">Reglas del Sistema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-gray-300">
-                  <li>• Los puntos se asignan según la posición final en cada partida</li>
-                  <li>
-                    •{" "}
-                    <strong className="text-yellow-400">
-                      Las posiciones se determinan por dinero ganado neto (de mayor a menor)
-                    </strong>
-                  </li>
-                  <li>
-                    •{" "}
-                    <strong className="text-yellow-400">
-                      En caso de empate en dinero ganado, gana quien pidió menos cajitas
-                    </strong>
-                  </li>
-                  <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>
-                  <li>• Solo se consideran partidas con mínimo 4 jugadores</li>
-                </ul>
               </CardContent>
             </Card>
           </div>
