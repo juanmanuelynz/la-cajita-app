@@ -1387,7 +1387,7 @@ export default function LaCajitaPoker() {
             
             <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-xl text-yellow-400">Reglas del Sistema</CardTitle>
+                <CardTitle className="text-xl text-yellow-400">Reglas</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-gray-300">
@@ -1404,7 +1404,8 @@ export default function LaCajitaPoker() {
                       En caso de empate en dinero ganado, gana quien pidió menos cajitas
                     </strong>
                   </li>
-                  <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>                  
+                  <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>
+                  
                 </ul>
               </CardContent>
             </Card>
