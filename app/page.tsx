@@ -632,7 +632,7 @@ export default function LaCajitaPoker() {
           </div>
         )}
 
-                {/* Ranking Anual Tab */}
+        {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-yellow-400 text-center">Tabla Anual</h2>                      
@@ -1232,12 +1232,12 @@ export default function LaCajitaPoker() {
                 <Card key={player.id} className="bg-gray-800/80 border-gray-700/80 backdrop-blur-sm">
                   <CardContent className="p-5">
                     <div className="flex justify-between items-center mb-4">
-                      <div className="text-xl font-normal text-white">{player.name}</div>
+                      <div className="text-xl font-light text-white">{player.name}</div>
                       <div className="text-xl font-semibold text-white">${player.moneyWon.toLocaleString()}</div>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4 mb-6">
-                                              <div className="text-center">
+                      <div className="text-center">
                           <Award className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
                           <div className="text-xl font-bold text-yellow-400">{player.points}</div>
                           <div className="text-xs text-gray-400">Puntos</div>
@@ -1256,7 +1256,7 @@ export default function LaCajitaPoker() {
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       {getPlayerBestMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-green-500/50 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-green-500/30 bg-green-500/5 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-4 h-4 text-green-400" />
@@ -1271,7 +1271,7 @@ export default function LaCajitaPoker() {
                         </div>
                       )}
                       {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-red-500/50 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-red-500/30 bg-red-500/5 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
                               <TrendingDown className="w-4 h-4 text-red-400" />
