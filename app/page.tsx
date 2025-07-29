@@ -42,6 +42,8 @@ import { DatabaseService } from "../lib/database"
 import type { Player, MatchWithPlayers, PlayerStats, ActiveMatch } from "../lib/supabase"
 import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { Switch } from "@/components/ui/switch"
+import { useTheme } from "next-themes"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -66,6 +68,7 @@ export default function LaCajitaPoker() {
   const [showEvolutionChart, setShowEvolutionChart] = useState(true)
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
   const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">("points")
+  const { theme, setTheme } = useTheme();
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
@@ -728,7 +731,7 @@ export default function LaCajitaPoker() {
                                   <div className="flex flex-col gap-2">
                                     <div className="text-lg font-semibold">{match.date}</div>
                                     <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
-                                      isComplete ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                      isComplete ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
                                     }`}>
                                       {isComplete ? "Lista para registrar" : "En progreso"}
                                     </div>
@@ -991,11 +994,11 @@ export default function LaCajitaPoker() {
                   </div>
 
                   <Card
-                    className={`border-2 ${validateBalance() ? "border-green-500" : "border-red-500"}`}
+                    className={`border-2 ${validateBalance() ? "border-emerald-500" : "border-red-500"}`}
                   >
                     <CardContent className="p-4">
                       <div className="text-center">
-                        <div className={`text-lg font-semibold ${validateBalance() ? "text-green-600" : "text-red-600"}`}>
+                        <div className={`text-lg font-semibold ${validateBalance() ? "text-emerald-600" : "text-red-600"}`}>
                           {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
                         </div>
                         <div className="text-sm text-muted-foreground mt-2">
@@ -1178,13 +1181,13 @@ export default function LaCajitaPoker() {
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       {getPlayerBestMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-green-200 bg-green-50 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-emerald-300 bg-emerald-100/10 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-green-600" />
-                              <span className="text-sm text-green-600 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
+                              <TrendingUp className="w-4 h-4 text-emerald-600" />
+                              <span className="text-sm text-emerald-600 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
                             </div>
-                            <div className="text-sm text-green-600 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-sm text-emerald-600 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
 
                           </div>
                           <div className="flex items-center justify-between">
@@ -1193,13 +1196,13 @@ export default function LaCajitaPoker() {
                         </div>
                       )}
                       {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-red-200 bg-red-50 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-red-300 bg-red-100/10 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
-                              <TrendingDown className="w-4 h-4 text-red-600" />
-                              <span className="text-sm text-red-600 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                              <span className="text-sm text-red-500 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
                             </div>
-                            <div className="text-sm text-red-600 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-sm text-red-500 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">{getPlayerWorstMatch(player.name)?.date}</div>
@@ -1215,7 +1218,7 @@ export default function LaCajitaPoker() {
                             <div
                               key={index}
                               className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
-                                match.moneyWon >= 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                                match.moneyWon >= 0 ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
                               }`}
                             >
                               {match.position}
@@ -1331,7 +1334,6 @@ export default function LaCajitaPoker() {
                     </strong>
                   </li>
                   <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>
-                  
                 </ul>
               </CardContent>
             </Card>
@@ -1360,6 +1362,24 @@ export default function LaCajitaPoker() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Configuración</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">☀️</span>
+                  <Switch
+                    checked={theme === "dark"}
+                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    aria-label="Cambiar tema"
+                  />
+                  <span className="text-sm">🌙</span>
+                  <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
                 </div>
               </CardContent>
             </Card>
