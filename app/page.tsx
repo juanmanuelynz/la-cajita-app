@@ -638,7 +638,7 @@ export default function LaCajitaPoker() {
                              index === 1 ? "bg-zinc-800/50" :
                              index === 2 ? "bg-orange-900/40" : "")
                           : (index === 0 ? "bg-amber-50" :
-                             index === 1 ? "bg-zinc-50" :
+                             index === 1 ? "bg-zinc-100" :
                              index === 2 ? "bg-orange-50" : "")
                       }`}
                     >
@@ -1343,6 +1343,24 @@ export default function LaCajitaPoker() {
             
             <Card>
               <CardHeader>
+                <CardTitle className="text-xl">Configuración</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">☀️</span>
+                  <Switch
+                    checked={theme === "dark"}
+                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    aria-label="Cambiar tema"
+                  />
+                  <span className="text-sm">🌙</span>
+                  <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-xl">Reglas</CardTitle>
               </CardHeader>
               <CardContent>
@@ -1391,25 +1409,7 @@ export default function LaCajitaPoker() {
                   </table>
                 </div>
               </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Configuración</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">☀️</span>
-                  <Switch
-                    checked={theme === "dark"}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                    aria-label="Cambiar tema"
-                  />
-                  <span className="text-sm">🌙</span>
-                  <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
-                </div>
-              </CardContent>
-            </Card>
+            </Card>            
           </div>
         )}
       </div>
