@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "nextjs",
+  "functions": {
+    "app/**/*.tsx": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  }
+} 

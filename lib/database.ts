@@ -189,7 +189,7 @@ export class DatabaseService {
     return (data || []).map((mp) => ({
       position: mp.position,
       moneyWon: mp.money_won,
-      date: mp.matches?.date || "",
+      date: (mp.matches as any)?.date || "",
     }))
   }
 
