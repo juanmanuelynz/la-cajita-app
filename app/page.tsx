@@ -634,9 +634,9 @@ export default function LaCajitaPoker() {
                       key={player.id}
                       className={`border-b ${
                         theme === 'dark' 
-                          ? (index === 0 ? "bg-amber-900/70" :
-                             index === 1 ? "bg-slate-800/70" :
-                             index === 2 ? "bg-orange-900/70" : "")
+                          ? (index === 0 ? "bg-yellow-900/40" :
+                             index === 1 ? "bg-zinc-800/50" :
+                             index === 2 ? "bg-orange-900/40" : "")
                           : (index === 0 ? "bg-amber-50" :
                              index === 1 ? "bg-zinc-50" :
                              index === 2 ? "bg-orange-50" : "")
@@ -1009,11 +1009,11 @@ export default function LaCajitaPoker() {
                   </div>
 
                   <Card
-                    className={`border-2 ${validateBalance() ? "border-emerald-500" : "border-red-500"}`}
+                    className={`border-2 ${validateBalance() ? "border-emerald-500" : "border-rose-500"}`}
                   >
                     <CardContent className="p-4">
                       <div className="text-center">
-                        <div className={`text-lg font-semibold ${validateBalance() ? "text-emerald-600" : "text-red-600"}`}>
+                        <div className={`text-lg font-semibold ${validateBalance() ? "text-emerald-600" : "text-rose-600"}`}>
                           {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
                         </div>
                         <div className="text-sm text-muted-foreground mt-2">
@@ -1211,13 +1211,13 @@ export default function LaCajitaPoker() {
                         </div>
                       )}
                       {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-red-300 bg-red-100/10 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-rose-300 bg-rose-100/10 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
-                              <TrendingDown className="w-4 h-4 text-red-500" />
-                              <span className="text-sm text-red-500 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
+                              <TrendingDown className="w-4 h-4 text-rose-500" />
+                              <span className="text-sm text-rose-500 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
                             </div>
-                            <div className="text-sm text-red-500 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-sm text-rose-500 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">{getPlayerWorstMatch(player.name)?.date}</div>
@@ -1233,7 +1233,7 @@ export default function LaCajitaPoker() {
                             <div
                               key={index}
                               className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
-                                match.moneyWon >= 0 ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+                                match.moneyWon >= 0 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                               }`}
                             >
                               {match.position}
