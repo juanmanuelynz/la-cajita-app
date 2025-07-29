@@ -493,15 +493,15 @@ export default function LaCajitaPoker() {
 
   if (loading && matches.length === 0 && activeMatches.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
           <p>Cargando datos...</p>
           {connectionStatus === false && (
-            <div className="mt-4 p-4 bg-red-900/20 border border-red-500 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-              <p className="text-red-400">Problema de conexión detectado</p>
-              <Button onClick={testConnectionAndLoadData} className="mt-2 bg-red-600 hover:bg-red-700">
+            <div className="mt-4 p-4 border rounded-lg">
+              <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+              <p>Problema de conexión detectado</p>
+              <Button onClick={testConnectionAndLoadData} className="mt-2">
                 Reintentar
               </Button>
             </div>
@@ -512,37 +512,14 @@ export default function LaCajitaPoker() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white pb-20">
+    <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-50">
+      <div className="backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl md:text-5xl font-bold mb-2">
               ♠️ La Cajita
             </h1>
-
-            {/* Connection Status & Refresh Button */}
-            {/* <div className="flex items-center justify-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${connectionStatus === true ? "bg-green-400" : connectionStatus === false ? "bg-red-400" : "bg-yellow-400"}`}
-              ></div>
-              <span className="text-sm text-gray-400">
-                {connectionStatus === true
-                  ? "Conectado"
-                  : connectionStatus === false
-                    ? "Sin conexión"
-                    : "Conectando..."}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshData}
-                disabled={loading}
-                className="text-gray-400 hover:text-white p-1"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
-            </div> */}
           </div>
         </div>
       </div>
@@ -551,23 +528,22 @@ export default function LaCajitaPoker() {
 
       <div className="container mx-auto px-4 py-8">
         {error && (
-          <Card className="mb-6 bg-red-900/20 border-red-500">
+          <Card className="mb-6">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5 text-red-400" />
-                <p className="text-red-400 font-semibold">Error</p>
+                <AlertCircle className="w-5 h-5" />
+                <p className="font-semibold">Error</p>
               </div>
-              <p className="text-red-300 mb-3">{error}</p>
+              <p className="mb-3">{error}</p>
               <div className="flex gap-2">
                 <Button
                   onClick={() => setError(null)}
                   variant="outline"
                   size="sm"
-                  className="border-red-500 text-red-400"
                 >
                   Cerrar
                 </Button>
-                <Button onClick={refreshData} size="sm" className="bg-red-600 hover:bg-red-700">
+                <Button onClick={refreshData} size="sm">
                   Reintentar
                 </Button>
               </div>
@@ -577,10 +553,10 @@ export default function LaCajitaPoker() {
 
         {/* Debug Info (only in development) */}
         {process.env.NODE_ENV === "development" && (
-          <Card className="mb-6 bg-blue-900/20 border-blue-500">
+          <Card className="mb-6">
             <CardContent className="p-4">
-              <h3 className="text-blue-400 font-semibold mb-2">Debug Info</h3>
-              <div className="text-sm text-blue-300 space-y-1">
+              <h3 className="font-semibold mb-2">Debug Info</h3>
+              <div className="text-sm space-y-1">
                 <p>Active Matches: {activeMatches.length}</p>
                 <p>Connection Status: {connectionStatus?.toString()}</p>
                 <p>Loading: {loading.toString()}</p>
@@ -599,24 +575,23 @@ export default function LaCajitaPoker() {
 
         {/* Confirmation Dialog */}
         {matchToDelete && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="bg-gray-800 border-gray-600 max-w-md w-full">
+          <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
               <CardHeader>
-                <CardTitle className="text-xl text-red-400">Confirmar Eliminación</CardTitle>
+                <CardTitle className="text-xl">Confirmar Eliminación</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-gray-300">
+                <p>
                   ¿Estás seguro de que quieres eliminar esta partida? Esta acción no se puede deshacer.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
                     onClick={() => setMatchToDelete(null)}
-                    className="border-gray-600 text-gray-300"
                   >
                     Cancelar
                   </Button>
-                  <Button onClick={deleteMatch} disabled={loading} className="bg-red-600 hover:bg-red-700 text-white">
+                  <Button onClick={deleteMatch} disabled={loading}>
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -635,61 +610,45 @@ export default function LaCajitaPoker() {
         {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center">Tabla Anual</h2>                      
+            <h2 className="text-2xl font-bold text-center">Tabla Anual</h2>                      
 
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-600">
-                    <th className="py-2 px-2 text-left text-yellow-400">Pos</th>
-                    <th className="py-2 px-2 text-left text-yellow-400">Jugador</th>
-                    <th className="py-2 px-2 text-center text-yellow-400">Puntos</th>
-                    <th className="py-2 px-2 text-center text-yellow-400">Dinero Ganado</th>
-                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Partidas</th>
-                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Cajitas</th>                      
-                    <th className="py-2 px-2 text-center text-yellow-400 hidden md:table-cell">Promedio/Partida</th>
+                  <tr className="border-b">
+                    <th className="py-2 px-2 text-left">Pos</th>
+                    <th className="py-2 px-2 text-left">Jugador</th>
+                    <th className="py-2 px-2 text-center">Puntos</th>
+                    <th className="py-2 px-2 text-center">Dinero Ganado</th>
+                    <th className="py-2 px-2 text-center hidden md:table-cell">Partidas</th>
+                    <th className="py-2 px-2 text-center hidden md:table-cell">Cajitas</th>                      
+                    <th className="py-2 px-2 text-center hidden md:table-cell">Promedio/Partida</th>
                   </tr>
                 </thead>
                 <tbody>
                   {getSortedPlayerStats().map((player, index) => (
                     <tr
                       key={player.id}
-                      className={`border-b border-gray-700/50 ${
-                        index === 0
-                          ? "bg-gradient-to-r from-yellow-900/30 to-yellow-800/20"
-                          : index === 1
-                            ? "bg-gradient-to-r from-gray-400/20 to-gray-500/10"
-                            : index === 2
-                              ? "bg-gradient-to-r from-orange-900/30 to-orange-800/20"
-                              : ""
-                      }`}
+                      className="border-b"
                     >
-                                              <td className="py-2 px-2">
-                          <div className="flex items-center gap-1">
-                          <span className="font-semibold text-slate-200 text-sm">{index + 1}</span>
-                            {index === 0 && <Trophy className="w-4 h-4 text-yellow-400" />}
-                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
-                            {index === 2 && <Award className="w-4 h-4 text-orange-400" />}                            
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 font-semibold text-white text-sm">{player.name}</td>
-                        <td className="py-3 px-2 text-center font-bold text-white text-sm">{player.points}</td>
-                        <td
-                          className={`py-3 px-2 text-center font-semibold text-sm ${
-                            player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          ${player.moneyWon.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-2 text-center text-slate-300 hidden md:table-cell text-sm">{player.matches}</td>
-                        <td className="py-3 px-2 text-center text-slate-300 hidden md:table-cell text-sm">{player.cajitas}</td>                        
-                        <td
-                          className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
-                            player.averagePerMatch >= 0 ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          ${Math.round(player.averagePerMatch).toLocaleString()}
-                        </td>
+                      <td className="py-2 px-2">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-sm">{index + 1}</span>
+                          {index === 0 && <Trophy className="w-4 h-4" />}
+                          {index === 1 && <Medal className="w-4 h-4" />}
+                          {index === 2 && <Award className="w-4 h-4" />}                            
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>
+                      <td className="py-3 px-2 text-center font-bold text-sm">{player.points}</td>
+                      <td className="py-3 px-2 text-center font-semibold text-sm">
+                        ${player.moneyWon.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.matches}</td>
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.cajitas}</td>                        
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                        ${Math.round(player.averagePerMatch).toLocaleString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -698,22 +657,22 @@ export default function LaCajitaPoker() {
 
             {/* Sort Toggle Switch */}
             <div className="flex items-center justify-center gap-4">
-              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "text-white" : "text-gray-400"}`}>
+              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "" : "text-muted-foreground"}`}>
                 Puntos
               </span>
               <button
                 onClick={() => setRankingSortBy(rankingSortBy === "points" ? "money" : "points")}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  rankingSortBy === "money" ? "bg-yellow-400" : "bg-gray-600"
+                  rankingSortBy === "money" ? "bg-primary" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
                     rankingSortBy === "money" ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
-              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "text-white" : "text-gray-400"}`}>
+              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "" : "text-muted-foreground"}`}>
                 Dinero
               </span>
             </div>
@@ -726,16 +685,15 @@ export default function LaCajitaPoker() {
             {!showRegisterForm ? (
               <>
                 {/* Partidas Activas */}
-                <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-2xl text-yellow-400">
+                    <CardTitle className="text-2xl">
                       Partidas ({activeMatches.length})
                     </CardTitle>
                     <div className="flex gap-2">                      
                       <Button
                         onClick={createNewActiveMatch}
                         disabled={loading}
-                        className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-1" />
@@ -749,7 +707,7 @@ export default function LaCajitaPoker() {
                   <CardContent>
                     {activeMatches.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-400 mb-4">No hay partidas activas</p>
+                        <p className="mb-4">No hay partidas activas</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -764,27 +722,21 @@ export default function LaCajitaPoker() {
                             playersWithNames.every((p) => p.finalChips > 0)
 
                           return (
-                            <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                            <Card key={match.id}>
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-start mb-3">
                                   <div className="flex flex-col gap-2">
-                                    
-                                      <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                                    
-                                    <div
-                                        className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
-                                          isComplete
-                                            ? "bg-green-600/20 text-green-400"
-                                            : "bg-yellow-600/20 text-yellow-400"
-                                        }`}
-                                      >
-                                        {isComplete ? "Lista para registrar" : "En progreso"}
-                                      </div>
-                                    <div className="text-sm text-gray-400">
+                                    <div className="text-lg font-semibold">{match.date}</div>
+                                    <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
+                                      isComplete ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                    }`}>
+                                      {isComplete ? "Lista para registrar" : "En progreso"}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
                                       {playersWithNames.length}/{match.player_count} jugadores - $
                                       {totalInvestment.toLocaleString()}
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div className="text-xs text-muted-foreground mt-1">
                                       Actualizado:{" "}
                                       {new Date(match.updated_at).toLocaleTimeString()}
                                     </div>
@@ -794,7 +746,6 @@ export default function LaCajitaPoker() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() => editActiveMatch(match.id)}
-                                      className="bg-blue-600/20 border-blue-500 text-blue-400 hover:bg-blue-600/40"
                                     >
                                       <NotebookPen className="w-4 h-4" />
                                     </Button>
@@ -803,7 +754,6 @@ export default function LaCajitaPoker() {
                                       size="sm"
                                       onClick={() => deleteActiveMatch(match.id)}
                                       disabled={loading}
-                                      className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
                                     >
                                       {loading ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -819,19 +769,15 @@ export default function LaCajitaPoker() {
                                     {playersWithNames.map((player, index) => (
                                       <div
                                         key={index}
-                                        className="flex items-center justify-between p-2 bg-gray-600/30 rounded"
+                                        className="flex items-center justify-between p-2 bg-muted rounded"
                                       >
                                         <div className="flex items-center gap-2">
-                                          <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold text-white">
+                                          <div className="w-6 h-6 rounded-full bg-muted-foreground flex items-center justify-center text-xs font-bold text-muted">
                                             {index + 1}
                                           </div>
                                           <span className="text-sm">{player.name}</span>
                                         </div>
-                                        <span
-                                          className={`text-sm font-semibold ${
-                                            player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
-                                          }`}
-                                        >
+                                        <span className="text-sm font-semibold">
                                           {player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}
                                         </span>
                                       </div>
@@ -849,7 +795,7 @@ export default function LaCajitaPoker() {
               </>
             ) : (
               /* Formulario de Registro */
-              <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button
@@ -859,11 +805,10 @@ export default function LaCajitaPoker() {
                         setShowRegisterForm(false)
                         setEditingMatchId(null)
                       }}
-                      className="bg-gray-700/50 border-gray-600 text-gray-300"
                     >
                       <ArrowLeft className="w-4 h-4" />
                     </Button>
-                    <CardTitle className="text-2xl text-yellow-400">
+                    <CardTitle className="text-2xl">
                       {editingMatchId ? "Editando Partida" : "Nueva Partida"}
                     </CardTitle>
                   </div>
@@ -871,7 +816,7 @@ export default function LaCajitaPoker() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="date" className="text-gray-300">
+                      <Label htmlFor="date">
                         Fecha
                       </Label>
                       <Input
@@ -879,11 +824,10 @@ export default function LaCajitaPoker() {
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                        className="bg-gray-700/50 border-gray-600 text-white"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cajiValue" className="text-gray-300">
+                      <Label htmlFor="cajiValue">
                         Valor de una Cajita
                       </Label>
                       <Input
@@ -891,26 +835,24 @@ export default function LaCajitaPoker() {
                         type="number"
                         value={formData.cajiValue}
                         onChange={(e) => setFormData((prev) => ({ ...prev, cajiValue: Number(e.target.value) }))}
-                        className="bg-gray-700/50 border-gray-600 text-white"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="playerCount" className="text-gray-300">
+                      <Label htmlFor="playerCount">
                         Número de Jugadores
                       </Label>
                       <Select
                         value={formData.playerCount.toString()}
                         onValueChange={(value) => setFormData((prev) => ({ ...prev, playerCount: Number(value) }))}
                       >
-                        <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600 text-white">
+                        <SelectContent>
                           {[4, 5, 6, 7, 8].map((count) => (
                             <SelectItem
                               key={count}
                               value={count.toString()}
-                              className="hover:bg-green-600 hover:text-white"
                             >
                               {count} jugadores
                             </SelectItem>
@@ -921,25 +863,23 @@ export default function LaCajitaPoker() {
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-green-400">Jugadores</h3>
+                    <h3 className="text-lg font-semibold">Jugadores</h3>
                     {formData.players.map((player, index) => (
-                      <Card key={index} className="bg-gray-700/30 border-gray-600/50">
+                      <Card key={index}>
                         <CardContent className="p-4">
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                              <Label className="text-gray-300">Jugador {index + 1}</Label>
+                              <Label>Jugador {index + 1}</Label>
                               {showNewPlayerInput === index ? (
                                 <div className="flex gap-2">
                                   <Input
                                     value={newPlayerName}
                                     onChange={(e) => setNewPlayerName(e.target.value)}
-                                    className="bg-gray-600/50 border-gray-500 text-white"
                                     placeholder="Nombre del nuevo jugador"
                                   />
                                   <Button
                                     onClick={() => createNewPlayer(index)}
                                     size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
                                     disabled={!newPlayerName.trim() || loading}
                                   >
                                     {loading ? (
@@ -955,7 +895,6 @@ export default function LaCajitaPoker() {
                                     }}
                                     size="sm"
                                     variant="outline"
-                                    className="border-gray-500"
                                   >
                                     ✕
                                   </Button>
@@ -972,10 +911,10 @@ export default function LaCajitaPoker() {
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="bg-gray-600/50 border-gray-500 text-white">
+                                    <SelectTrigger>
                                       <SelectValue placeholder="Seleccionar jugador" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
+                                    <SelectContent>
                                       {players
                                         .filter(
                                           (p) =>
@@ -987,14 +926,12 @@ export default function LaCajitaPoker() {
                                           <SelectItem
                                             key={p.id}
                                             value={p.name}
-                                            className="hover:bg-green-600 hover:text-white"
                                           >
                                             {p.name}
                                           </SelectItem>
                                         ))}
                                       <SelectItem
                                         value="new"
-                                        className="text-green-400 hover:bg-green-600 hover:text-white"
                                       >
                                         + Crear nuevo jugador
                                       </SelectItem>
@@ -1005,7 +942,7 @@ export default function LaCajitaPoker() {
                             </div>
                             <div className="flex items-center justify-between gap-4">
                               <div>
-                                <Label className="text-gray-300">Cajitas</Label>
+                                <Label>Cajitas</Label>
                                 <Input
                                   type="text"
                                   inputMode="numeric"
@@ -1018,13 +955,13 @@ export default function LaCajitaPoker() {
                                     }
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                  className="text-center"
                                   min="1"
                                   placeholder="1"
                                 />
                               </div>
                               <div>
-                                <Label className="text-gray-300">Fichas Totales</Label>
+                                <Label>Fichas Totales</Label>
                                 <Input
                                   type="text"
                                   inputMode="numeric"
@@ -1035,48 +972,39 @@ export default function LaCajitaPoker() {
                                     updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className="bg-gray-600/50 border-gray-500 text-white text-center"
+                                  className="text-center"
                                   min="0"
                                   placeholder="0"
                                 />
                               </div>
                             </div>
                             <div className="flex items-center justify-between">
-                              <Label className="text-gray-300">Dinero Ganado/Perdido</Label>
-                              <div
-                                className={`p-2 rounded text-center font-semibold ${
-                                  player.moneyWon >= 0 ? "text-green-400" : "text-red-400"
-                                }`}
-                              >
+                              <Label>Dinero Ganado/Perdido</Label>
+                              <div className="p-2 rounded text-center font-semibold">
                                 ${player.moneyWon.toLocaleString()}
                               </div>
                             </div>
                           </div>
-                          {/* <div className="mt-2 text-sm text-gray-400">
-                            Inversión: ${(player.cajitas * formData.cajiValue).toLocaleString()}
-                          </div> */}
                         </CardContent>
                       </Card>
                     ))}
                   </div>
 
                   <Card
-                    className={`border-2 ${validateBalance() ? "border-green-500 bg-green-900/20" : "border-red-500 bg-red-900/20"}`}
+                    className={`border-2 ${validateBalance() ? "border-green-500" : "border-red-500"}`}
                   >
                     <CardContent className="p-4">
                       <div className="text-center">
-                        <div
-                          className={`text-lg font-semibold ${validateBalance() ? "text-green-400" : "text-red-400"}`}
-                        >
+                        <div className={`text-lg font-semibold ${validateBalance() ? "text-green-600" : "text-red-600"}`}>
                           {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
                         </div>
-                        <div className="text-sm text-gray-300 mt-2">
+                        <div className="text-sm text-muted-foreground mt-2">
                           Total Invertido: $
                           {formData.players
                             .reduce((sum, p) => sum + p.cajitas * formData.cajiValue, 0)
                             .toLocaleString()}
                         </div>
-                        <div className="text-sm text-gray-300">
+                        <div className="text-sm text-muted-foreground">
                           Total Fichas Finales: $
                           {formData.players.reduce((sum, p) => sum + p.finalChips, 0).toLocaleString()}
                         </div>
@@ -1091,14 +1019,14 @@ export default function LaCajitaPoker() {
                         setEditingMatchId(null)
                       }}
                       variant="outline"
-                      className="flex-1 border-gray-600 text-gray-300"
+                      className="flex-1"
                     >
                       Volver
                     </Button>
                     <Button
                       onClick={registerMatch}
                       disabled={!validateBalance() || formData.players.some((p) => !p.name) || loading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      className="flex-1"
                     >
                       {loading ? (
                         <>
@@ -1115,15 +1043,14 @@ export default function LaCajitaPoker() {
             )}
 
             {/* Historial de Partidas */}
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-2xl text-yellow-400">Historial de Partidas</CardTitle>
+                <CardTitle className="text-2xl">Historial de Partidas</CardTitle>
                 <Button
                         onClick={refreshData}
                         disabled={loading}
                         variant="outline"
                         size="sm"
-                        className="bg-gray-700/50 border-gray-600 text-gray-300"
                       >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                       </Button>
@@ -1135,28 +1062,28 @@ export default function LaCajitaPoker() {
                     const winner = match.match_players.find(mp => mp.position === 1)
                     
                     return (
-                      <Card key={match.id} className="bg-gray-700/30 border-gray-600/50">
+                      <Card key={match.id}>
                         <CardContent className="p-4">
                           <div 
-                            className="flex justify-between items-start cursor-pointer hover:bg-gray-600/20 rounded p-2 -m-2 transition-colors"
+                            className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
                             onClick={() => toggleMatchExpansion(match.id)}
                           >
                             <div className="flex-1">
-                              <div className="text-lg font-semibold text-green-400">{match.date}</div>
-                              <div className="text-sm text-gray-400">
+                              <div className="text-lg font-semibold">{match.date}</div>
+                              <div className="text-sm text-muted-foreground">
                                 {match.player_count} jugadores - ${match.total_money.toLocaleString()}
                               </div>
                               {winner && (
-                                <div className="text-sm text-yellow-400 mt-1">
+                                <div className="text-sm mt-1">
                                   🏆 Ganador: {winner.players?.name}
                                 </div>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
                               {isExpanded ? (
-                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                                <ChevronUp className="w-5 h-5" />
                               ) : (
-                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                                <ChevronDown className="w-5 h-5" />
                               )}
                             </div>
                           </div>
@@ -1164,8 +1091,8 @@ export default function LaCajitaPoker() {
                           {isExpanded && (
                             <div className="mt-4 space-y-3">
                               <div className="flex justify-between items-center">
-                                <div className="text-sm text-gray-300">
-                                  Dinero total jugado: <span className="text-yellow-400 font-semibold">${match.total_money.toLocaleString()}</span>
+                                <div className="text-sm">
+                                  Dinero total jugado: <span className="font-semibold">${match.total_money.toLocaleString()}</span>
                                 </div>
                                 <Button
                                   variant="outline"
@@ -1174,7 +1101,6 @@ export default function LaCajitaPoker() {
                                     e.stopPropagation()
                                     confirmDeleteMatch(match.id)
                                   }}
-                                  className="bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/40"
                                   disabled={loading}
                                 >
                                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -1184,7 +1110,7 @@ export default function LaCajitaPoker() {
                                 {match.match_players
                                   .sort((a, b) => a.position - b.position)
                                   .map((mp) => (
-                                    <div key={mp.id} className="flex items-center justify-between p-2 bg-gray-600/30 rounded">
+                                    <div key={mp.id} className="flex items-center justify-between p-2 bg-muted rounded">
                                       <div className="flex items-center gap-2">
                                         <div
                                           className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -1194,18 +1120,14 @@ export default function LaCajitaPoker() {
                                                 ? "bg-gray-400 text-black"
                                                 : mp.position === 3
                                                   ? "bg-orange-500 text-black"
-                                                  : "bg-gray-600 text-white"
+                                                  : "bg-muted-foreground text-muted"
                                           }`}
                                         >
                                           {mp.position}
                                         </div>
                                         <span className="text-sm">{mp.players?.name}</span>
                                       </div>
-                                      <span
-                                        className={`text-sm font-semibold ${
-                                          mp.money_won >= 0 ? "text-green-400" : "text-red-400"
-                                        }`}
-                                      >
+                                      <span className="text-sm font-semibold">
                                         ${mp.money_won.toLocaleString()}
                                       </span>
                                     </div>
@@ -1229,71 +1151,71 @@ export default function LaCajitaPoker() {
             {/* Análisis Individual */}
             <div className="space-y-4">
               {playerStats.filter(player => player.matches > 0).map((player) => (
-                <Card key={player.id} className="bg-gray-800/80 border-gray-700/80 backdrop-blur-sm">
+                <Card key={player.id}>
                   <CardContent className="p-5">
                     <div className="flex justify-between items-center mb-4">
-                      <div className="text-xl font-light text-white">{player.name}</div>
-                      <div className="text-xl font-semibold text-white">${player.moneyWon.toLocaleString()}</div>
+                      <div className="text-xl font-light">{player.name}</div>
+                      <div className="text-xl font-semibold">${player.moneyWon.toLocaleString()}</div>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="text-center">
-                          <Award className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                          <div className="text-xl font-bold text-yellow-400">{player.points}</div>
-                          <div className="text-xs text-gray-400">Puntos</div>
+                          <Award className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-xl font-bold">{player.points}</div>
+                          <div className="text-xs text-muted-foreground">Puntos</div>
                         </div>
                       <div className="text-center">
-                        <Cannabis className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                        <div className="text-xl font-bold text-yellow-400">{player.matches}</div>
-                        <div className="text-xs text-gray-400">Partidas</div>
+                        <Cannabis className="w-8 h-8 mx-auto mb-2" />
+                        <div className="text-xl font-bold">{player.matches}</div>
+                        <div className="text-xs text-muted-foreground">Partidas</div>
                       </div>
                       <div className="text-center">
-                        <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                        <div className="text-xl font-bold text-yellow-400">{player.cajitas}</div>
-                        <div className="text-xs text-gray-400">Cajitas</div>
+                        <Coins className="w-8 h-8 mx-auto mb-2" />
+                        <div className="text-xl font-bold">{player.cajitas}</div>
+                        <div className="text-xs text-muted-foreground">Cajitas</div>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       {getPlayerBestMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-green-500/30 bg-green-500/5 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-green-200 bg-green-50 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-green-400" />
-                              <span className="text-sm text-green-400 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
+                              <TrendingUp className="w-4 h-4 text-green-600" />
+                              <span className="text-sm text-green-600 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
                             </div>
-                            <div className="text-sm text-green-400 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-sm text-green-600 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
 
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-slate-400">{getPlayerBestMatch(player.name)?.date}</div>
+                            <div className="text-xs text-muted-foreground">{getPlayerBestMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
                       {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-red-500/30 bg-red-500/5 rounded-lg">
+                        <div className="flex flex-col items-center p-2 border border-red-200 bg-red-50 rounded-lg">
                           <div className="flex items-center justify-between mb-2 w-full">
                             <div className="flex items-center gap-2">
-                              <TrendingDown className="w-4 h-4 text-red-400" />
-                              <span className="text-sm text-red-400 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
+                              <TrendingDown className="w-4 h-4 text-red-600" />
+                              <span className="text-sm text-red-600 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
                             </div>
-                            <div className="text-sm text-red-400 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="text-sm text-red-600 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-slate-400">{getPlayerWorstMatch(player.name)?.date}</div>
+                            <div className="text-xs text-muted-foreground">{getPlayerWorstMatch(player.name)?.date}</div>
                           </div>
                         </div>
                       )}
                     </div>
                     
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-300">Últimas 5 partidas</span>
+                        <span className="text-sm">Últimas 5 partidas</span>
                         <div className="flex gap-1">
                           {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
                             <div
                               key={index}
-                              className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal text-white ${
-                                match.moneyWon >= 0 ? "bg-green-500" : "bg-red-500"
+                              className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
+                                match.moneyWon >= 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"
                               }`}
                             >
                               {match.position}
@@ -1307,24 +1229,24 @@ export default function LaCajitaPoker() {
             </div>
 
             {/* Evolución de Puntos */}
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <Card>
               <CardHeader
-                className="cursor-pointer hover:bg-gray-700/30 transition-colors"
+                className="cursor-pointer hover:bg-muted transition-colors"
                 onClick={() => setShowEvolutionChart(!showEvolutionChart)}
               >
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-2xl text-yellow-400">Evolución de Puntos</CardTitle>
+                  <CardTitle className="text-2xl">Evolución de Puntos</CardTitle>
                   {showEvolutionChart ? (
-                    <ChevronUp className="w-6 h-6 text-yellow-400" />
+                    <ChevronUp className="w-6 h-6" />
                   ) : (
-                    <ChevronDown className="w-6 h-6 text-yellow-400" />
+                    <ChevronDown className="w-6 h-6" />
                   )}
                 </div>
               </CardHeader>
               {showEvolutionChart && (
                 <CardContent>
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-green-400 mb-3">Seleccionar Jugadores</h3>
+                    <h3 className="text-lg font-semibold mb-3">Seleccionar Jugadores</h3>
                     <div className="flex flex-wrap gap-3">
                       {playerStats.filter(player => player.matches > 0).map((player, index) => (
                         <div key={player.id} className="flex items-center space-x-2">
@@ -1360,17 +1282,17 @@ export default function LaCajitaPoker() {
                           maintainAspectRatio: false,
                           plugins: {
                             legend: {
-                              labels: { color: "#ffffff" },
+                              labels: { color: "hsl(var(--foreground))" },
                             },
                           },
                           scales: {
                             x: {
-                              ticks: { color: "#ffffff" },
-                              grid: { color: "#374151" },
+                              ticks: { color: "hsl(var(--foreground))" },
+                              grid: { color: "hsl(var(--border))" },
                             },
                             y: {
-                              ticks: { color: "#ffffff" },
-                              grid: { color: "#ffffff" },
+                              ticks: { color: "hsl(var(--foreground))" },
+                              grid: { color: "hsl(var(--border))" },
                             },
                           },
                         }}
@@ -1389,22 +1311,22 @@ export default function LaCajitaPoker() {
         {activeTab === "reglas" && (
           <div className="space-y-6">
             
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-xl text-yellow-400">Reglas</CardTitle>
+                <CardTitle className="text-xl">Reglas</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-gray-300">
+                <ul className="space-y-2">
                   <li>• Los puntos se asignan según la posición final en cada partida</li>
                   <li>
                     •{" "}
-                    <strong className="text-yellow-400">
+                    <strong>
                       Las posiciones se determinan por dinero ganado neto (de mayor a menor)
                     </strong>
                   </li>
                   <li>
                     •{" "}
-                    <strong className="text-yellow-400">
+                    <strong>
                       En caso de empate en dinero ganado, gana quien pidió menos cajitas
                     </strong>
                   </li>
@@ -1414,24 +1336,24 @@ export default function LaCajitaPoker() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-xl text-yellow-400">Sistema de Puntos</CardTitle>
+                <CardTitle className="text-xl">Sistema de Puntos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-center">
                     <thead>
-                      <tr className="border-b border-gray-600">
-                        <th className="py-3 px-4 text-yellow-400">Posición</th>
-                        <th className="py-3 px-4 text-yellow-400">Puntos</th>
+                      <tr className="border-b">
+                        <th className="py-3 px-4">Posición</th>
+                        <th className="py-3 px-4">Puntos</th>
                       </tr>
                     </thead>
                     <tbody>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
-                        <tr key={position} className="border-b border-gray-700/50">
-                          <td className="py-3 px-4 font-semibold text-green-400">{position}°</td>
-                          <td className="py-3 px-4 text-slate-400 font-bold text-lg">
+                        <tr key={position} className="border-b">
+                          <td className="py-3 px-4 font-semibold">{position}°</td>
+                          <td className="py-3 px-4 font-bold text-lg">
                             {POINTS_DISTRIBUTION[position - 1]}
                           </td>
                         </tr>
@@ -1446,7 +1368,7 @@ export default function LaCajitaPoker() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed p-0 bottom-0 left-0 right-0 h-20 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-sm border-t border-gray-700/50 z-50">
+      <div className="fixed p-0 bottom-0 left-0 right-0 h-20 backdrop-blur-sm border-t z-50">
         <div className="flex justify-around items-center h-full p-0">
           {tabs.map((tab) => (
             <button
@@ -1458,8 +1380,8 @@ export default function LaCajitaPoker() {
               }}
               className={`flex items-center justify-center w-32 h-full transition-all duration-200 ${
                 activeTab === tab.id
-                  ? "text-yellow-400 bg-yellow-400/10"
-                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
+                  ? "bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {tab.id === "ranking" && <Trophy className="w-7 h-7" />}
