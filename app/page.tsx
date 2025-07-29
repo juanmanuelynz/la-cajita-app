@@ -666,12 +666,16 @@ export default function LaCajitaPoker() {
                       </td>
                       <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>
                       <td className="py-3 px-2 text-center font-bold text-sm">{player.points}</td>
-                      <td className="py-3 px-2 text-center font-semibold text-sm">
+                      <td className={`py-3 px-2 text-center font-semibold text-sm ${
+                        player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
+                      }`}>
                         ${player.moneyWon.toLocaleString()}
                       </td>
                       <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.matches}</td>
                       <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.cajitas}</td>                        
-                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                      <td className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
+                        player.averagePerMatch >= 0 ? "text-emerald-500" : "text-rose-500"
+                      }`}>
                         ${Math.round(player.averagePerMatch).toLocaleString()}
                       </td>
                     </tr>
@@ -795,7 +799,11 @@ export default function LaCajitaPoker() {
                                           </div>
                                           <span className="text-sm">{player.name}</span>
                                         </div>
-                                        <span className="text-sm font-semibold">
+                                        <span className={`text-sm font-semibold ${
+                                          player.finalChips > 0 
+                                            ? (player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500")
+                                            : ""
+                                        }`}>
                                           {player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}
                                         </span>
                                       </div>
@@ -998,7 +1006,9 @@ export default function LaCajitaPoker() {
                             </div>
                             <div className="flex items-center justify-between">
                               <Label>Dinero Ganado/Perdido</Label>
-                              <div className="p-2 rounded text-center font-semibold">
+                              <div className={`p-2 rounded text-center font-semibold ${
+                                player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
+                              }`}>
                                 ${player.moneyWon.toLocaleString()}
                               </div>
                             </div>
@@ -1145,7 +1155,9 @@ export default function LaCajitaPoker() {
                                         </div>
                                         <span className="text-sm">{mp.players?.name}</span>
                                       </div>
-                                      <span className="text-sm font-semibold">
+                                      <span className={`text-sm font-semibold ${
+                                        mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
+                                      }`}>
                                         ${mp.money_won.toLocaleString()}
                                       </span>
                                     </div>
