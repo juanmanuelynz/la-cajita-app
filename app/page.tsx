@@ -632,14 +632,36 @@ export default function LaCajitaPoker() {
                   {getSortedPlayerStats().map((player, index) => (
                     <tr
                       key={player.id}
-                      className="border-b"
+                      className={`border-b ${
+                        theme === 'dark' 
+                          ? (index === 0 ? "bg-amber-900/70" :
+                             index === 1 ? "bg-slate-800/70" :
+                             index === 2 ? "bg-orange-900/70" : "")
+                          : (index === 0 ? "bg-amber-50" :
+                             index === 1 ? "bg-zinc-50" :
+                             index === 2 ? "bg-orange-50" : "")
+                      }`}
                     >
                       <td className="py-2 px-2">
                         <div className="flex items-center gap-1">
-                          <span className="font-semibold text-sm">{index + 1}</span>
-                          {index === 0 && <Trophy className="w-4 h-4" />}
-                          {index === 1 && <Medal className="w-4 h-4" />}
-                          {index === 2 && <Award className="w-4 h-4" />}                            
+                          <span className={`font-semibold text-sm ${
+                            theme === 'dark'
+                              ? (index === 0 ? "text-yellow-400" :
+                                 index === 1 ? "text-slate-300" :
+                                 index === 2 ? "text-orange-400" : "")
+                              : (index === 0 ? "text-yellow-600" :
+                                 index === 1 ? "text-gray-600" :
+                                 index === 2 ? "text-orange-600" : "")
+                          }`}>{index + 1}</span>
+                          {index === 0 && <Trophy className={`w-4 h-4 ${
+                            theme === 'dark' ? "text-yellow-400" : "text-yellow-600"
+                          }`} />}
+                          {index === 1 && <Medal className={`w-4 h-4 ${
+                            theme === 'dark' ? "text-slate-300" : "text-gray-600"
+                          }`} />}
+                          {index === 2 && <Award className={`w-4 h-4 ${
+                            theme === 'dark' ? "text-orange-400" : "text-orange-600"
+                          }`} />}                            
                         </div>
                       </td>
                       <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>
@@ -663,18 +685,11 @@ export default function LaCajitaPoker() {
               <span className={`text-sm font-medium ${rankingSortBy === "money" ? "" : "text-muted-foreground"}`}>
                 Puntos
               </span>
-              <button
-                onClick={() => setRankingSortBy(rankingSortBy === "points" ? "money" : "points")}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  rankingSortBy === "money" ? "bg-primary" : "bg-muted"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                    rankingSortBy === "money" ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
+              <Switch
+                checked={rankingSortBy === "money"}
+                onCheckedChange={(checked) => setRankingSortBy(checked ? "money" : "points")}
+                aria-label="Cambiar orden de ranking"
+              />
               <span className={`text-sm font-medium ${rankingSortBy === "points" ? "" : "text-muted-foreground"}`}>
                 Dinero
               </span>
