@@ -1145,7 +1145,7 @@ export default function LaCajitaPoker() {
                                             mp.position === 1
                                               ? "bg-yellow-500 text-black"
                                               : mp.position === 2
-                                                ? "bg-gray-400 text-black"
+                                                ? "bg-slate-400 text-black"
                                                 : mp.position === 3
                                                   ? "bg-orange-500 text-black"
                                                   : "bg-muted-foreground text-muted"
