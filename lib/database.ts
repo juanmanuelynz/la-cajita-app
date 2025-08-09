@@ -283,6 +283,23 @@ export class DatabaseService {
     return data || []
   }
 
+  static async getActiveMatchById(matchId: string): Promise<ActiveMatch | null> {
+    console.log("🔍 Fetching active match by id...", matchId)
+
+    const { data, error } = await supabase
+      .from("active_matches")
+      .select("*")
+      .eq("id", matchId)
+      .single()
+
+    if (error) {
+      console.error("❌ Error fetching active match by id:", error)
+      return null
+    }
+
+    return data
+  }
+
   static async createActiveMatch(matchData: {
     date: string
     cajiValue: number

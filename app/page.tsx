@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,6 +44,7 @@ import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { Switch } from "@/components/ui/switch"
 import { useTheme } from "next-themes"
+import { useRouter, useSearchParams } from "next/navigation"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -57,7 +58,9 @@ interface FormPlayer {
 const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
 const PLAYER_COLORS = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3", "#54a0ff", "#5f27cd"]
 
-export default function LaCajitaPoker() {
+function LaCajitaPoker() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState("ranking")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,6 +103,14 @@ export default function LaCajitaPoker() {
   useEffect(() => {
     testConnectionAndLoadData()
   }, [])
+
+  // Read tab from query string
+  useEffect(() => {
+    const tabParam = searchParams?.get("tab")
+    if (tabParam && ["ranking", "partidas", "estadisticas", "reglas"].includes(tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
 
   // Set all players as selected by default when playerStats loads
   useEffect(() => {
@@ -184,15 +195,8 @@ export default function LaCajitaPoker() {
       const activeMatchesData = await DatabaseService.getAllActiveMatches()
       setActiveMatches(activeMatchesData)
 
-      // Set form data and show form
-      setFormData({
-        date: newMatch.date,
-        cajiValue: newMatch.caji_value,
-        playerCount: newMatch.player_count,
-        players: newMatch.players,
-      })
-      setEditingMatchId(newMatch.id)
-      setShowRegisterForm(true)
+      // Navegar a pantalla de edición separada
+      router.push(`/partidas/${newMatch.id}`)
     } catch (err) {
       console.error("❌ Error creating active match:", err)
       setError(err instanceof Error ? err.message : "Error creating active match")
@@ -203,17 +207,7 @@ export default function LaCajitaPoker() {
 
   // Load active match for editing
   const editActiveMatch = (matchId: string) => {
-    const match = activeMatches.find((m) => m.id === matchId)
-    if (match) {
-      setFormData({
-        date: match.date,
-        cajiValue: match.caji_value,
-        playerCount: match.player_count,
-        players: match.players,
-      })
-      setEditingMatchId(matchId)
-      setShowRegisterForm(true)
-    }
+    router.push(`/partidas/${matchId}`)
   }
 
   // Delete active match
@@ -1444,5 +1438,22 @@ export default function LaCajitaPoker() {
       <PWAInstall />
       <OfflineIndicator />
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p>Cargando...</p>
+          </div>
+        </div>
+      }
+    >
+      <LaCajitaPoker />
+    </Suspense>
   )
 }
