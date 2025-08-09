@@ -634,9 +634,9 @@ export default function LaCajitaPoker() {
                       key={player.id}
                       className={`border-b ${
                         theme === 'dark' 
-                          ? (index === 0 ? "bg-yellow-900/40" :
-                             index === 1 ? "bg-zinc-800/50" :
-                             index === 2 ? "bg-orange-900/40" : "")
+                          ? (index === 0 ? "bg-yellow-800/40" :
+                             index === 1 ? "bg-slate-600/50" :
+                             index === 2 ? "bg-orange-800/40" : "")
                           : (index === 0 ? "bg-amber-50" :
                              index === 1 ? "bg-zinc-100" :
                              index === 2 ? "bg-orange-50" : "")
@@ -1071,7 +1071,7 @@ export default function LaCajitaPoker() {
             )}
 
             {/* Historial de Partidas */}
-            <Card>
+            <Card className="border-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-2xl">Historial de Partidas</CardTitle>
                 <Button
@@ -1084,7 +1084,7 @@ export default function LaCajitaPoker() {
                       </Button>
               </CardHeader>
               <CardContent>
-                <div className="max-h-96 overflow-y-auto space-y-4 custom-scrollbar">
+                <div className="max-h-200 overflow-y-auto space-y-4 custom-scrollbar">
                   {matches.map((match) => {
                     const isExpanded = expandedMatches.has(match.id)
                     const winner = match.match_players.find(mp => mp.position === 1)
