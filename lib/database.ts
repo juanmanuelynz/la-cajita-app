@@ -54,14 +54,18 @@ export class DatabaseService {
   }): Promise<MatchWithPlayers> {
     // Sort players by money won (descending), then by cajitas (ascending) for tie-breaking
     const sortedPlayers = [...matchData.players]
-      .map((player, index) => ({ ...player, originalIndex: index }))
+      .map((player, index) => ({ ...player, originalIndex: index, tieBreak: (player as any).tieBreak ?? Math.random() }))
       .sort((a, b) => {
         // First sort by money won (descending)
         if (b.moneyWon !== a.moneyWon) {
           return b.moneyWon - a.moneyWon
         }
         // If tied, sort by cajitas (ascending - fewer cajitas = better position)
-        return a.cajitas - b.cajitas
+        if (a.cajitas !== b.cajitas) {
+          return a.cajitas - b.cajitas
+        }
+        // If still tied, use stable tie-breaker value
+        return a.tieBreak! - b.tieBreak!
       })
 
     const totalMoney = matchData.players.reduce((sum, p) => sum + p.cajitas * matchData.cajiValue, 0)
@@ -243,7 +247,11 @@ export class DatabaseService {
           return b.money_won - a.money_won
         }
         // If tied, sort by cajitas (ascending - fewer cajitas = better position)
-        return a.cajitas - b.cajitas
+        if (a.cajitas !== b.cajitas) {
+          return a.cajitas - b.cajitas
+        }
+        // If still tied, random order (legacy fix); no deterministic tieBreak stored in historical data
+        return Math.random() < 0.5 ? -1 : 1
       })
 
       // Update positions and points
@@ -309,9 +317,16 @@ export class DatabaseService {
       cajitas: number
       finalChips: number
       moneyWon: number
+      tieBreak?: number
     }>
   }): Promise<ActiveMatch> {
     console.log("🆕 Creating active match:", matchData)
+
+    const playersWithTieBreak = matchData.players.map((p) => ({
+      ...p,
+      // ensure deterministic tie-break value is stored
+      tieBreak: (p as any).tieBreak ?? Math.random(),
+    }))
 
     const { data, error } = await supabase
       .from("active_matches")
@@ -319,7 +334,7 @@ export class DatabaseService {
         date: matchData.date,
         caji_value: matchData.cajiValue,
         player_count: matchData.playerCount,
-        players: matchData.players,
+        players: playersWithTieBreak,
       })
       .select()
       .single()
@@ -344,10 +359,16 @@ export class DatabaseService {
         cajitas: number
         finalChips: number
         moneyWon: number
+        tieBreak?: number
       }>
     },
   ): Promise<ActiveMatch> {
     console.log("📝 Updating active match:", matchId, matchData)
+
+    const playersWithTieBreak = matchData.players.map((p) => ({
+      ...p,
+      tieBreak: (p as any).tieBreak ?? Math.random(),
+    }))
 
     const { data, error } = await supabase
       .from("active_matches")
@@ -355,7 +376,7 @@ export class DatabaseService {
         date: matchData.date,
         caji_value: matchData.cajiValue,
         player_count: matchData.playerCount,
-        players: matchData.players,
+        players: playersWithTieBreak,
       })
       .eq("id", matchId)
       .select()

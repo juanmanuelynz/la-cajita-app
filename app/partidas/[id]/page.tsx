@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, GripVertical, Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Loader2, ArrowLeft, GripVertical, Plus, Trophy, Medal, Award } from "lucide-react"
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 // Nota: evitamos CSS.Transform.toString para prevenir errores en algunos entornos
@@ -19,6 +20,7 @@ interface FormPlayer {
   cajitas: number
   finalChips: number
   moneyWon: number
+  tieBreak?: number
 }
 
 function SortablePlayerRow({ id, index, children }: { id: string; index: number; children: React.ReactNode }) {
@@ -46,11 +48,15 @@ export default function EditActiveMatchPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [registering, setRegistering] = useState(false)
   const [playersList, setPlayersList] = useState<string[]>([])
   const [formData, setFormData] = useState<{ date: string; cajiValue: number; playerCount: number; players: FormPlayer[] } | null>(null)
   const [newPlayerInputIndex, setNewPlayerInputIndex] = useState<number | null>(null)
   const [newPlayerName, setNewPlayerName] = useState("")
   const [creatingPlayer, setCreatingPlayer] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+
+  const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -69,7 +75,10 @@ export default function EditActiveMatchPage() {
           date: match.date,
           cajiValue: match.caji_value,
           playerCount: match.player_count,
-          players: match.players,
+          players: (match.players as Array<FormPlayer | (FormPlayer & { tieBreak?: number })>).map((p) => ({
+            ...p,
+            tieBreak: (p as any).tieBreak ?? Math.random(),
+          })),
         })
       }
       const allPlayers = await DatabaseService.getAllPlayers()
@@ -118,14 +127,18 @@ export default function EditActiveMatchPage() {
     }
   }
 
-  const handleRegister = async () => {
+  const openPreview = () => {
     if (!formData || !validateBalance) return
-    setSaving(true)
+    setShowPreview(true)
+  }
+
+  const confirmRegister = async () => {
+    setRegistering(true)
     try {
       await DatabaseService.registerActiveMatch(matchId)
       router.push("/?tab=partidas")
     } finally {
-      setSaving(false)
+      setRegistering(false)
     }
   }
 
@@ -199,7 +212,26 @@ export default function EditActiveMatchPage() {
             </div>
             <div>
               <Label htmlFor="playerCount">Número de Jugadores</Label>
-              <Select value={String(formData.playerCount)} onValueChange={(v) => setFormData({ ...formData, playerCount: Number(v), players: Array(Number(v)).fill(null).map((_, i) => formData.players[i] || { name: "", cajitas: 1, finalChips: 0, moneyWon: -formData.cajiValue }) })}>
+              <Select
+                value={String(formData.playerCount)}
+                onValueChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    playerCount: Number(v),
+                    players: Array(Number(v))
+                      .fill(null)
+                      .map((_, i) =>
+                        formData.players[i] || {
+                          name: "",
+                          cajitas: 1,
+                          finalChips: 0,
+                          moneyWon: -formData.cajiValue,
+                          tieBreak: Math.random(),
+                        },
+                      ),
+                  })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -363,8 +395,8 @@ export default function EditActiveMatchPage() {
               "Guardar"
             )}
           </Button>
-          <Button onClick={handleRegister} disabled={!validateBalance || formData.players.some((p) => !p.name) || saving} className="flex-1">
-            {saving ? (
+          <Button onClick={openPreview} disabled={!validateBalance || formData.players.some((p) => !p.name) || saving} className="flex-1">
+            {registering ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" /> Registrando...
               </>
@@ -374,6 +406,77 @@ export default function EditActiveMatchPage() {
           </Button>
         </div>
       </div>
+      {formData && (
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Vista previa del registro</DialogTitle>
+              <DialogDescription>
+                {formData.date} · {formData.playerCount} jugadores · ${" "}
+                {formData.cajiValue.toLocaleString()} por cajita
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              {([...formData.players]
+                .map((p, originalIndex) => ({ ...p, originalIndex }))
+                .sort((a, b) => {
+                  if (b.moneyWon !== a.moneyWon) return b.moneyWon - a.moneyWon
+                  if (a.cajitas !== b.cajitas) return a.cajitas - b.cajitas
+                  return (a.tieBreak ?? 0) - (b.tieBreak ?? 0)
+                })
+              ).map((p, idx) => {
+                const pos = idx + 1
+                const points = POINTS_DISTRIBUTION[idx] || 0
+                return (
+                  <div key={p.originalIndex} className="flex items-center justify-between p-3 rounded-xl border">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          pos === 1
+                            ? "bg-yellow-500 text-black"
+                            : pos === 2
+                              ? "bg-slate-400 text-black"
+                              : pos === 3
+                                ? "bg-orange-500 text-black"
+                                : "bg-muted-foreground text-muted"
+                        }`}
+                      >
+                        {pos}
+                      </div>
+                      <div className="text-lg font-semibold flex items-center gap-2">
+                        {pos === 1 && <Trophy className="w-4 h-4" />}
+                        {pos === 2 && <Medal className="w-4 h-4" />}
+                        {pos === 3 && <Award className="w-4 h-4" />}
+                        {p.name || `Jugador ${p.originalIndex + 1}`}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className={`text-base font-semibold ${p.moneyWon >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        ${p.moneyWon.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{points} pts</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <DialogFooter className="mt-4 gap-2">
+              <Button variant="outline" onClick={() => setShowPreview(false)}>
+                Volver
+              </Button>
+              <Button onClick={confirmRegister} disabled={registering}>
+                {registering ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Registrando...
+                  </>
+                ) : (
+                  "Confirmar y Registrar"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

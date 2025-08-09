@@ -57,6 +57,7 @@ export interface ActiveMatch {
     cajitas: number
     finalChips: number
     moneyWon: number
+    tieBreak?: number
   }>
   created_at: string
   updated_at: string
