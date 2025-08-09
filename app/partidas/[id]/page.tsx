@@ -215,7 +215,7 @@ export default function EditActiveMatchPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-0">
+        <Card className="border-0 bg-transparent">
           <CardHeader>
             <CardTitle>Jugadores</CardTitle>
           </CardHeader>

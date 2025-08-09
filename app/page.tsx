@@ -1065,7 +1065,7 @@ function LaCajitaPoker() {
             )}
 
             {/* Historial de Partidas */}
-            <Card className="border-0">
+            <Card className="border-0 bg-transparent">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-2xl">Historial de Partidas</CardTitle>
                 <Button
