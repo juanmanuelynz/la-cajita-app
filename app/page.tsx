@@ -743,19 +743,23 @@ function LaCajitaPoker() {
                                 <div className="flex justify-between items-start mb-3">
                                   <div className="flex flex-col gap-2">
                                     <div className="text-lg font-semibold">{match.date}</div>
+                                    {/*
                                     <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
                                       isComplete ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
                                     }`}>
                                       {isComplete ? "Lista para registrar" : "En progreso"}
                                     </div>
+                                    */}
                                     <div className="text-sm text-muted-foreground">
                                       {playersWithNames.length}/{match.player_count} jugadores - $
                                       {totalInvestment.toLocaleString()}
                                     </div>
+                                    {/*
                                     <div className="text-xs text-muted-foreground mt-1">
                                       Actualizado:{" "}
                                       {new Date(match.updated_at).toLocaleTimeString()}
-                                    </div>
+                                    </div>}
+                                    */}
                                   </div>
                                   <div className="flex gap-2">
                                     <Button

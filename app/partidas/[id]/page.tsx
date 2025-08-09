@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DatabaseService } from "@/lib/database"
 import type { ActiveMatch } from "@/lib/database"
@@ -47,7 +47,6 @@ export default function EditActiveMatchPage() {
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [registering, setRegistering] = useState(false)
   const [playersList, setPlayersList] = useState<string[]>([])
   const [formData, setFormData] = useState<{ date: string; cajiValue: number; playerCount: number; players: FormPlayer[] } | null>(null)
@@ -57,6 +56,10 @@ export default function EditActiveMatchPage() {
   const [showPreview, setShowPreview] = useState(false)
 
   const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [isOnline, setIsOnline] = useState<boolean>(true)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -112,20 +115,50 @@ export default function EditActiveMatchPage() {
     return Math.abs(totalInvestment - totalFinalChips) < 0.01
   }, [formData])
 
-  const handleSave = async () => {
+  // Auto-guardado con debounce
+  useEffect(() => {
     if (!formData) return
-    setSaving(true)
-    try {
-      await DatabaseService.updateActiveMatch(matchId, {
-        date: formData.date,
-        cajiValue: formData.cajiValue,
-        playerCount: formData.playerCount,
-        players: formData.players,
-      })
-    } finally {
-      setSaving(false)
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setSaveState("saving")
+      try {
+        await DatabaseService.updateActiveMatch(matchId, {
+          date: formData.date,
+          cajiValue: formData.cajiValue,
+          playerCount: formData.playerCount,
+          players: formData.players,
+        })
+        setSaveState("saved")
+        setLastSavedAt(new Date())
+      } catch {
+        setSaveState("error")
+      }
+    }, 500)
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
     }
-  }
+  }, [formData, matchId])
+
+  // Estado online/offline
+  useEffect(() => {
+    const setFromNavigator = () => setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true)
+    setFromNavigator()
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
+  // Ocultar automáticamente el indicador "Guardado" tras unos segundos
+  useEffect(() => {
+    if (saveState !== "saved") return
+    const t = setTimeout(() => setSaveState("idle"), 2000)
+    return () => clearTimeout(t)
+  }, [saveState])
 
   const openPreview = () => {
     if (!formData || !validateBalance) return
@@ -167,6 +200,23 @@ export default function EditActiveMatchPage() {
     }
   }
 
+  const handleBack = async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    if (formData) {
+      try {
+        await DatabaseService.updateActiveMatch(matchId, {
+          date: formData.date,
+          cajiValue: formData.cajiValue,
+          playerCount: formData.playerCount,
+          players: formData.players,
+        })
+      } catch {
+        // ignore
+      }
+    }
+    router.push("/?tab=partidas")
+  }
+
   if (loading || !formData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,10 +233,31 @@ export default function EditActiveMatchPage() {
       <div className="backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => router.push("/?tab=partidas")}> 
+            <Button variant="outline" size="sm" onClick={handleBack}> 
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <h1 className="text-2xl font-bold">Editar Partida</h1>
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              {!isOnline ? (
+                <div className="flex items-center gap-2 text-rose-500">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  Sin conexión
+                </div>
+              ) : saveState === "saving" ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Guardando...
+                </div>
+              ) : saveState === "error" ? (
+                <div className="flex items-center gap-2 text-rose-500">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Error al guardar
+                </div>
+              ) : saveState === "saved" ? (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Guardado{lastSavedAt ? ` ${lastSavedAt.toLocaleTimeString()}` : ""}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -383,19 +454,10 @@ export default function EditActiveMatchPage() {
         </Card>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={() => router.push("/?tab=partidas")}>
+          <Button variant="outline" className="flex-1" onClick={handleBack}> 
             Volver
           </Button>
-          <Button onClick={handleSave} disabled={saving} variant="secondary" className="flex-1">
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Guardando...
-              </>
-            ) : (
-              "Guardar"
-            )}
-          </Button>
-          <Button onClick={openPreview} disabled={!validateBalance || formData.players.some((p) => !p.name) || saving} className="flex-1">
+          <Button onClick={openPreview} disabled={!validateBalance || formData.players.some((p) => !p.name)} className="flex-1">
             {registering ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" /> Registrando...
