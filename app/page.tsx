@@ -72,6 +72,14 @@ function LaCajitaPoker() {
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
   const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">("points")
   const { theme, setTheme } = useTheme();
+  const getHslColor = (varName: string) => {
+    if (typeof window === "undefined") {
+      // Fallbacks para SSR
+      return varName === "--foreground" ? "#111" : "#e5e5e5"
+    }
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+    return raw ? `hsl(${raw})` : (varName === "--foreground" ? "#111" : "#e5e5e5")
+  }
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([])
@@ -1293,7 +1301,7 @@ function LaCajitaPoker() {
                           <Label
                             htmlFor={player.id}
                             className="cursor-pointer"
-                            style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}
+                            
                           >
                             {player.name}
                           </Label>
@@ -1304,28 +1312,34 @@ function LaCajitaPoker() {
 
                   {selectedPlayers.length > 0 && (
                     <div className="h-96 mb-6">
-                      <Line
-                        data={getChartData()}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              labels: { color: "hsl(var(--foreground))" },
-                            },
-                          },
-                          scales: {
-                            x: {
-                              ticks: { color: "hsl(var(--foreground))" },
-                              grid: { color: "hsl(var(--border))" },
-                            },
-                            y: {
-                              ticks: { color: "hsl(var(--foreground))" },
-                              grid: { color: "hsl(var(--border))" },
-                            },
-                          },
-                        }}
-                      />
+                      {(() => {
+                        const fg = getHslColor("--foreground")
+                        const grid = getHslColor("--border")
+                        return (
+                          <Line
+                            data={getChartData()}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  labels: { color: fg },
+                                },
+                              },
+                              scales: {
+                                x: {
+                                  ticks: { color: fg },
+                                  grid: { color: grid },
+                                },
+                                y: {
+                                  ticks: { color: fg },
+                                  grid: { color: grid },
+                                },
+                              },
+                            }}
+                          />
+                        )
+                      })()}
                     </div>
                   )}
                 </CardContent>
