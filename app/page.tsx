@@ -798,7 +798,8 @@ function LaCajitaPoker() {
                                             ? (player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500")
                                             : ""
                                         }`}>
-                                          {player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}
+                                          {/*{player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}*/}
+                                          {`$${player.moneyWon.toLocaleString()}`}
                                         </span>
                                       </div>
                                     ))}
@@ -1065,7 +1066,7 @@ function LaCajitaPoker() {
             )}
 
             {/* Historial de Partidas */}
-            <Card className="border-0 bg-transparent">
+            <Card className="border-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-2xl">Historial de Partidas</CardTitle>
                 <Button
