@@ -1,12 +1,18 @@
-"use client"
+"use client";
 
-import { useState, useEffect, Suspense } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect, Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash2,
   Trophy,
@@ -26,8 +32,8 @@ import {
   Coins,
   TrendingUp,
   TrendingDown,
-} from "lucide-react"
-import { Line } from "react-chartjs-2"
+} from "lucide-react";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -37,61 +43,95 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js"
-import { DatabaseService } from "../lib/database"
-import type { Player, MatchWithPlayers, PlayerStats, ActiveMatch } from "../lib/supabase"
-import { PWAInstall } from "@/components/pwa-install"
-import { OfflineIndicator } from "@/components/offline-indicator"
-import { Switch } from "@/components/ui/switch"
-import { useTheme } from "next-themes"
-import { useRouter, useSearchParams } from "next/navigation"
+} from "chart.js";
+import { DatabaseService } from "../lib/database";
+import type {
+  Player,
+  MatchWithPlayers,
+  PlayerStats,
+  ActiveMatch,
+} from "../lib/supabase";
+import { PWAInstall } from "@/components/pwa-install";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { Switch } from "@/components/ui/switch";
+import { useTheme } from "next-themes";
+import { useRouter, useSearchParams } from "next/navigation";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface FormPlayer {
-  name: string
-  cajitas: number
-  finalChips: number
-  moneyWon: number
+  name: string;
+  cajitas: number;
+  finalChips: number;
+  moneyWon: number;
 }
 
-const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
-const PLAYER_COLORS = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3", "#54a0ff", "#5f27cd"]
+const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4];
+const PLAYER_COLORS = [
+  "#ff6b6b",
+  "#4ecdc4",
+  "#45b7d1",
+  "#96ceb4",
+  "#feca57",
+  "#ff9ff3",
+  "#54a0ff",
+  "#5f27cd",
+];
 
 function LaCajitaPoker() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState("ranking")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showRegisterForm, setShowRegisterForm] = useState(false)
-  const [matchToDelete, setMatchToDelete] = useState<string | null>(null)
-  const [editingMatchId, setEditingMatchId] = useState<string | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null)
-  const [showEvolutionChart, setShowEvolutionChart] = useState(true)
-  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set())
-  const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">("points")
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState("ranking");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [matchToDelete, setMatchToDelete] = useState<string | null>(null);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(
+    null
+  );
+  const [showEvolutionChart, setShowEvolutionChart] = useState(true);
+  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(
+    new Set()
+  );
+  const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">(
+    "points"
+  );
   const { theme, setTheme } = useTheme();
   const getHslColor = (varName: string) => {
     if (typeof window === "undefined") {
       // Fallbacks para SSR
-      return varName === "--foreground" ? "#111" : "#e5e5e5"
+      return varName === "--foreground" ? "#111" : "#e5e5e5";
     }
-    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
-    return raw ? `hsl(${raw})` : (varName === "--foreground" ? "#111" : "#e5e5e5")
-  }
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
+    return raw
+      ? `hsl(${raw})`
+      : varName === "--foreground"
+      ? "#111"
+      : "#e5e5e5";
+  };
 
   // Data states
-  const [players, setPlayers] = useState<Player[]>([])
-  const [matches, setMatches] = useState<MatchWithPlayers[]>([])
-  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([])
-  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([])
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<MatchWithPlayers[]>([]);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([]);
   const [overallStats, setOverallStats] = useState({
     totalMatches: 0,
     totalCajitas: 0,
     totalMoney: 0,
     activePlayers: 0,
-  })
+  });
 
   // Form states
   const [formData, setFormData] = useState({
@@ -101,92 +141,103 @@ function LaCajitaPoker() {
     players: Array(4)
       .fill(null)
       .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 })),
-  })
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([])
-  const [selectedAnalysisPlayer, setSelectedAnalysisPlayer] = useState("")
-  const [newPlayerName, setNewPlayerName] = useState("")
-  const [showNewPlayerInput, setShowNewPlayerInput] = useState<number | null>(null)
+  });
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedAnalysisPlayer, setSelectedAnalysisPlayer] = useState("");
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [showNewPlayerInput, setShowNewPlayerInput] = useState<number | null>(
+    null
+  );
 
   // Load initial data
   useEffect(() => {
-    testConnectionAndLoadData()
-  }, [])
+    testConnectionAndLoadData();
+  }, []);
 
   // Read tab from query string
   useEffect(() => {
-    const tabParam = searchParams?.get("tab")
-    if (tabParam && ["ranking", "partidas", "estadisticas", "reglas"].includes(tabParam)) {
-      setActiveTab(tabParam)
+    const tabParam = searchParams?.get("tab");
+    if (
+      tabParam &&
+      ["ranking", "partidas", "estadisticas", "reglas"].includes(tabParam)
+    ) {
+      setActiveTab(tabParam);
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   // Set all players as selected by default when playerStats loads
   useEffect(() => {
     if (playerStats.length > 0 && selectedPlayers.length === 0) {
-      setSelectedPlayers(playerStats.map((player) => player.name))
+      setSelectedPlayers(playerStats.map((player) => player.name));
     }
-  }, [playerStats])
+  }, [playerStats]);
 
   const testConnectionAndLoadData = async () => {
-    console.log("🚀 Starting app initialization...")
+    console.log("🚀 Starting app initialization...");
 
     // Test database connection first
-    const isConnected = await DatabaseService.testConnection()
-    setConnectionStatus(isConnected)
+    const isConnected = await DatabaseService.testConnection();
+    setConnectionStatus(isConnected);
 
     if (isConnected) {
-      await loadAllData()
+      await loadAllData();
     } else {
-      setError("No se pudo conectar a la base de datos. Verifica tu conexión.")
+      setError("No se pudo conectar a la base de datos. Verifica tu conexión.");
     }
-  }
+  };
 
   const loadAllData = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      console.log("📊 Loading all data...")
+      console.log("📊 Loading all data...");
 
-      const [playersData, matchesData, statsData, overallData, activeMatchesData] = await Promise.all([
+      const [
+        playersData,
+        matchesData,
+        statsData,
+        overallData,
+        activeMatchesData,
+      ] = await Promise.all([
         DatabaseService.getAllPlayers(),
         DatabaseService.getAllMatches(),
         DatabaseService.getPlayerStats(),
         DatabaseService.getOverallStats(),
         DatabaseService.getAllActiveMatches(),
-      ])
+      ]);
 
-      console.log("✅ Data loaded successfully:")
-      console.log("- Players:", playersData.length)
-      console.log("- Matches:", matchesData.length)
-      console.log("- Active matches:", activeMatchesData.length)
+      console.log("✅ Data loaded successfully:");
+      console.log("- Players:", playersData.length);
+      console.log("- Matches:", matchesData.length);
+      console.log("- Active matches:", activeMatchesData.length);
 
-      setPlayers(playersData)
-      setMatches(matchesData)
-      setPlayerStats(statsData)
-      setOverallStats(overallData)
-      setActiveMatches(activeMatchesData)
-      setConnectionStatus(true)
+      setPlayers(playersData);
+      setMatches(matchesData);
+      setPlayerStats(statsData);
+      setOverallStats(overallData);
+      setActiveMatches(activeMatchesData);
+      setConnectionStatus(true);
     } catch (err) {
-      console.error("❌ Error loading data:", err)
-      setError(err instanceof Error ? err.message : "Error loading data")
-      setConnectionStatus(false)
+      console.error("❌ Error loading data:", err);
+      setError(err instanceof Error ? err.message : "Error loading data");
+      setConnectionStatus(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Manual refresh function
   const refreshData = async () => {
-    console.log("🔄 Manual refresh triggered")
-    await loadAllData()
-  }
+    console.log("🔄 Manual refresh triggered");
+    await loadAllData();
+  };
 
   // Create new active match
   const createNewActiveMatch = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      console.log("🆕 Creating new active match...")
+      console.log("🆕 Creating new active match...");
 
       const newMatch = await DatabaseService.createActiveMatch({
         date: new Date().toISOString().split("T")[0],
@@ -194,56 +245,65 @@ function LaCajitaPoker() {
         playerCount: 4,
         players: Array(4)
           .fill(null)
-          .map(() => ({ name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 })),
-      })
+          .map(() => ({
+            name: "",
+            cajitas: 1,
+            finalChips: 0,
+            moneyWon: -2000,
+          })),
+      });
 
-      console.log("✅ New active match created:", newMatch)
+      console.log("✅ New active match created:", newMatch);
 
       // Reload active matches
-      const activeMatchesData = await DatabaseService.getAllActiveMatches()
-      setActiveMatches(activeMatchesData)
+      const activeMatchesData = await DatabaseService.getAllActiveMatches();
+      setActiveMatches(activeMatchesData);
 
       // Navegar a pantalla de edición separada
-      router.push(`/partidas/${newMatch.id}`)
+      router.push(`/partidas/${newMatch.id}`);
     } catch (err) {
-      console.error("❌ Error creating active match:", err)
-      setError(err instanceof Error ? err.message : "Error creating active match")
+      console.error("❌ Error creating active match:", err);
+      setError(
+        err instanceof Error ? err.message : "Error creating active match"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Load active match for editing
   const editActiveMatch = (matchId: string) => {
-    router.push(`/partidas/${matchId}`)
-  }
+    router.push(`/partidas/${matchId}`);
+  };
 
   // Delete active match
   const deleteActiveMatch = async (matchId: string) => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      await DatabaseService.deleteActiveMatch(matchId)
+      await DatabaseService.deleteActiveMatch(matchId);
 
       // Reload active matches
-      const activeMatchesData = await DatabaseService.getAllActiveMatches()
-      setActiveMatches(activeMatchesData)
+      const activeMatchesData = await DatabaseService.getAllActiveMatches();
+      setActiveMatches(activeMatchesData);
 
       // If we're editing this match, close the form
       if (editingMatchId === matchId) {
-        setShowRegisterForm(false)
-        setEditingMatchId(null)
+        setShowRegisterForm(false);
+        setEditingMatchId(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error deleting active match")
+      setError(
+        err instanceof Error ? err.message : "Error deleting active match"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Update active match
   const updateActiveMatch = async () => {
-    if (!editingMatchId) return
+    if (!editingMatchId) return;
 
     try {
       await DatabaseService.updateActiveMatch(editingMatchId, {
@@ -251,122 +311,128 @@ function LaCajitaPoker() {
         cajiValue: formData.cajiValue,
         playerCount: formData.playerCount,
         players: formData.players,
-      })
+      });
 
       // Reload active matches to get updated data
-      const activeMatchesData = await DatabaseService.getAllActiveMatches()
-      setActiveMatches(activeMatchesData)
+      const activeMatchesData = await DatabaseService.getAllActiveMatches();
+      setActiveMatches(activeMatchesData);
     } catch (err) {
-      console.error("Error updating active match:", err)
+      console.error("Error updating active match:", err);
     }
-  }
+  };
 
   // Update players array when player count changes
   useEffect(() => {
     const newPlayers = Array(formData.playerCount)
       .fill(null)
       .map((_, i) => {
-        const existingPlayer = formData.players[i]
+        const existingPlayer = formData.players[i];
         if (existingPlayer) {
-          return existingPlayer
+          return existingPlayer;
         }
-        return { name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 }
-      })
-    setFormData((prev) => ({ ...prev, players: newPlayers }))
-  }, [formData.playerCount])
+        return { name: "", cajitas: 1, finalChips: 0, moneyWon: -2000 };
+      });
+    setFormData((prev) => ({ ...prev, players: newPlayers }));
+  }, [formData.playerCount]);
 
   // Update active match when form data changes (debounced)
   useEffect(() => {
     if (editingMatchId && showRegisterForm) {
       const timeoutId = setTimeout(() => {
-        updateActiveMatch()
-      }, 500) // Debounce for 500ms
+        updateActiveMatch();
+      }, 500); // Debounce for 500ms
 
-      return () => clearTimeout(timeoutId)
+      return () => clearTimeout(timeoutId);
     }
-  }, [formData, editingMatchId, showRegisterForm])
+  }, [formData, editingMatchId, showRegisterForm]);
 
   // Calculate money won/lost based on investment and final chips
   const updatePlayerMoney = (index: number, field: string, value: any) => {
-    const newPlayers = [...formData.players]
-    newPlayers[index] = { ...newPlayers[index], [field]: value }
+    const newPlayers = [...formData.players];
+    newPlayers[index] = { ...newPlayers[index], [field]: value };
 
     if (field === "cajitas" || field === "finalChips") {
-      const cajitas = newPlayers[index].cajitas || 1
-      const finalChips = newPlayers[index].finalChips || 0
-      const investment = cajitas * formData.cajiValue
-      newPlayers[index].moneyWon = finalChips - investment
+      const cajitas = newPlayers[index].cajitas || 1;
+      const finalChips = newPlayers[index].finalChips || 0;
+      const investment = cajitas * formData.cajiValue;
+      newPlayers[index].moneyWon = finalChips - investment;
     }
 
-    setFormData((prev) => ({ ...prev, players: newPlayers }))
-  }
+    setFormData((prev) => ({ ...prev, players: newPlayers }));
+  };
 
   // Validate balance
   const validateBalance = () => {
-    const totalInvestment = formData.players.reduce((sum, p) => sum + p.cajitas * formData.cajiValue, 0)
-    const totalFinalChips = formData.players.reduce((sum, p) => sum + p.finalChips, 0)
-    return Math.abs(totalInvestment - totalFinalChips) < 0.01
-  }
+    const totalInvestment = formData.players.reduce(
+      (sum, p) => sum + p.cajitas * formData.cajiValue,
+      0
+    );
+    const totalFinalChips = formData.players.reduce(
+      (sum, p) => sum + p.finalChips,
+      0
+    );
+    return Math.abs(totalInvestment - totalFinalChips) < 0.01;
+  };
 
   // Register match (convert active match to real match)
   const registerMatch = async () => {
-    if (!validateBalance() || !editingMatchId) return
+    if (!validateBalance() || !editingMatchId) return;
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      await DatabaseService.registerActiveMatch(editingMatchId)
+      await DatabaseService.registerActiveMatch(editingMatchId);
 
       // Close form and reload all data
-      setShowRegisterForm(false)
-      setEditingMatchId(null)
-      await loadAllData()
+      setShowRegisterForm(false);
+      setEditingMatchId(null);
+      await loadAllData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error registering match")
+      setError(err instanceof Error ? err.message : "Error registering match");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Create new player
   const createNewPlayer = async (index: number) => {
-    if (!newPlayerName.trim()) return
+    if (!newPlayerName.trim()) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await DatabaseService.createPlayer(newPlayerName.trim())
-      await DatabaseService.getAllPlayers().then(setPlayers)
+      await DatabaseService.createPlayer(newPlayerName.trim());
+      await DatabaseService.getAllPlayers().then(setPlayers);
 
       // Update form with new player
-      updatePlayerMoney(index, "name", newPlayerName.trim())
-      setNewPlayerName("")
-      setShowNewPlayerInput(null)
+      updatePlayerMoney(index, "name", newPlayerName.trim());
+      setNewPlayerName("");
+      setShowNewPlayerInput(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creating player")
+      setError(err instanceof Error ? err.message : "Error creating player");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Delete match with confirmation (for completed matches in historial)
   const confirmDeleteMatch = (matchId: string) => {
-    setMatchToDelete(matchId)
-  }
+    setMatchToDelete(matchId);
+  };
 
   const deleteMatch = async () => {
-    if (!matchToDelete) return
+    if (!matchToDelete) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await DatabaseService.deleteMatch(matchToDelete)
-      await loadAllData()
-      setMatchToDelete(null)
+      await DatabaseService.deleteMatch(matchToDelete);
+      await loadAllData();
+      setMatchToDelete(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error deleting match")
+      setError(err instanceof Error ? err.message : "Error deleting match");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Get chart data
   const getChartData = () => {
@@ -374,15 +440,21 @@ function LaCajitaPoker() {
       .filter((playerName) => playerStats.some((p) => p.name === playerName))
       .map((playerName, index) => {
         const playerMatches = matches
-          .filter((match) => match.match_players.some((mp) => mp.players?.name === playerName))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .filter((match) =>
+            match.match_players.some((mp) => mp.players?.name === playerName)
+          )
+          .sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
 
-        let cumulativePoints = 0
+        let cumulativePoints = 0;
         const data = playerMatches.map((match) => {
-          const playerInMatch = match.match_players.find((mp) => mp.players?.name === playerName)
-          cumulativePoints += playerInMatch?.points || 0
-          return cumulativePoints
-        })
+          const playerInMatch = match.match_players.find(
+            (mp) => mp.players?.name === playerName
+          );
+          cumulativePoints += playerInMatch?.points || 0;
+          return cumulativePoints;
+        });
 
         return {
           label: playerName,
@@ -390,111 +462,129 @@ function LaCajitaPoker() {
           borderColor: PLAYER_COLORS[index % PLAYER_COLORS.length],
           backgroundColor: PLAYER_COLORS[index % PLAYER_COLORS.length] + "20",
           tension: 0.4,
-        }
-      })
+        };
+      });
 
-    const maxLength = Math.max(...datasets.map((d) => d.data.length))
-    const labels = Array.from({ length: maxLength }, (_, i) => `Partida ${i + 1}`)
+    const maxLength = Math.max(...datasets.map((d) => d.data.length));
+    const labels = Array.from(
+      { length: maxLength },
+      (_, i) => `Partida ${i + 1}`
+    );
 
-    return { labels, datasets }
-  }
+    return { labels, datasets };
+  };
 
   // Get player's last matches
   const getPlayerLastMatches = (playerName: string) => {
     return matches
-      .filter((match) => match.match_players.some((mp) => mp.players?.name === playerName))
+      .filter((match) =>
+        match.match_players.some((mp) => mp.players?.name === playerName)
+      )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
       .map((match) => {
-        const playerMatch = match.match_players.find((mp) => mp.players?.name === playerName)!
-        return { position: playerMatch.position, moneyWon: playerMatch.money_won }
-      })
-  }
+        const playerMatch = match.match_players.find(
+          (mp) => mp.players?.name === playerName
+        )!;
+        return {
+          position: playerMatch.position,
+          moneyWon: playerMatch.money_won,
+        };
+      });
+  };
 
   // Toggle match expansion
   const toggleMatchExpansion = (matchId: string) => {
-    setExpandedMatches(prev => {
-      const newSet = new Set(prev)
+    setExpandedMatches((prev) => {
+      const newSet = new Set(prev);
       if (newSet.has(matchId)) {
-        newSet.delete(matchId)
+        newSet.delete(matchId);
       } else {
-        newSet.add(matchId)
+        newSet.add(matchId);
       }
-      return newSet
-    })
-  }
+      return newSet;
+    });
+  };
 
   // Get player's best match
   const getPlayerBestMatch = (playerName: string) => {
     const playerMatches = matches.filter((match) =>
       match.match_players.some((mp) => mp.players?.name === playerName)
-    )
-    
-    if (playerMatches.length === 0) return null
-    
-    let bestMatch = playerMatches[0]
-    let bestMp = bestMatch.match_players.find((mp) => mp.players?.name === playerName)!
-    
+    );
+
+    if (playerMatches.length === 0) return null;
+
+    let bestMatch = playerMatches[0];
+    let bestMp = bestMatch.match_players.find(
+      (mp) => mp.players?.name === playerName
+    )!;
+
     for (const match of playerMatches) {
-      const mp = match.match_players.find((mp) => mp.players?.name === playerName)!
+      const mp = match.match_players.find(
+        (mp) => mp.players?.name === playerName
+      )!;
       if (mp.money_won > bestMp.money_won) {
-        bestMatch = match
-        bestMp = mp
+        bestMatch = match;
+        bestMp = mp;
       }
     }
-    
+
     return {
       date: bestMatch.date,
       position: bestMp.position,
-      moneyWon: bestMp.money_won
-    }
-  }
+      moneyWon: bestMp.money_won,
+    };
+  };
 
   // Get player's worst match
   const getPlayerWorstMatch = (playerName: string) => {
     const playerMatches = matches.filter((match) =>
       match.match_players.some((mp) => mp.players?.name === playerName)
-    )
-    
-    if (playerMatches.length === 0) return null
-    
-    let worstMatch = playerMatches[0]
-    let worstMp = worstMatch.match_players.find((mp) => mp.players?.name === playerName)!
-    
+    );
+
+    if (playerMatches.length === 0) return null;
+
+    let worstMatch = playerMatches[0];
+    let worstMp = worstMatch.match_players.find(
+      (mp) => mp.players?.name === playerName
+    )!;
+
     for (const match of playerMatches) {
-      const mp = match.match_players.find((mp) => mp.players?.name === playerName)!
+      const mp = match.match_players.find(
+        (mp) => mp.players?.name === playerName
+      )!;
       if (mp.money_won < worstMp.money_won) {
-        worstMatch = match
-        worstMp = mp
+        worstMatch = match;
+        worstMp = mp;
       }
     }
-    
+
     return {
       date: worstMatch.date,
       position: worstMp.position,
-      moneyWon: worstMp.money_won
-    }
-  }
+      moneyWon: worstMp.money_won,
+    };
+  };
 
   // Get sorted player stats based on current sort criteria
   const getSortedPlayerStats = () => {
     return [...playerStats]
-      .filter(player => player.matches > 0) // Only show players who have played matches
+      .filter((player) => player.matches > 0) // Only show players who have played matches
       .sort((a, b) => {
         if (rankingSortBy === "points") {
-          return b.points - a.points
+          return b.points - a.points;
         } else {
-          return b.moneyWon - a.moneyWon
+          return b.moneyWon - a.moneyWon;
         }
-      })
-  }
+      });
+  };
 
   const tabs = [
     { id: "ranking", label: "Ranking Anual" },
     { id: "partidas", label: "Partidas" },
     { id: "estadisticas", label: "Estadísticas" },
     { id: "reglas", label: "Reglas" },
-  ]
+  ];
 
   if (loading && matches.length === 0 && activeMatches.length === 0) {
     return (
@@ -513,7 +603,7 @@ function LaCajitaPoker() {
           )}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -528,8 +618,6 @@ function LaCajitaPoker() {
           </div>
         </div>
       </div>
-
-
 
       <div className="container mx-auto px-4 py-8">
         {error && (
@@ -587,7 +675,8 @@ function LaCajitaPoker() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  ¿Estás seguro de que quieres eliminar esta partida? Esta acción no se puede deshacer.
+                  ¿Estás seguro de que quieres eliminar esta partida? Esta
+                  acción no se puede deshacer.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <Button
@@ -615,7 +704,7 @@ function LaCajitaPoker() {
         {/* Ranking Anual Tab */}
         {activeTab === "ranking" && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-center">Tabla Anual</h2>                      
+            <h2 className="text-2xl font-bold text-center">Tabla Anual</h2>
 
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -625,9 +714,15 @@ function LaCajitaPoker() {
                     <th className="py-2 px-2 text-left">Jugador</th>
                     <th className="py-2 px-2 text-center">Puntos</th>
                     <th className="py-2 px-2 text-center">Dinero Ganado</th>
-                    <th className="py-2 px-2 text-center hidden md:table-cell">Partidas</th>
-                    <th className="py-2 px-2 text-center hidden md:table-cell">Cajitas</th>                      
-                    <th className="py-2 px-2 text-center hidden md:table-cell">Promedio/Partida</th>
+                    <th className="py-2 px-2 text-center hidden md:table-cell">
+                      Partidas
+                    </th>
+                    <th className="py-2 px-2 text-center hidden md:table-cell">
+                      Cajitas
+                    </th>
+                    <th className="py-2 px-2 text-center hidden md:table-cell">
+                      Promedio/Partida
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -635,49 +730,103 @@ function LaCajitaPoker() {
                     <tr
                       key={player.id}
                       className={`border-b ${
-                        theme === 'dark' 
-                          ? (index === 0 ? "bg-yellow-800/40" :
-                             index === 1 ? "bg-slate-600/50" :
-                             index === 2 ? "bg-orange-800/40" : "")
-                          : (index === 0 ? "bg-amber-50" :
-                             index === 1 ? "bg-zinc-100" :
-                             index === 2 ? "bg-orange-50" : "")
+                        theme === "dark"
+                          ? index === 0
+                            ? "bg-yellow-800/40"
+                            : index === 1
+                            ? "bg-slate-600/50"
+                            : index === 2
+                            ? "bg-orange-800/40"
+                            : ""
+                          : index === 0
+                          ? "bg-amber-100"
+                          : index === 1
+                          ? "bg-zinc-200"
+                          : index === 2
+                          ? "bg-orange-100"
+                          : ""
                       }`}
                     >
                       <td className="py-2 px-2">
                         <div className="flex items-center gap-1">
-                          <span className={`font-semibold text-sm ${
-                            theme === 'dark'
-                              ? (index === 0 ? "text-yellow-400" :
-                                 index === 1 ? "text-slate-300" :
-                                 index === 2 ? "text-orange-400" : "")
-                              : (index === 0 ? "text-yellow-600" :
-                                 index === 1 ? "text-gray-600" :
-                                 index === 2 ? "text-orange-600" : "")
-                          }`}>{index + 1}</span>
-                          {index === 0 && <Trophy className={`w-4 h-4 ${
-                            theme === 'dark' ? "text-yellow-400" : "text-yellow-600"
-                          }`} />}
-                          {index === 1 && <Medal className={`w-4 h-4 ${
-                            theme === 'dark' ? "text-slate-300" : "text-gray-600"
-                          }`} />}
-                          {index === 2 && <Award className={`w-4 h-4 ${
-                            theme === 'dark' ? "text-orange-400" : "text-orange-600"
-                          }`} />}                            
+                          <span
+                            className={`font-semibold text-sm ${
+                              theme === "dark"
+                                ? index === 0
+                                  ? "text-yellow-400"
+                                  : index === 1
+                                  ? "text-slate-300"
+                                  : index === 2
+                                  ? "text-orange-400"
+                                  : ""
+                                : index === 0
+                                ? "text-yellow-600"
+                                : index === 1
+                                ? "text-gray-600"
+                                : index === 2
+                                ? "text-orange-600"
+                                : ""
+                            }`}
+                          >
+                            {index + 1}
+                          </span>
+                          {index === 0 && (
+                            <Trophy
+                              className={`w-4 h-4 ${
+                                theme === "dark"
+                                  ? "text-yellow-400"
+                                  : "text-yellow-600"
+                              }`}
+                            />
+                          )}
+                          {index === 1 && (
+                            <Medal
+                              className={`w-4 h-4 ${
+                                theme === "dark"
+                                  ? "text-slate-300"
+                                  : "text-gray-600"
+                              }`}
+                            />
+                          )}
+                          {index === 2 && (
+                            <Award
+                              className={`w-4 h-4 ${
+                                theme === "dark"
+                                  ? "text-orange-400"
+                                  : "text-orange-600"
+                              }`}
+                            />
+                          )}
                         </div>
                       </td>
-                      <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>
-                      <td className="py-3 px-2 text-center font-bold text-sm">{player.points}</td>
-                      <td className={`py-3 px-2 text-center font-semibold text-sm ${
-                        player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
-                      }`}>
+                      <td className="py-3 px-2 font-semibold text-sm">
+                        {player.name}
+                      </td>
+                      <td className="py-3 px-2 text-center font-bold text-sm">
+                        {player.points}
+                      </td>
+                      <td
+                        className={`py-3 px-2 text-center font-semibold text-sm ${
+                          player.moneyWon >= 0
+                            ? "text-emerald-500"
+                            : "text-rose-500"
+                        }`}
+                      >
                         ${player.moneyWon.toLocaleString()}
                       </td>
-                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.matches}</td>
-                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">{player.cajitas}</td>                        
-                      <td className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
-                        player.averagePerMatch >= 0 ? "text-emerald-500" : "text-rose-500"
-                      }`}>
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                        {player.matches}
+                      </td>
+                      <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                        {player.cajitas}
+                      </td>
+                      <td
+                        className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
+                          player.averagePerMatch >= 0
+                            ? "text-emerald-500"
+                            : "text-rose-500"
+                        }`}
+                      >
                         ${Math.round(player.averagePerMatch).toLocaleString()}
                       </td>
                     </tr>
@@ -688,15 +837,25 @@ function LaCajitaPoker() {
 
             {/* Sort Toggle Switch */}
             <div className="flex items-center justify-center gap-4">
-              <span className={`text-sm font-medium ${rankingSortBy === "money" ? "" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm font-medium ${
+                  rankingSortBy === "money" ? "" : "text-muted-foreground"
+                }`}
+              >
                 Puntos
               </span>
               <Switch
                 checked={rankingSortBy === "money"}
-                onCheckedChange={(checked) => setRankingSortBy(checked ? "money" : "points")}
+                onCheckedChange={(checked) =>
+                  setRankingSortBy(checked ? "money" : "points")
+                }
                 aria-label="Cambiar orden de ranking"
               />
-              <span className={`text-sm font-medium ${rankingSortBy === "points" ? "" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm font-medium ${
+                  rankingSortBy === "points" ? "" : "text-muted-foreground"
+                }`}
+              >
                 Dinero
               </span>
             </div>
@@ -714,11 +873,8 @@ function LaCajitaPoker() {
                     <CardTitle className="text-2xl">
                       Partidas ({activeMatches.length})
                     </CardTitle>
-                    <div className="flex gap-2">                      
-                      <Button
-                        onClick={createNewActiveMatch}
-                        disabled={loading}
-                      >
+                    <div className="flex gap-2">
+                      <Button onClick={createNewActiveMatch} disabled={loading}>
                         {loading ? (
                           <Loader2 className="w-4 h-4 animate-spin mr-1" />
                         ) : (
@@ -736,21 +892,25 @@ function LaCajitaPoker() {
                     ) : (
                       <div className="space-y-4">
                         {activeMatches.map((match) => {
-                          const playersWithNames = match.players.filter((p) => p.name.trim() !== "")
+                          const playersWithNames = match.players.filter(
+                            (p) => p.name.trim() !== ""
+                          );
                           const totalInvestment = match.players.reduce(
                             (sum, p) => sum + p.cajitas * match.caji_value,
-                            0,
-                          )
+                            0
+                          );
                           const isComplete =
                             playersWithNames.length === match.player_count &&
-                            playersWithNames.every((p) => p.finalChips > 0)
+                            playersWithNames.every((p) => p.finalChips > 0);
 
                           return (
                             <Card key={match.id}>
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-start mb-3">
                                   <div className="flex flex-col gap-2">
-                                    <div className="text-lg font-semibold">{match.date}</div>
+                                    <div className="text-lg font-semibold">
+                                      {match.date}
+                                    </div>
                                     {/*
                                     <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
                                       isComplete ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
@@ -759,7 +919,8 @@ function LaCajitaPoker() {
                                     </div>
                                     */}
                                     <div className="text-sm text-muted-foreground">
-                                      {playersWithNames.length}/{match.player_count} jugadores - $
+                                      {playersWithNames.length}/
+                                      {match.player_count} jugadores - $
                                       {totalInvestment.toLocaleString()}
                                     </div>
                                     {/*
@@ -780,7 +941,9 @@ function LaCajitaPoker() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => deleteActiveMatch(match.id)}
+                                      onClick={() =>
+                                        deleteActiveMatch(match.id)
+                                      }
                                       disabled={loading}
                                     >
                                       {loading ? (
@@ -803,13 +966,19 @@ function LaCajitaPoker() {
                                           <div className="w-6 h-6 rounded-full bg-muted-foreground flex items-center justify-center text-xs font-bold text-muted">
                                             {index + 1}
                                           </div>
-                                          <span className="text-sm">{player.name}</span>
+                                          <span className="text-sm">
+                                            {player.name}
+                                          </span>
                                         </div>
-                                        <span className={`text-sm font-semibold ${
-                                          player.finalChips > 0 
-                                            ? (player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500")
-                                            : ""
-                                        }`}>
+                                        <span
+                                          className={`text-sm font-semibold ${
+                                            player.finalChips > 0
+                                              ? player.moneyWon >= 0
+                                                ? "text-emerald-500"
+                                                : "text-rose-500"
+                                              : ""
+                                          }`}
+                                        >
                                           {/*{player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}*/}
                                           {`$${player.moneyWon.toLocaleString()}`}
                                         </span>
@@ -819,7 +988,7 @@ function LaCajitaPoker() {
                                 )}
                               </CardContent>
                             </Card>
-                          )
+                          );
                         })}
                       </div>
                     )}
@@ -835,8 +1004,8 @@ function LaCajitaPoker() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setShowRegisterForm(false)
-                        setEditingMatchId(null)
+                        setShowRegisterForm(false);
+                        setEditingMatchId(null);
                       }}
                     >
                       <ArrowLeft className="w-4 h-4" />
@@ -849,44 +1018,50 @@ function LaCajitaPoker() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="date">
-                        Fecha
-                      </Label>
+                      <Label htmlFor="date">Fecha</Label>
                       <Input
                         id="date"
                         type="date"
                         value={formData.date}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            date: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cajiValue">
-                        Valor de una Cajita
-                      </Label>
+                      <Label htmlFor="cajiValue">Valor de una Cajita</Label>
                       <Input
                         id="cajiValue"
                         type="number"
                         value={formData.cajiValue}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, cajiValue: Number(e.target.value) }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            cajiValue: Number(e.target.value),
+                          }))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="playerCount">
-                        Número de Jugadores
-                      </Label>
+                      <Label htmlFor="playerCount">Número de Jugadores</Label>
                       <Select
                         value={formData.playerCount.toString()}
-                        onValueChange={(value) => setFormData((prev) => ({ ...prev, playerCount: Number(value) }))}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            playerCount: Number(value),
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {[4, 5, 6, 7, 8].map((count) => (
-                            <SelectItem
-                              key={count}
-                              value={count.toString()}
-                            >
+                            <SelectItem key={count} value={count.toString()}>
                               {count} jugadores
                             </SelectItem>
                           ))}
@@ -907,7 +1082,9 @@ function LaCajitaPoker() {
                                 <div className="flex gap-2">
                                   <Input
                                     value={newPlayerName}
-                                    onChange={(e) => setNewPlayerName(e.target.value)}
+                                    onChange={(e) =>
+                                      setNewPlayerName(e.target.value)
+                                    }
                                     placeholder="Nombre del nuevo jugador"
                                   />
                                   <Button
@@ -923,8 +1100,8 @@ function LaCajitaPoker() {
                                   </Button>
                                   <Button
                                     onClick={() => {
-                                      setShowNewPlayerInput(null)
-                                      setNewPlayerName("")
+                                      setShowNewPlayerInput(null);
+                                      setNewPlayerName("");
                                     }}
                                     size="sm"
                                     variant="outline"
@@ -938,9 +1115,9 @@ function LaCajitaPoker() {
                                     value={player.name}
                                     onValueChange={(value) => {
                                       if (value === "new") {
-                                        setShowNewPlayerInput(index)
+                                        setShowNewPlayerInput(index);
                                       } else {
-                                        updatePlayerMoney(index, "name", value)
+                                        updatePlayerMoney(index, "name", value);
                                       }
                                     }}
                                   >
@@ -952,20 +1129,17 @@ function LaCajitaPoker() {
                                         .filter(
                                           (p) =>
                                             !formData.players.some(
-                                              (fp, fpIndex) => fpIndex !== index && fp.name === p.name,
-                                            ),
+                                              (fp, fpIndex) =>
+                                                fpIndex !== index &&
+                                                fp.name === p.name
+                                            )
                                         )
                                         .map((p) => (
-                                          <SelectItem
-                                            key={p.id}
-                                            value={p.name}
-                                          >
+                                          <SelectItem key={p.id} value={p.name}>
                                             {p.name}
                                           </SelectItem>
                                         ))}
-                                      <SelectItem
-                                        value="new"
-                                      >
+                                      <SelectItem value="new">
                                         + Crear nuevo jugador
                                       </SelectItem>
                                     </SelectContent>
@@ -982,9 +1156,22 @@ function LaCajitaPoker() {
                                   pattern="[0-9]*"
                                   value={player.cajitas.toString()}
                                   onChange={(e) => {
-                                    const value = e.target.value.replace(/[^0-9]/g, "")
-                                    if (value === "" || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 999)) {
-                                      updatePlayerMoney(index, "cajitas", value === "" ? 1 : Number.parseInt(value))
+                                    const value = e.target.value.replace(
+                                      /[^0-9]/g,
+                                      ""
+                                    );
+                                    if (
+                                      value === "" ||
+                                      (Number.parseInt(value) >= 1 &&
+                                        Number.parseInt(value) <= 999)
+                                    ) {
+                                      updatePlayerMoney(
+                                        index,
+                                        "cajitas",
+                                        value === ""
+                                          ? 1
+                                          : Number.parseInt(value)
+                                      );
                                     }
                                   }}
                                   onFocus={(e) => e.target.select()}
@@ -999,10 +1186,21 @@ function LaCajitaPoker() {
                                   type="text"
                                   inputMode="numeric"
                                   pattern="[0-9]*"
-                                  value={player.finalChips === 0 ? "" : player.finalChips.toString()}
+                                  value={
+                                    player.finalChips === 0
+                                      ? ""
+                                      : player.finalChips.toString()
+                                  }
                                   onChange={(e) => {
-                                    const value = e.target.value.replace(/[^0-9]/g, "")
-                                    updatePlayerMoney(index, "finalChips", value === "" ? 0 : Number.parseInt(value))
+                                    const value = e.target.value.replace(
+                                      /[^0-9]/g,
+                                      ""
+                                    );
+                                    updatePlayerMoney(
+                                      index,
+                                      "finalChips",
+                                      value === "" ? 0 : Number.parseInt(value)
+                                    );
                                   }}
                                   onFocus={(e) => e.target.select()}
                                   className="text-center"
@@ -1013,9 +1211,13 @@ function LaCajitaPoker() {
                             </div>
                             <div className="flex items-center justify-between">
                               <Label>Dinero Ganado/Perdido</Label>
-                              <div className={`p-2 rounded text-center font-semibold ${
-                                player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
-                              }`}>
+                              <div
+                                className={`p-2 rounded text-center font-semibold ${
+                                  player.moneyWon >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500"
+                                }`}
+                              >
                                 ${player.moneyWon.toLocaleString()}
                               </div>
                             </div>
@@ -1026,22 +1228,39 @@ function LaCajitaPoker() {
                   </div>
 
                   <Card
-                    className={`border-2 ${validateBalance() ? "border-emerald-500" : "border-rose-500"}`}
+                    className={`border-2 ${
+                      validateBalance()
+                        ? "border-emerald-500"
+                        : "border-rose-500"
+                    }`}
                   >
                     <CardContent className="p-4">
                       <div className="text-center">
-                        <div className={`text-lg font-semibold ${validateBalance() ? "text-emerald-600" : "text-rose-600"}`}>
-                          {validateBalance() ? "✅ Balance Correcto" : "❌ Balance Incorrecto"}
+                        <div
+                          className={`text-lg font-semibold ${
+                            validateBalance()
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {validateBalance()
+                            ? "✅ Balance Correcto"
+                            : "❌ Balance Incorrecto"}
                         </div>
                         <div className="text-sm text-muted-foreground mt-2">
                           Total Invertido: $
                           {formData.players
-                            .reduce((sum, p) => sum + p.cajitas * formData.cajiValue, 0)
+                            .reduce(
+                              (sum, p) => sum + p.cajitas * formData.cajiValue,
+                              0
+                            )
                             .toLocaleString()}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Total Fichas Finales: $
-                          {formData.players.reduce((sum, p) => sum + p.finalChips, 0).toLocaleString()}
+                          {formData.players
+                            .reduce((sum, p) => sum + p.finalChips, 0)
+                            .toLocaleString()}
                         </div>
                       </div>
                     </CardContent>
@@ -1050,8 +1269,8 @@ function LaCajitaPoker() {
                   <div className="flex gap-3">
                     <Button
                       onClick={() => {
-                        setShowRegisterForm(false)
-                        setEditingMatchId(null)
+                        setShowRegisterForm(false);
+                        setEditingMatchId(null);
                       }}
                       variant="outline"
                       className="flex-1"
@@ -1060,7 +1279,11 @@ function LaCajitaPoker() {
                     </Button>
                     <Button
                       onClick={registerMatch}
-                      disabled={!validateBalance() || formData.players.some((p) => !p.name) || loading}
+                      disabled={
+                        !validateBalance() ||
+                        formData.players.some((p) => !p.name) ||
+                        loading
+                      }
                       className="flex-1"
                     >
                       {loading ? (
@@ -1080,33 +1303,44 @@ function LaCajitaPoker() {
             {/* Historial de Partidas */}
             <Card className="border-0">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-2xl">Historial de Partidas</CardTitle>
+                <CardTitle className="text-2xl">
+                  Historial de Partidas
+                </CardTitle>
                 <Button
-                        onClick={refreshData}
-                        disabled={loading}
-                        variant="outline"
-                        size="sm"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                      </Button>
+                  onClick={refreshData}
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="max-h-200 overflow-y-auto space-y-4 custom-scrollbar">
                   {matches.map((match) => {
-                    const isExpanded = expandedMatches.has(match.id)
-                    const winner = match.match_players.find(mp => mp.position === 1)
-                    
+                    const isExpanded = expandedMatches.has(match.id);
+                    const winner = match.match_players.find(
+                      (mp) => mp.position === 1
+                    );
+
                     return (
                       <Card key={match.id}>
                         <CardContent className="p-4">
-                          <div 
+                          <div
                             className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
                             onClick={() => toggleMatchExpansion(match.id)}
                           >
                             <div className="flex-1">
-                              <div className="text-lg font-semibold">{match.date}</div>
+                              <div className="text-lg font-semibold">
+                                {match.date}
+                              </div>
                               <div className="text-sm text-muted-foreground">
-                                {match.player_count} jugadores - ${match.total_money.toLocaleString()}
+                                {match.player_count} jugadores - $
+                                {match.total_money.toLocaleString()}
                               </div>
                               {winner && (
                                 <div className="text-sm mt-1">
@@ -1122,49 +1356,65 @@ function LaCajitaPoker() {
                               )}
                             </div>
                           </div>
-                          
+
                           {isExpanded && (
                             <div className="mt-4 space-y-3">
                               <div className="flex justify-between items-center">
                                 <div className="text-sm">
-                                  Dinero total jugado: <span className="font-semibold">${match.total_money.toLocaleString()}</span>
+                                  Dinero total jugado:{" "}
+                                  <span className="font-semibold">
+                                    ${match.total_money.toLocaleString()}
+                                  </span>
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={(e) => {
-                                    e.stopPropagation()
-                                    confirmDeleteMatch(match.id)
+                                    e.stopPropagation();
+                                    confirmDeleteMatch(match.id);
                                   }}
                                   disabled={loading}
                                 >
-                                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                  {loading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                                 {match.match_players
                                   .sort((a, b) => a.position - b.position)
                                   .map((mp) => (
-                                    <div key={mp.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                    <div
+                                      key={mp.id}
+                                      className="flex items-center justify-between p-2 bg-muted rounded"
+                                    >
                                       <div className="flex items-center gap-2">
                                         <div
                                           className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                             mp.position === 1
                                               ? "bg-yellow-500 text-black"
                                               : mp.position === 2
-                                                ? "bg-slate-400 text-black"
-                                                : mp.position === 3
-                                                  ? "bg-orange-500 text-black"
-                                                  : "bg-muted-foreground text-muted"
+                                              ? "bg-slate-400 text-black"
+                                              : mp.position === 3
+                                              ? "bg-orange-500 text-black"
+                                              : "bg-muted-foreground text-muted"
                                           }`}
                                         >
                                           {mp.position}
                                         </div>
-                                        <span className="text-sm">{mp.players?.name}</span>
+                                        <span className="text-sm">
+                                          {mp.players?.name}
+                                        </span>
                                       </div>
-                                      <span className={`text-sm font-semibold ${
-                                        mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
-                                      }`}>
+                                      <span
+                                        className={`text-sm font-semibold ${
+                                          mp.money_won >= 0
+                                            ? "text-emerald-500"
+                                            : "text-rose-500"
+                                        }`}
+                                      >
                                         ${mp.money_won.toLocaleString()}
                                       </span>
                                     </div>
@@ -1174,7 +1424,7 @@ function LaCajitaPoker() {
                           )}
                         </CardContent>
                       </Card>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -1187,82 +1437,119 @@ function LaCajitaPoker() {
           <div className="space-y-6">
             {/* Análisis Individual */}
             <div className="space-y-4">
-              {playerStats.filter(player => player.matches > 0).map((player) => (
-                <Card key={player.id}>
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="text-xl font-light">{player.name}</div>
-                      <div className="text-xl font-semibold">${player.moneyWon.toLocaleString()}</div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center">
-                          <Award className="w-8 h-8 mx-auto mb-2" />
-                          <div className="text-xl font-bold">{player.points}</div>
-                          <div className="text-xs text-muted-foreground">Puntos</div>
+              {playerStats
+                .filter((player) => player.matches > 0)
+                .map((player) => (
+                  <Card key={player.id}>
+                    <CardContent className="p-5 flex flex-col gap-2">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="text-2xl font-light">{player.name}</div>
+                        <div className="text-xl font-semibold">
+                          ${player.moneyWon.toLocaleString()}
                         </div>
-                      <div className="text-center">
-                        <Cannabis className="w-8 h-8 mx-auto mb-2" />
-                        <div className="text-xl font-bold">{player.matches}</div>
-                        <div className="text-xs text-muted-foreground">Partidas</div>
                       </div>
-                      <div className="text-center">
-                        <Coins className="w-8 h-8 mx-auto mb-2" />
-                        <div className="text-xl font-bold">{player.cajitas}</div>
-                        <div className="text-xs text-muted-foreground">Cajitas</div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {getPlayerBestMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-emerald-300 bg-emerald-100/10 rounded-lg">
-                          <div className="flex items-center justify-between mb-2 w-full">
-                            <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-emerald-600" />
-                              <span className="text-sm text-emerald-600 font-semibold">P{getPlayerBestMatch(player.name)?.position}</span>
-                            </div>
-                            <div className="text-sm text-emerald-600 font-semibold">${getPlayerBestMatch(player.name)?.moneyWon.toLocaleString()}</div>
 
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="text-center">
+                          <Award className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-xl font-bold">
+                            {player.points}
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">{getPlayerBestMatch(player.name)?.date}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Puntos
                           </div>
                         </div>
-                      )}
-                      {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 border border-rose-300 bg-rose-100/10 rounded-lg">
-                          <div className="flex items-center justify-between mb-2 w-full">
-                            <div className="flex items-center gap-2">
-                              <TrendingDown className="w-4 h-4 text-rose-500" />
-                              <span className="text-sm text-rose-500 font-semibold">P{getPlayerWorstMatch(player.name)?.position}</span>
+                        <div className="text-center">
+                          <Cannabis className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-xl font-bold">
+                            {player.matches}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Partidas
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <Coins className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-xl font-bold">
+                            {player.cajitas}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Cajitas
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {getPlayerBestMatch(player.name) && (
+                          <div className="flex flex-col items-center p-2 bg-emerald-800/30 rounded-lg">
+                            <div className="flex items-center justify-between mb-2 w-full">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                                <span className="text-sm text-emerald-600 font-semibold">
+                                  P{getPlayerBestMatch(player.name)?.position}
+                                </span>
+                              </div>
+                              <div className="text-sm text-emerald-600 font-semibold">
+                                $
+                                {getPlayerBestMatch(
+                                  player.name
+                                )?.moneyWon.toLocaleString()}
+                              </div>
                             </div>
-                            <div className="text-sm text-rose-500 font-semibold">${getPlayerWorstMatch(player.name)?.moneyWon.toLocaleString()}</div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs text-emerald-50/50">
+                                {getPlayerBestMatch(player.name)?.date}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-muted-foreground">{getPlayerWorstMatch(player.name)?.date}</div>
+                        )}
+                        {getPlayerWorstMatch(player.name) && (
+                          <div className="flex flex-col items-center p-2 bg-rose-800/30 rounded-lg">
+                            <div className="flex items-center justify-between mb-2 w-full">
+                              <div className="flex items-center gap-2">
+                                <TrendingDown className="w-4 h-4 text-rose-500" />
+                                <span className="text-sm text-rose-500 font-semibold">
+                                  P{getPlayerWorstMatch(player.name)?.position}
+                                </span>
+                              </div>
+                              <div className="text-sm text-rose-500 font-semibold">
+                                $
+                                {getPlayerWorstMatch(
+                                  player.name
+                                )?.moneyWon.toLocaleString()}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs text-rose-50/50">
+                                {getPlayerWorstMatch(player.name)?.date}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between">
                         <span className="text-sm">Últimas 5 partidas</span>
                         <div className="flex gap-1">
-                          {getPlayerLastMatches(player.name).slice(0, 5).map((match, index) => (
-                            <div
-                              key={index}
-                              className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
-                                match.moneyWon >= 0 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
-                              }`}
-                            >
-                              {match.position}
-                            </div>
-                          ))}
+                          {getPlayerLastMatches(player.name)
+                            .slice(0, 5)
+                            .map((match, index) => (
+                              <div
+                                key={index}
+                                className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
+                                  match.moneyWon >= 0
+                                    ? "bg-emerald-500 text-white"
+                                    : "bg-rose-500 text-white"
+                                }`}
+                              >
+                                {match.position}
+                              </div>
+                            ))}
                         </div>
                       </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
 
             {/* Evolución de Puntos */}
@@ -1272,7 +1559,9 @@ function LaCajitaPoker() {
                 onClick={() => setShowEvolutionChart(!showEvolutionChart)}
               >
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-2xl">Evolución de Puntos</CardTitle>
+                  <CardTitle className="text-2xl">
+                    Evolución de Puntos
+                  </CardTitle>
                   {showEvolutionChart ? (
                     <ChevronUp className="w-6 h-6" />
                   ) : (
@@ -1283,38 +1572,49 @@ function LaCajitaPoker() {
               {showEvolutionChart && (
                 <CardContent>
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3">Seleccionar Jugadores</h3>
+                    <h3 className="text-lg font-semibold mb-3">
+                      Seleccionar Jugadores
+                    </h3>
                     <div className="flex flex-wrap gap-3">
-                      {playerStats.filter(player => player.matches > 0).map((player, index) => (
-                        <div key={player.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={player.id}
-                            checked={selectedPlayers.includes(player.name)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedPlayers((prev) => [...prev, player.name])
-                              } else {
-                                setSelectedPlayers((prev) => prev.filter((p) => p !== player.name))
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={player.id}
-                            className="cursor-pointer"
-                            
+                      {playerStats
+                        .filter((player) => player.matches > 0)
+                        .map((player, index) => (
+                          <div
+                            key={player.id}
+                            className="flex items-center space-x-2"
                           >
-                            {player.name}
-                          </Label>
-                        </div>
-                      ))}
+                            <Checkbox
+                              id={player.id}
+                              checked={selectedPlayers.includes(player.name)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedPlayers((prev) => [
+                                    ...prev,
+                                    player.name,
+                                  ]);
+                                } else {
+                                  setSelectedPlayers((prev) =>
+                                    prev.filter((p) => p !== player.name)
+                                  );
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={player.id}
+                              className="cursor-pointer"
+                            >
+                              {player.name}
+                            </Label>
+                          </div>
+                        ))}
                     </div>
                   </div>
 
                   {selectedPlayers.length > 0 && (
                     <div className="h-96 mb-6">
                       {(() => {
-                        const fg = getHslColor("--foreground")
-                        const grid = getHslColor("--border")
+                        const fg = getHslColor("--foreground");
+                        const grid = getHslColor("--border");
                         return (
                           <Line
                             data={getChartData()}
@@ -1338,7 +1638,7 @@ function LaCajitaPoker() {
                               },
                             }}
                           />
-                        )
+                        );
                       })()}
                     </div>
                   )}
@@ -1348,12 +1648,9 @@ function LaCajitaPoker() {
           </div>
         )}
 
-
-
         {/* Reglas Tab */}
         {activeTab === "reglas" && (
           <div className="space-y-6">
-            
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">Configuración</CardTitle>
@@ -1363,11 +1660,15 @@ function LaCajitaPoker() {
                   <span className="text-sm">☀️</span>
                   <Switch
                     checked={theme === "dark"}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    onCheckedChange={(checked) =>
+                      setTheme(checked ? "dark" : "light")
+                    }
                     aria-label="Cambiar tema"
                   />
                   <span className="text-sm">🌙</span>
-                  <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
+                  <span className="ml-2 text-sm">
+                    Tema {theme === "dark" ? "oscuro" : "claro"}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -1378,20 +1679,28 @@ function LaCajitaPoker() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  <li>• Los puntos se asignan según la posición final en cada partida</li>
+                  <li>
+                    • Los puntos se asignan según la posición final en cada
+                    partida
+                  </li>
                   <li>
                     •{" "}
                     <strong>
-                      Las posiciones se determinan por dinero ganado neto (de mayor a menor)
+                      Las posiciones se determinan por dinero ganado neto (de
+                      mayor a menor)
                     </strong>
                   </li>
                   <li>
                     •{" "}
                     <strong>
-                      En caso de empate en dinero ganado, gana quien pidió menos cajitas
+                      En caso de empate en dinero ganado, gana quien pidió menos
+                      cajitas
                     </strong>
                   </li>
-                  <li>• En caso de empate en puntos del ranking anual, gana quien tenga más dinero ganado total</li>
+                  <li>
+                    • En caso de empate en puntos del ranking anual, gana quien
+                    tenga más dinero ganado total
+                  </li>
                 </ul>
               </CardContent>
             </Card>
@@ -1412,7 +1721,9 @@ function LaCajitaPoker() {
                     <tbody>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
                         <tr key={position} className="border-b">
-                          <td className="py-3 px-4 font-semibold">{position}°</td>
+                          <td className="py-3 px-4 font-semibold">
+                            {position}°
+                          </td>
                           <td className="py-3 px-4 font-bold text-lg">
                             {POINTS_DISTRIBUTION[position - 1]}
                           </td>
@@ -1422,7 +1733,7 @@ function LaCajitaPoker() {
                   </table>
                 </div>
               </CardContent>
-            </Card>            
+            </Card>
           </div>
         )}
       </div>
@@ -1434,13 +1745,13 @@ function LaCajitaPoker() {
             <button
               key={tab.id}
               onClick={() => {
-                setActiveTab(tab.id)
-                setShowRegisterForm(false)
-                setEditingMatchId(null)
+                setActiveTab(tab.id);
+                setShowRegisterForm(false);
+                setEditingMatchId(null);
               }}
               className={`flex items-center justify-center w-32 h-full transition-all duration-200 ${
                 activeTab === tab.id
-                  ? "bg-primary/10"
+                  ? "bg-primary/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
@@ -1457,7 +1768,7 @@ function LaCajitaPoker() {
       <PWAInstall />
       <OfflineIndicator />
     </div>
-  )
+  );
 }
 
 export default function Page() {
@@ -1474,5 +1785,5 @@ export default function Page() {
     >
       <LaCajitaPoker />
     </Suspense>
-  )
+  );
 }
