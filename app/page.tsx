@@ -972,11 +972,9 @@ function LaCajitaPoker() {
                                         </div>
                                         <span
                                           className={`text-sm font-semibold ${
-                                            player.finalChips > 0
-                                              ? player.moneyWon >= 0
-                                                ? "text-emerald-500"
-                                                : "text-rose-500"
-                                              : ""
+                                            player.moneyWon >= 0
+                                              ? "text-emerald-500"
+                                              : "text-rose-500"
                                           }`}
                                         >
                                           {/*{player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}*/}
