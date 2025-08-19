@@ -1,6 +1,6 @@
 import { supabase, type Player, type MatchWithPlayers, type PlayerStats } from "./supabase"
 
-const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4]
+const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]
 
 export class DatabaseService {
   // Player operations
@@ -451,6 +451,57 @@ export class DatabaseService {
     } catch (err) {
       console.error("❌ Database connection test error:", err)
       return false
+    }
+  }
+
+  // Función temporal para actualizar el sistema de puntos
+  static async updatePointsSystem(): Promise<void> {
+    console.log("🔄 Iniciando actualización del sistema de puntos...")
+    
+    try {
+      // Obtener todas las partidas
+      const { data: matches, error: matchesError } = await supabase
+        .from("matches")
+        .select("id")
+        .order("date")
+
+      if (matchesError) throw matchesError
+
+      for (const match of matches || []) {
+        console.log(`🔄 Procesando partida: ${match.id}`)
+        
+        // Obtener jugadores de la partida ordenados por dinero ganado (desc) y cajitas (asc)
+        const { data: players, error: playersError } = await supabase
+          .from("match_players")
+          .select("*")
+          .eq("match_id", match.id)
+          .order("money_won", { ascending: false })
+          .order("cajitas", { ascending: true })
+
+        if (playersError) throw playersError
+
+        // Actualizar posición y puntos de cada jugador
+        for (let i = 0; i < (players || []).length; i++) {
+          const player = players![i]
+          const newPosition = i + 1
+          const newPoints = POINTS_DISTRIBUTION[i] || 0
+
+          const { error: updateError } = await supabase
+            .from("match_players")
+            .update({ 
+              position: newPosition, 
+              points: newPoints 
+            })
+            .eq("id", player.id)
+
+          if (updateError) throw updateError
+        }
+      }
+
+      console.log("✅ Actualización del sistema de puntos completada!")
+    } catch (error) {
+      console.error("❌ Error actualizando sistema de puntos:", error)
+      throw error
     }
   }
 }

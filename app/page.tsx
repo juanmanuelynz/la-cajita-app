@@ -74,7 +74,7 @@ interface FormPlayer {
   moneyWon: number;
 }
 
-const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4];
+const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0];
 const PLAYER_COLORS = [
   "#ff6b6b",
   "#4ecdc4",
@@ -1663,7 +1663,7 @@ function LaCajitaPoker() {
               <CardHeader>
                 <CardTitle className="text-xl">Configuración</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">☀️</span>
                   <Switch
@@ -1678,6 +1678,44 @@ function LaCajitaPoker() {
                     Tema {theme === "dark" ? "oscuro" : "claro"}
                   </span>
                 </div>
+
+                {/* Botón temporal para actualizar sistema de puntos */}
+                {/*
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={async () => {
+                      if (confirm("¿Estás seguro de que quieres actualizar el sistema de puntos? Esto recalculará todos los puntos de las partidas pasadas.")) {
+                        setLoading(true);
+                        try {
+                          await DatabaseService.updatePointsSystem();
+                          await loadAllData(); // Recargar datos
+                          alert("¡Sistema de puntos actualizado correctamente!");
+                        } catch (error) {
+                          console.error(error);
+                          alert("Error al actualizar el sistema de puntos");
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Actualizando...
+                      </>
+                    ) : (
+                      "Actualizar Sistema de Puntos"
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Recalcula todos los puntos con el nuevo sistema: 1º=10, 2º=7, 3º=5, 4º=3, 5º=2, 6º=1, 7º=0, 8º=0
+                  </p>
+                </div>
+                */}
               </CardContent>
             </Card>
 

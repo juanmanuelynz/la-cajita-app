@@ -115,7 +115,7 @@ export default function EditActiveMatchPage() {
   const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const POINTS_DISTRIBUTION = [25, 18, 15, 12, 10, 8, 6, 4];
+  const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0];
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
