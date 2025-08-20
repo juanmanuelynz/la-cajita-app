@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Trash2,
   Trophy,
   Medal,
@@ -32,14 +38,16 @@ import {
   Coins,
   TrendingUp,
   TrendingDown,
+  HelpCircle,
 } from "lucide-react";
-import { Line } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -62,6 +70,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -604,6 +613,65 @@ function LaCajitaPoker() {
       newExpanded.add(playerId);
     }
     setExpandedPlayerCards(newExpanded);
+  };
+
+  // Función para calcular ROI por cajita para cada jugador
+  const calculateROIPerPlayer = () => {
+    const roiData: { [playerName: string]: number } = {};
+    
+    // Procesar cada partida
+    matches.forEach((match) => {
+      match.match_players.forEach((mp) => {
+        const playerName = mp.players.name;
+        if (!roiData[playerName]) {
+          roiData[playerName] = 0;
+        }
+        
+        // Calcular inversión total por cajita
+        const investment = mp.cajitas * match.caji_value;
+        // ROI = (ganancia_total / inversión_total) * 100
+        const roi = investment > 0 ? (mp.money_won / investment) * 100 : 0;
+        roiData[playerName] += roi;
+      });
+    });
+
+    // Promediar ROI por número de partidas jugadas por cada jugador
+    Object.keys(roiData).forEach((playerName) => {
+      const playerMatches = matches.filter(match => 
+        match.match_players.some(mp => mp.players.name === playerName)
+      ).length;
+      
+      if (playerMatches > 0) {
+        roiData[playerName] = roiData[playerName] / playerMatches;
+      }
+    });
+
+    // Ordenar de mayor a menor ROI
+    const sortedEntries = Object.entries(roiData)
+      .filter(([_, roi]) => !isNaN(roi))
+      .sort(([, a], [, b]) => b - a);
+
+    return Object.fromEntries(sortedEntries);
+  };
+
+  // Función para formatear datos para el gráfico de barras
+  const formatROIForBarChart = () => {
+    const roiData = calculateROIPerPlayer();
+    const labels = Object.keys(roiData);
+    const data = Object.values(roiData);
+    const backgroundColor = data.map(roi => 
+      roi >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+    );
+    const borderColor = data.map(roi => 
+      roi >= 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'
+    );
+
+    return {
+      labels,
+      data,
+      backgroundColor,
+      borderColor
+    };
   };
 
   const tabs = [
@@ -1606,6 +1674,97 @@ function LaCajitaPoker() {
                 );
               })}
             </div>
+
+            {/* ROI por Cajita */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">ROI por Cajita (%)</CardTitle>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <div className="space-y-2">
+                          <p className="font-semibold">¿Qué es el ROI?</p>
+                          <p>
+                            El <strong>ROI (Return on Investment)</strong> mide cuánto dinero ganas o pierdes por cada peso que inviertes en cajitas.
+                          </p>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>ROI positivo:</strong> Ganas más de lo que inviertes</p>
+                            <p><strong>ROI negativo:</strong> Pierdes dinero</p>
+                            <p><strong>ROI = 0%:</strong> Recuperas exactamente tu inversión</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Fórmula: (Dinero ganado / Dinero invertido) × 100
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Retorno de inversión promedio por cajita comprada
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <Bar
+                    data={{
+                      labels: formatROIForBarChart().labels,
+                      datasets: [
+                        {
+                          label: 'ROI (%)',
+                          data: formatROIForBarChart().data,
+                          backgroundColor: formatROIForBarChart().backgroundColor,
+                          borderColor: formatROIForBarChart().borderColor,
+                          borderWidth: 1,
+                        },
+                      ],
+                    }}
+                    options={{
+                      indexAxis: 'y' as const,
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) => {
+                              const value = context.parsed.x;
+                              return `ROI: ${value.toFixed(1)}%`;
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        x: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: 'ROI (%)',
+                          },
+                          ticks: {
+                            callback: function(value) {
+                              return value + '%';
+                            },
+                          },
+                        },
+                        y: {
+                          title: {
+                            display: true,
+                            text: 'Jugadores',
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Evolución de Puntos */}
             {/* 
