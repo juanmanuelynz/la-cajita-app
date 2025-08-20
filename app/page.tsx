@@ -107,6 +107,25 @@ function LaCajitaPoker() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("ranking");
+
+  // Utility function to safely format numbers with Spanish locale
+  const formatAmount = (amount: number | string | undefined | null): string => {
+    // Handle null, undefined, empty string cases
+    if (amount === null || amount === undefined || amount === '') {
+      return '0';
+    }
+    
+    // Convert to number
+    const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    // Handle NaN cases
+    if (isNaN(numValue)) {
+      return '0';
+    }
+    
+    // Format with Spanish locale
+    return numValue.toLocaleString("es-ES");
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -1146,7 +1165,7 @@ function LaCajitaPoker() {
                             : "text-rose-500"
                         }`}
                       >
-                        ${player.moneyWon.toLocaleString()}
+                        ${formatAmount(player.moneyWon)}
                       </td>
                       <td className="py-3 px-2 text-center font-bold text-sm">
                         {player.points}
@@ -1164,7 +1183,7 @@ function LaCajitaPoker() {
                             : "text-rose-500"
                         }`}
                       >
-                        ${Math.round(player.averagePerMatch).toLocaleString()}
+                        ${formatAmount(Math.round(player.averagePerMatch))}
                       </td>
                     </tr>
                   ))}
@@ -1258,7 +1277,7 @@ function LaCajitaPoker() {
                                     <div className="text-sm text-muted-foreground">
                                       {playersWithNames.length}/
                                       {match.player_count} jugadores - $
-                                      {totalInvestment.toLocaleString()}
+                                      {formatAmount(totalInvestment)}
                                     </div>
                                     {/*
                                     <div className="text-xs text-muted-foreground mt-1">
@@ -1315,7 +1334,7 @@ function LaCajitaPoker() {
                                           }`}
                                         >
                                           {/*{player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}*/}
-                                          {`$${player.moneyWon.toLocaleString()}`}
+                                          {`$${formatAmount(player.moneyWon)}`}
                                         </span>
                                       </div>
                                     ))}
@@ -1553,7 +1572,7 @@ function LaCajitaPoker() {
                                     : "text-rose-500"
                                 }`}
                               >
-                                ${player.moneyWon.toLocaleString()}
+                                ${formatAmount(player.moneyWon)}
                               </div>
                             </div>
                           </div>
@@ -1584,18 +1603,21 @@ function LaCajitaPoker() {
                         </div>
                         <div className="text-sm text-muted-foreground mt-2">
                           Total Invertido: $
-                          {formData.players
-                            .reduce(
+                          {formatAmount(
+                            formData.players.reduce(
                               (sum, p) => sum + p.cajitas * formData.cajiValue,
                               0
                             )
-                            .toLocaleString()}
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Total Fichas Finales: $
-                          {formData.players
-                            .reduce((sum, p) => sum + p.finalChips, 0)
-                            .toLocaleString()}
+                          {formatAmount(
+                            formData.players.reduce(
+                              (sum, p) => sum + p.finalChips,
+                              0
+                            )
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -1675,7 +1697,7 @@ function LaCajitaPoker() {
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {match.player_count} jugadores - $
-                                {match.total_money.toLocaleString()}
+                                {formatAmount(match.total_money)}
                               </div>
                               {winner && (
                                 <div className="text-sm mt-1">
@@ -1698,7 +1720,7 @@ function LaCajitaPoker() {
                                 <div className="text-sm">
                                   Dinero total jugado:{" "}
                                   <span className="font-semibold">
-                                    ${match.total_money.toLocaleString()}
+                                    ${formatAmount(match.total_money)}
                                   </span>
                                 </div>
                                 <Button
@@ -1750,7 +1772,7 @@ function LaCajitaPoker() {
                                             : "text-rose-500"
                                         }`}
                                       >
-                                        ${mp.money_won.toLocaleString()}{" "}
+                                        ${formatAmount(mp.money_won)}{" "}
                                         <span className="text-xs text-muted-foreground font-normal">
                                           ({mp.cajitas} cajita
                                           {mp.cajitas !== 1 ? "s" : ""})
@@ -1793,7 +1815,7 @@ function LaCajitaPoker() {
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="text-xl font-semibold">
-                              ${player.moneyWon.toLocaleString()}
+                              ${formatAmount(player.moneyWon)}
                             </div>
                             {isExpanded ? (
                               <ChevronUp className="w-5 h-5 text-muted-foreground" />
@@ -1853,9 +1875,9 @@ function LaCajitaPoker() {
                                   </div>
                                   <div className="text-sm text-emerald-600 font-semibold">
                                     $
-                                    {getPlayerBestMatch(
-                                      player.name
-                                    )?.moneyWon.toLocaleString()}
+                                    {formatAmount(
+                                      getPlayerBestMatch(player.name)?.moneyWon
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -1880,9 +1902,9 @@ function LaCajitaPoker() {
                                   </div>
                                   <div className="text-sm text-rose-500 font-semibold">
                                     $
-                                    {getPlayerWorstMatch(
-                                      player.name
-                                    )?.moneyWon.toLocaleString()}
+                                    {formatAmount(
+                                      getPlayerWorstMatch(player.name)?.moneyWon
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -2003,7 +2025,7 @@ function LaCajitaPoker() {
                               </div>
                               <div className="flex flex-col items-end">
                                 <span className="font-bold text-emerald-400 text-lg">
-                                  $ {p.dinero_ganado}
+                                  ${formatAmount(p.dinero_ganado)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {p.fecha}
@@ -2048,7 +2070,7 @@ function LaCajitaPoker() {
                               </div>
                               <div className="flex flex-col items-end">
                                 <span className="font-bold text-rose-400 text-lg">
-                                  $ {p.dinero_ganado}
+                                  ${formatAmount(p.dinero_ganado)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {p.fecha}
@@ -2128,7 +2150,7 @@ function LaCajitaPoker() {
                         <div className="ml-auto text-right">
                           <div className="text-2xl font-bold text-emerald-600">
                             +$
-                            {getTopComeback()!.comeback_amount.toLocaleString()}
+                            {formatAmount(getTopComeback()!.comeback_amount)}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Recuperación
@@ -2145,14 +2167,18 @@ function LaCajitaPoker() {
                         <div>
                           <div className="font-semibold text-rose-600">
                             $
-                            {getTopComeback()!.partida_detalle.punto_mas_bajo.toLocaleString()}
+                            {formatAmount(
+                              getTopComeback()!.partida_detalle.punto_mas_bajo
+                            )}
                           </div>
                           <div className="text-muted-foreground">Invertido</div>
                         </div>
                         <div>
                           <div className="font-semibold text-emerald-600">
                             +$
-                            {getTopComeback()!.partida_detalle.dinero_final.toLocaleString()}
+                            {formatAmount(
+                              getTopComeback()!.partida_detalle.dinero_final
+                            )}
                           </div>
                           <div className="text-muted-foreground">
                             Ganancia neta
@@ -2186,14 +2212,16 @@ function LaCajitaPoker() {
                               {comeback.jugador}
                             </div>
                             <div className="text-lg font-bold text-emerald-600 mb-1">
-                              +${comeback.comeback_amount.toLocaleString()}
+                              +${formatAmount(comeback.comeback_amount)}
                             </div>
                             <div className="text-xs text-muted-foreground mb-1">
                               {comeback.fecha}
                             </div>
                             <div className="text-xs text-rose-600">
                               $
-                              {comeback.partida_detalle.monto_invertido.toLocaleString()}{" "}
+                              {formatAmount(
+                                comeback.partida_detalle.monto_invertido
+                              )}{" "}
                               invertido
                             </div>
                           </CardContent>
