@@ -20,6 +20,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
   Trash2,
   Trophy,
   Medal,
@@ -118,6 +126,8 @@ function LaCajitaPoker() {
     "money"
   );
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
+
   const getHslColor = (varName: string) => {
     if (typeof window === "undefined") {
       // Fallbacks para SSR
@@ -578,6 +588,42 @@ function LaCajitaPoker() {
     };
   };
 
+  // Componente adaptativo para tooltips en mobile/desktop
+  const AdaptiveTooltip = ({
+    children,
+    content,
+    title,
+  }: {
+    children: React.ReactNode;
+    content: React.ReactNode;
+    title?: string;
+  }) => {
+    if (isMobile) {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>{children}</DialogTrigger>
+          <DialogContent className="max-w-sm">
+            {title && (
+              <DialogHeader>
+                <DialogTitle>{title}</DialogTitle>
+              </DialogHeader>
+            )}
+            <div className="text-sm">{content}</div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    return (
+      <TooltipProvider>
+        <UITooltip>
+          <TooltipTrigger asChild>{children}</TooltipTrigger>
+          <TooltipContent className="max-w-sm">{content}</TooltipContent>
+        </UITooltip>
+      </TooltipProvider>
+    );
+  };
+
   // Get sorted player stats based on current sort criteria
   const getSortedPlayerStats = () => {
     return [...playerStats]
@@ -617,7 +663,9 @@ function LaCajitaPoker() {
 
   // Función para calcular ROI total para cada jugador
   const calculateROIPerPlayer = () => {
-    const playerData: { [playerName: string]: { totalInvestment: number; totalMoney: number } } = {};
+    const playerData: {
+      [playerName: string]: { totalInvestment: number; totalMoney: number };
+    } = {};
 
     // Procesar cada partida para acumular inversión total y dinero total ganado
     matches.forEach((match) => {
@@ -638,7 +686,8 @@ function LaCajitaPoker() {
     const roiData: { [playerName: string]: number } = {};
     Object.keys(playerData).forEach((playerName) => {
       const { totalInvestment, totalMoney } = playerData[playerName];
-      const roi = totalInvestment > 0 ? (totalMoney / totalInvestment) * 100 : 0;
+      const roi =
+        totalInvestment > 0 ? (totalMoney / totalInvestment) * 100 : 0;
       roiData[playerName] = roi;
     });
 
@@ -761,7 +810,7 @@ function LaCajitaPoker() {
         }
 
         const inversion = mp.cajitas * match.caji_value;
-        
+
         playerAnalysis[playerName].inversion_total += inversion;
         playerAnalysis[playerName].cajitas_total += mp.cajitas;
         playerAnalysis[playerName].partidas += 1;
@@ -773,8 +822,12 @@ function LaCajitaPoker() {
     return Object.entries(playerAnalysis)
       .map(([jugador, data]) => {
         // Eficiencia total: dinero_ganado_total / inversion_total
-        const eficiencia_total = data.inversion_total > 0 ? data.dinero_ganado_total / data.inversion_total : 0;
-        const cajitas_promedio = data.partidas > 0 ? data.cajitas_total / data.partidas : 0;
+        const eficiencia_total =
+          data.inversion_total > 0
+            ? data.dinero_ganado_total / data.inversion_total
+            : 0;
+        const cajitas_promedio =
+          data.partidas > 0 ? data.cajitas_total / data.partidas : 0;
         const cuadrante = getCuadrante(eficiencia_total, cajitas_promedio);
 
         return {
@@ -1869,39 +1922,36 @@ function LaCajitaPoker() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-xl">ROI por Cajita (%)</CardTitle>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <div className="space-y-2">
-                          <p className="font-semibold">¿Qué es el ROI?</p>
+                  <AdaptiveTooltip
+                    title="¿Qué es el ROI?"
+                    content={
+                      <div className="space-y-2">
+                        <p>
+                          El <strong>ROI (Return on Investment)</strong> mide
+                          cuánto dinero ganas o pierdes por cada peso que
+                          inviertes en cajitas.
+                        </p>
+                        <div className="space-y-1 text-sm">
                           <p>
-                            El <strong>ROI (Return on Investment)</strong> mide
-                            cuánto dinero ganas o pierdes por cada peso que
-                            inviertes en cajitas.
+                            <strong>ROI positivo:</strong> Ganas más de lo que
+                            inviertes
                           </p>
-                          <div className="space-y-1 text-sm">
-                            <p>
-                              <strong>ROI positivo:</strong> Ganas más de lo que
-                              inviertes
-                            </p>
-                            <p>
-                              <strong>ROI negativo:</strong> Pierdes dinero
-                            </p>
-                            <p>
-                              <strong>ROI = 0%:</strong> Recuperas exactamente
-                              tu inversión
-                            </p>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Fórmula: (Dinero ganado / Dinero invertido) × 100
+                          <p>
+                            <strong>ROI negativo:</strong> Pierdes dinero
+                          </p>
+                          <p>
+                            <strong>ROI = 0%:</strong> Recuperas exactamente tu
+                            inversión
                           </p>
                         </div>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
+                        <p className="text-xs text-muted-foreground">
+                          Fórmula: (Dinero ganado / Dinero invertido) × 100
+                        </p>
+                      </div>
+                    }
+                  >
+                    <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
+                  </AdaptiveTooltip>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Retorno de inversión promedio por cajita comprada
@@ -1973,42 +2023,37 @@ function LaCajitaPoker() {
                   <CardTitle className="text-xl">
                     Mayores Recuperaciones
                   </CardTitle>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <div className="space-y-2">
-                          <p className="font-semibold">
-                            ¿Qué es una Recuperación?
+                  <AdaptiveTooltip
+                    title="¿Qué es una Recuperación?"
+                    content={
+                      <div className="space-y-2">
+                        <p>
+                          Una <strong>recuperación</strong> mide cuánto dinero
+                          logró ganar un jugador después de haber invertido en
+                          cajitas.
+                        </p>
+                        <div className="space-y-1 text-sm">
+                          <p>
+                            <strong>Inversión:</strong> Dinero gastado en
+                            cajitas al inicio
                           </p>
                           <p>
-                            Una <strong>recuperación</strong> mide cuánto dinero
-                            logró ganar un jugador después de haber invertido en
-                            cajitas.
+                            <strong>Recuperación:</strong> Inversión total +
+                            ganancia neta final
                           </p>
-                          <div className="space-y-1 text-sm">
-                            <p>
-                              <strong>Inversión:</strong> Dinero gastado en
-                              cajitas al inicio
-                            </p>
-                            <p>
-                              <strong>Recuperación:</strong> Inversión total +
-                              ganancia neta final
-                            </p>
-                            <p>
-                              <strong>Solo se cuentan:</strong> Partidas donde
-                              se gana dinero
-                            </p>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Fórmula: Cajitas invertidas + Ganancia neta
+                          <p>
+                            <strong>Solo se cuentan:</strong> Partidas donde se
+                            gana dinero
                           </p>
                         </div>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
+                        <p className="text-xs text-muted-foreground">
+                          Fórmula: Cajitas invertidas + Ganancia neta
+                        </p>
+                      </div>
+                    }
+                  >
+                    <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
+                  </AdaptiveTooltip>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Las remontadas más épicas en una sola partida
@@ -2041,7 +2086,7 @@ function LaCajitaPoker() {
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-center text-sm">
                         <div>
-                          <div className="font-semibold text-blue-600">
+                          <div className="font-semibold text-white">
                             {getTopComeback()!.partida_detalle.cajitas}
                           </div>
                           <div className="text-muted-foreground">Cajitas</div>
@@ -2051,9 +2096,7 @@ function LaCajitaPoker() {
                             $
                             {getTopComeback()!.partida_detalle.punto_mas_bajo.toLocaleString()}
                           </div>
-                          <div className="text-muted-foreground">
-                            Después de invertir
-                          </div>
+                          <div className="text-muted-foreground">Invertido</div>
                         </div>
                         <div>
                           <div className="font-semibold text-emerald-600">
@@ -2097,7 +2140,7 @@ function LaCajitaPoker() {
                             <div className="text-xs text-muted-foreground mb-1">
                               {comeback.fecha}
                             </div>
-                            <div className="text-xs text-blue-600">
+                            <div className="text-xs text-rose-600">
                               $
                               {comeback.partida_detalle.monto_invertido.toLocaleString()}{" "}
                               invertido
@@ -2124,33 +2167,40 @@ function LaCajitaPoker() {
                   <CardTitle className="text-2xl">
                     Análisis de Eficiencia vs Inversión
                   </CardTitle>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-5 h-5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
+                  <AdaptiveTooltip
+                    title="Análisis de Eficiencia"
+                    content={
+                      <div className="space-y-2">
                         <p>
                           <strong>Eficiencia:</strong> Dinero ganado / Inversión
-                          promedio por partida.
-                          <br />
-                          <strong>Cuadrantes:</strong>
-                          <br />
-                          🧠 <strong>Genio:</strong> Alta eficiencia, baja
-                          inversión
-                          <br />
-                          🎰 <strong>Apostador:</strong> Alta eficiencia, alta
-                          inversión
-                          <br />
-                          🛡️ <strong>Conservador:</strong> Baja eficiencia, baja
-                          inversión
-                          <br />
-                          🔥 <strong>Temerario:</strong> Baja eficiencia, alta
-                          inversión
+                          total acumulada.
                         </p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
+                        <p>
+                          <strong>Cuadrantes:</strong>
+                        </p>
+                        <div className="space-y-1 text-sm">
+                          <p>
+                            🧠 <strong>Genio:</strong> Alta eficiencia, baja
+                            inversión
+                          </p>
+                          <p>
+                            🎰 <strong>Apostador:</strong> Alta eficiencia, alta
+                            inversión
+                          </p>
+                          <p>
+                            🛡️ <strong>Conservador:</strong> Baja eficiencia,
+                            baja inversión
+                          </p>
+                          <p>
+                            🔥 <strong>Temerario:</strong> Baja eficiencia, alta
+                            inversión
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
+                  </AdaptiveTooltip>
                 </div>
               </CardHeader>
               <CardContent>
