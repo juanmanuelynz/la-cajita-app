@@ -123,8 +123,14 @@ function LaCajitaPoker() {
       return "0";
     }
 
-    // Format with Spanish locale
-    return numValue.toLocaleString("es-ES");
+    // Manual formatting for Spanish locale (dot as thousands separator)
+    const absValue = Math.abs(numValue);
+    const sign = numValue < 0 ? "-" : "";
+
+    // Convert to string and add thousands separators
+    const formatted = absValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+    return sign + formatted;
   };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
