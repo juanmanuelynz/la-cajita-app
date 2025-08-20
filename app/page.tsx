@@ -1921,6 +1921,152 @@ function LaCajitaPoker() {
               })}
             </div>
 
+            {/* Top 3 */}
+            {/* Helper functions */}
+            {(() => {
+              // Flatten all partidas individuales
+              type PartidaFlat = {
+                jugador: string;
+                dinero_ganado: number;
+                fecha: string;
+                cajitas: number;
+                rank?: number;
+              };
+              const partidasFlat: PartidaFlat[] = matches.flatMap((match) =>
+                match.match_players.map((mp) => ({
+                  jugador: mp.players.name,
+                  dinero_ganado: mp.money_won,
+                  fecha: match.date,
+                  cajitas: mp.cajitas,
+                }))
+              );
+
+              // Top 3 ganadores
+              const getTopWins = (
+                partidas: PartidaFlat[],
+                limit: number = 3
+              ): PartidaFlat[] =>
+                partidas
+                  .filter((p: PartidaFlat) => p.dinero_ganado > 0)
+                  .sort(
+                    (a: PartidaFlat, b: PartidaFlat) =>
+                      b.dinero_ganado - a.dinero_ganado
+                  )
+                  .slice(0, limit)
+                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
+
+              // Top 3 perdedores
+              const getTopLosses = (
+                partidas: PartidaFlat[],
+                limit: number = 3
+              ): PartidaFlat[] =>
+                partidas
+                  .filter((p: PartidaFlat) => p.dinero_ganado < 0)
+                  .sort(
+                    (a: PartidaFlat, b: PartidaFlat) =>
+                      a.dinero_ganado - b.dinero_ganado
+                  )
+                  .slice(0, limit)
+                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
+
+              const topWins: PartidaFlat[] = getTopWins(partidasFlat);
+              const topLosses: PartidaFlat[] = getTopLosses(partidasFlat);
+
+              return (
+                <>
+                  {/* Card 1: Mejores Partidas */}
+                  <Card className="flex-1 ">
+                    <CardHeader>
+                      <CardTitle className="text-white text-xl flex items-center gap-2">
+                        💰 Mejores Partidas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {topWins.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-6">
+                          No hay datos
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {topWins.map((p: PartidaFlat) => (
+                            <div
+                              key={p.rank}
+                              className="flex items-center justify-between p-3 rounded-lg bg-white/5"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-white text-xl font-bold w-6 text-center">
+                                  {p.rank}
+                                </span>
+                                <span className="text-white font-semibold text-base md:text-lg">
+                                  {p.jugador}
+                                </span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="font-bold text-emerald-400 text-lg">
+                                  $ {p.dinero_ganado}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {p.fecha}
+                                </span>
+                                <span className="text-xs text-white/70">
+                                  {p.cajitas} cajitas
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Card 2: Peores Partidas */}
+                  <Card className="flex-1">
+                    <CardHeader>
+                      <CardTitle className="text-white text-xl flex items-center gap-2">
+                        💸 Peores Partidas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {topLosses.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-6">
+                          No hay datos
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {topLosses.map((p: PartidaFlat) => (
+                            <div
+                              key={p.rank}
+                              className="flex items-center justify-between p-3 rounded-lg bg-white/5"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-white text-xl font-bold w-6 text-center">
+                                  {p.rank}
+                                </span>
+                                <span className="text-white font-semibold text-base md:text-lg">
+                                  {p.jugador}
+                                </span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="font-bold text-rose-400 text-lg">
+                                  $ {p.dinero_ganado}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {p.fecha}
+                                </span>
+                                <span className="text-xs text-white/70">
+                                  {p.cajitas} cajitas
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              );
+            })()}
+
             {/* Mayores Recuperaciones */}
             <Card>
               <CardHeader>
@@ -2278,102 +2424,6 @@ function LaCajitaPoker() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Evolución de Puntos */}
-            {/* 
-            <Card>
-              <CardHeader
-                className="cursor-pointer hover:bg-muted transition-colors"
-                onClick={() => setShowEvolutionChart(!showEvolutionChart)}
-              >
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-2xl">
-                    Evolución de Puntos
-                  </CardTitle>
-                  {showEvolutionChart ? (
-                    <ChevronUp className="w-6 h-6" />
-                  ) : (
-                    <ChevronDown className="w-6 h-6" />
-                  )}
-                </div>
-              </CardHeader>
-              {showEvolutionChart && (
-                <CardContent>
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3">
-                      Seleccionar Jugadores
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {playerStats
-                        .filter((player) => player.matches > 0)
-                        .map((player, index) => (
-                          <div
-                            key={player.id}
-                            className="flex items-center space-x-2"
-                          >
-                            <Checkbox
-                              id={player.id}
-                              checked={selectedPlayers.includes(player.name)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedPlayers((prev) => [
-                                    ...prev,
-                                    player.name,
-                                  ]);
-                                } else {
-                                  setSelectedPlayers((prev) =>
-                                    prev.filter((p) => p !== player.name)
-                                  );
-                                }
-                              }}
-                            />
-                            <Label
-                              htmlFor={player.id}
-                              className="cursor-pointer"
-                            >
-                              {player.name}
-                            </Label>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-
-                  {selectedPlayers.length > 0 && (
-                    <div className="h-96 mb-6">
-                      {(() => {
-                        const fg = getHslColor("--foreground");
-                        const grid = getHslColor("--border");
-                        return (
-                          <Line
-                            data={getChartData()}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: {
-                                legend: {
-                                  labels: { color: fg },
-                                },
-                              },
-                              scales: {
-                                x: {
-                                  ticks: { color: fg },
-                                  grid: { color: grid },
-                                },
-                                y: {
-                                  ticks: { color: fg },
-                                  grid: { color: grid },
-                                },
-                              },
-                            }}
-                          />
-                        );
-                      })()}
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-            */}
           </div>
         )}
 
