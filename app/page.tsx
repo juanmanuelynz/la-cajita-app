@@ -40,7 +40,7 @@ import {
   TrendingDown,
   HelpCircle,
 } from "lucide-react";
-import { Line, Bar } from "react-chartjs-2";
+import { Line, Bar, Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -615,35 +615,31 @@ function LaCajitaPoker() {
     setExpandedPlayerCards(newExpanded);
   };
 
-  // Función para calcular ROI por cajita para cada jugador
+  // Función para calcular ROI total para cada jugador
   const calculateROIPerPlayer = () => {
-    const roiData: { [playerName: string]: number } = {};
+    const playerData: { [playerName: string]: { totalInvestment: number; totalMoney: number } } = {};
 
-    // Procesar cada partida
+    // Procesar cada partida para acumular inversión total y dinero total ganado
     matches.forEach((match) => {
       match.match_players.forEach((mp) => {
         const playerName = mp.players.name;
-        if (!roiData[playerName]) {
-          roiData[playerName] = 0;
+        if (!playerData[playerName]) {
+          playerData[playerName] = { totalInvestment: 0, totalMoney: 0 };
         }
 
-        // Calcular inversión total por cajita
+        // Acumular inversión total (cajitas × valor de cada cajita)
         const investment = mp.cajitas * match.caji_value;
-        // ROI = (ganancia_total / inversión_total) * 100
-        const roi = investment > 0 ? (mp.money_won / investment) * 100 : 0;
-        roiData[playerName] += roi;
+        playerData[playerName].totalInvestment += investment;
+        playerData[playerName].totalMoney += mp.money_won;
       });
     });
 
-    // Promediar ROI por número de partidas jugadas por cada jugador
-    Object.keys(roiData).forEach((playerName) => {
-      const playerMatches = matches.filter((match) =>
-        match.match_players.some((mp) => mp.players.name === playerName)
-      ).length;
-
-      if (playerMatches > 0) {
-        roiData[playerName] = roiData[playerName] / playerMatches;
-      }
+    // Calcular ROI total: (dinero_total_ganado / inversión_total) * 100
+    const roiData: { [playerName: string]: number } = {};
+    Object.keys(playerData).forEach((playerName) => {
+      const { totalInvestment, totalMoney } = playerData[playerName];
+      const roi = totalInvestment > 0 ? (totalMoney / totalInvestment) * 100 : 0;
+      roiData[playerName] = roi;
     });
 
     // Ordenar de mayor a menor ROI
@@ -738,6 +734,133 @@ function LaCajitaPoker() {
   const getTopComeback = () => {
     const topComebacks = calculateTopComebacks();
     return topComebacks.length > 0 ? topComebacks[0] : null;
+  };
+
+  // Función para calcular eficiencia vs inversión
+  const calculateEfficiencyAnalysis = () => {
+    const playerAnalysis: {
+      [playerName: string]: {
+        inversion_total: number;
+        cajitas_total: number;
+        partidas: number;
+        dinero_ganado_total: number;
+      };
+    } = {};
+
+    // Procesar cada partida para acumular totales
+    matches.forEach((match) => {
+      match.match_players.forEach((mp) => {
+        const playerName = mp.players.name;
+        if (!playerAnalysis[playerName]) {
+          playerAnalysis[playerName] = {
+            inversion_total: 0,
+            cajitas_total: 0,
+            partidas: 0,
+            dinero_ganado_total: 0,
+          };
+        }
+
+        const inversion = mp.cajitas * match.caji_value;
+        
+        playerAnalysis[playerName].inversion_total += inversion;
+        playerAnalysis[playerName].cajitas_total += mp.cajitas;
+        playerAnalysis[playerName].partidas += 1;
+        playerAnalysis[playerName].dinero_ganado_total += mp.money_won;
+      });
+    });
+
+    // Calcular eficiencia total y promedios
+    return Object.entries(playerAnalysis)
+      .map(([jugador, data]) => {
+        // Eficiencia total: dinero_ganado_total / inversion_total
+        const eficiencia_total = data.inversion_total > 0 ? data.dinero_ganado_total / data.inversion_total : 0;
+        const cajitas_promedio = data.partidas > 0 ? data.cajitas_total / data.partidas : 0;
+        const cuadrante = getCuadrante(eficiencia_total, cajitas_promedio);
+
+        return {
+          jugador,
+          eficiencia_promedio: eficiencia_total, // Renombrado para mantener compatibilidad
+          cajitas_promedio,
+          cuadrante,
+          partidas: data.partidas,
+          dinero_ganado_total: data.dinero_ganado_total,
+        };
+      })
+      .filter((player) => player.partidas > 0);
+  };
+
+  // Función para determinar el cuadrante
+  const getCuadrante = (eficiencia: number, riesgo: number) => {
+    const eficienciaMediana = 0; // Punto neutro (break-even)
+    const riesgoMediano = 2; // Promedio de cajitas como punto de referencia
+
+    if (eficiencia >= eficienciaMediana && riesgo < riesgoMediano) {
+      return "Genio"; // Alta eficiencia, bajo riesgo
+    } else if (eficiencia >= eficienciaMediana && riesgo >= riesgoMediano) {
+      return "Apostador"; // Alta eficiencia, alto riesgo
+    } else if (eficiencia < eficienciaMediana && riesgo < riesgoMediano) {
+      return "Conservador"; // Baja eficiencia, bajo riesgo
+    } else {
+      return "Temerario"; // Baja eficiencia, alto riesgo
+    }
+  };
+
+  // Función para formatear datos para el scatter plot
+  const formatForQuadrantChart = () => {
+    const analysis = calculateEfficiencyAnalysis();
+
+    const datasets = [
+      {
+        label: "Genio",
+        data: analysis
+          .filter((p) => p.cuadrante === "Genio")
+          .map((p) => ({
+            x: p.cajitas_promedio,
+            y: p.eficiencia_promedio * 100, // Convertir a porcentaje
+            jugador: p.jugador,
+          })),
+        backgroundColor: "rgba(34, 197, 94, 0.8)",
+        borderColor: "rgba(34, 197, 94, 1)",
+      },
+      {
+        label: "Apostador",
+        data: analysis
+          .filter((p) => p.cuadrante === "Apostador")
+          .map((p) => ({
+            x: p.cajitas_promedio,
+            y: p.eficiencia_promedio * 100,
+            jugador: p.jugador,
+          })),
+        backgroundColor: "rgba(59, 130, 246, 0.8)",
+        borderColor: "rgba(59, 130, 246, 1)",
+      },
+      {
+        label: "Conservador",
+        data: analysis
+          .filter((p) => p.cuadrante === "Conservador")
+          .map((p) => ({
+            x: p.cajitas_promedio,
+            y: p.eficiencia_promedio * 100,
+            jugador: p.jugador,
+          })),
+        backgroundColor: "rgba(156, 163, 175, 0.8)",
+        borderColor: "rgba(156, 163, 175, 1)",
+      },
+      {
+        label: "Temerario",
+        data: analysis
+          .filter((p) => p.cuadrante === "Temerario")
+          .map((p) => ({
+            x: p.cajitas_promedio,
+            y: p.eficiencia_promedio * 100,
+            jugador: p.jugador,
+          })),
+        backgroundColor: "rgba(239, 68, 68, 0.8)",
+        borderColor: "rgba(239, 68, 68, 1)",
+      },
+    ];
+
+    return datasets.filter((dataset) => dataset.data.length > 0);
   };
 
   const tabs = [
@@ -1989,6 +2112,114 @@ function LaCajitaPoker() {
                   <div className="text-center py-8 text-muted-foreground">
                     <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>No hay datos de recuperaciones disponibles</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Análisis de Eficiencia vs Inversión */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-2xl">
+                    Análisis de Eficiencia vs Inversión
+                  </CardTitle>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-5 h-5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p>
+                          <strong>Eficiencia:</strong> Dinero ganado / Inversión
+                          promedio por partida.
+                          <br />
+                          <strong>Cuadrantes:</strong>
+                          <br />
+                          🧠 <strong>Genio:</strong> Alta eficiencia, baja
+                          inversión
+                          <br />
+                          🎰 <strong>Apostador:</strong> Alta eficiencia, alta
+                          inversión
+                          <br />
+                          🛡️ <strong>Conservador:</strong> Baja eficiencia, baja
+                          inversión
+                          <br />
+                          🔥 <strong>Temerario:</strong> Baja eficiencia, alta
+                          inversión
+                        </p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {calculateEfficiencyAnalysis().length > 0 ? (
+                  <div className="h-80">
+                    <Scatter
+                      data={{
+                        datasets: formatForQuadrantChart(),
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: "top" as const,
+                            labels: {
+                              usePointStyle: true,
+                            },
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (context: any) => {
+                                const dataPoint = context.raw;
+                                return `${
+                                  dataPoint.jugador
+                                }: ${context.parsed.y.toFixed(
+                                  1
+                                )}% eficiencia, ${context.parsed.x.toFixed(
+                                  1
+                                )} cajitas promedio`;
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          x: {
+                            display: true,
+                            title: {
+                              display: true,
+                              text: "Cajitas Promedio por Partida",
+                            },
+                            min: 0,
+                          },
+                          y: {
+                            display: true,
+                            title: {
+                              display: true,
+                              text: "Eficiencia (%)",
+                            },
+                            ticks: {
+                              callback: function (value: any) {
+                                return value + "%";
+                              },
+                            },
+                          },
+                        },
+                        elements: {
+                          point: {
+                            radius: 8,
+                            hoverRadius: 10,
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Cannabis className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No hay datos de eficiencia disponibles</p>
                   </div>
                 )}
               </CardContent>
