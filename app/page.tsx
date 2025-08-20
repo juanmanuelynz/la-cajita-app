@@ -1750,7 +1750,11 @@ function LaCajitaPoker() {
                                             : "text-rose-500"
                                         }`}
                                       >
-                                        ${mp.money_won.toLocaleString()}
+                                        ${mp.money_won.toLocaleString()}{" "}
+                                        <span className="text-xs text-muted-foreground font-normal">
+                                          ({mp.cajitas} cajita
+                                          {mp.cajitas !== 1 ? "s" : ""})
+                                        </span>
                                       </span>
                                     </div>
                                   ))}
