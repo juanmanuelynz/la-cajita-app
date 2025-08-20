@@ -618,7 +618,7 @@ function LaCajitaPoker() {
   // Función para calcular ROI por cajita para cada jugador
   const calculateROIPerPlayer = () => {
     const roiData: { [playerName: string]: number } = {};
-    
+
     // Procesar cada partida
     matches.forEach((match) => {
       match.match_players.forEach((mp) => {
@@ -626,7 +626,7 @@ function LaCajitaPoker() {
         if (!roiData[playerName]) {
           roiData[playerName] = 0;
         }
-        
+
         // Calcular inversión total por cajita
         const investment = mp.cajitas * match.caji_value;
         // ROI = (ganancia_total / inversión_total) * 100
@@ -637,10 +637,10 @@ function LaCajitaPoker() {
 
     // Promediar ROI por número de partidas jugadas por cada jugador
     Object.keys(roiData).forEach((playerName) => {
-      const playerMatches = matches.filter(match => 
-        match.match_players.some(mp => mp.players.name === playerName)
+      const playerMatches = matches.filter((match) =>
+        match.match_players.some((mp) => mp.players.name === playerName)
       ).length;
-      
+
       if (playerMatches > 0) {
         roiData[playerName] = roiData[playerName] / playerMatches;
       }
@@ -659,19 +659,85 @@ function LaCajitaPoker() {
     const roiData = calculateROIPerPlayer();
     const labels = Object.keys(roiData);
     const data = Object.values(roiData);
-    const backgroundColor = data.map(roi => 
-      roi >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+    const backgroundColor = data.map((roi) =>
+      roi >= 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)"
     );
-    const borderColor = data.map(roi => 
-      roi >= 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'
+    const borderColor = data.map((roi) =>
+      roi >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239, 68, 68, 1)"
     );
 
     return {
       labels,
       data,
       backgroundColor,
-      borderColor
+      borderColor,
     };
+  };
+
+  // Función para calcular las mayores recuperaciones en una sola noche
+  const calculateTopComebacks = () => {
+    const comebacks: {
+      jugador: string;
+      comeback_amount: number;
+      fecha: string;
+      partida_detalle: {
+        dinero_inicial: number;
+        punto_mas_bajo: number;
+        dinero_final: number;
+        cajitas: number;
+        monto_invertido: number;
+      };
+    }[] = [];
+
+    matches.forEach((match) => {
+      match.match_players.forEach((mp) => {
+        const playerName = mp.players.name;
+        const inversionTotal = mp.cajitas * match.caji_value; // Total invertido en cajitas
+        const dineroFinal = mp.final_chips;
+
+        // El punto más bajo real es cuando ha invertido todo (cajitas) pero aún no ha ganado nada
+        // Es decir, está en -inversión_total antes de empezar a ganar
+        const puntoMasBajo = 0; // Punto de referencia neutral
+        const dineroNeto = mp.money_won; // Dinero ganado/perdido después de descontar inversión
+
+        // Solo consideramos recuperaciones significativas (cuando ganan dinero después de invertir)
+        // Y que la recuperación sea desde un punto negativo o de pérdida importante
+        if (dineroNeto > 0) {
+          // La recuperación es desde -inversión hasta el resultado neto positivo
+          // Esto representa cuánto tuvo que "recuperar" desde su inversión inicial
+          const comebackAmount = inversionTotal + dineroNeto;
+
+          comebacks.push({
+            jugador: playerName,
+            comeback_amount: comebackAmount,
+            fecha: match.date,
+            partida_detalle: {
+              dinero_inicial: 0, // Empieza sin dinero
+              punto_mas_bajo: -inversionTotal, // Después de invertir las cajitas
+              dinero_final: dineroNeto, // Ganancia neta final
+              cajitas: mp.cajitas,
+              monto_invertido: inversionTotal, // Agregamos el monto invertido
+            },
+          });
+        }
+      });
+    });
+
+    // Ordenar por mayor recuperación y tomar top 3
+    return comebacks
+      .sort((a, b) => b.comeback_amount - a.comeback_amount)
+      .slice(0, 3);
+  };
+
+  // Función para formatear datos para el podio
+  const formatForPodium = () => {
+    return calculateTopComebacks();
+  };
+
+  // Función para obtener el top comeback para la card principal
+  const getTopComeback = () => {
+    const topComebacks = calculateTopComebacks();
+    return topComebacks.length > 0 ? topComebacks[0] : null;
   };
 
   const tabs = [
@@ -1689,12 +1755,22 @@ function LaCajitaPoker() {
                         <div className="space-y-2">
                           <p className="font-semibold">¿Qué es el ROI?</p>
                           <p>
-                            El <strong>ROI (Return on Investment)</strong> mide cuánto dinero ganas o pierdes por cada peso que inviertes en cajitas.
+                            El <strong>ROI (Return on Investment)</strong> mide
+                            cuánto dinero ganas o pierdes por cada peso que
+                            inviertes en cajitas.
                           </p>
                           <div className="space-y-1 text-sm">
-                            <p><strong>ROI positivo:</strong> Ganas más de lo que inviertes</p>
-                            <p><strong>ROI negativo:</strong> Pierdes dinero</p>
-                            <p><strong>ROI = 0%:</strong> Recuperas exactamente tu inversión</p>
+                            <p>
+                              <strong>ROI positivo:</strong> Ganas más de lo que
+                              inviertes
+                            </p>
+                            <p>
+                              <strong>ROI negativo:</strong> Pierdes dinero
+                            </p>
+                            <p>
+                              <strong>ROI = 0%:</strong> Recuperas exactamente
+                              tu inversión
+                            </p>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Fórmula: (Dinero ganado / Dinero invertido) × 100
@@ -1715,16 +1791,17 @@ function LaCajitaPoker() {
                       labels: formatROIForBarChart().labels,
                       datasets: [
                         {
-                          label: 'ROI (%)',
+                          label: "ROI (%)",
                           data: formatROIForBarChart().data,
-                          backgroundColor: formatROIForBarChart().backgroundColor,
+                          backgroundColor:
+                            formatROIForBarChart().backgroundColor,
                           borderColor: formatROIForBarChart().borderColor,
                           borderWidth: 1,
                         },
                       ],
                     }}
                     options={{
-                      indexAxis: 'y' as const,
+                      indexAxis: "y" as const,
                       responsive: true,
                       maintainAspectRatio: false,
                       plugins: {
@@ -1745,24 +1822,175 @@ function LaCajitaPoker() {
                           beginAtZero: true,
                           title: {
                             display: true,
-                            text: 'ROI (%)',
+                            text: "ROI (%)",
                           },
                           ticks: {
-                            callback: function(value) {
-                              return value + '%';
+                            callback: function (value) {
+                              return value + "%";
                             },
                           },
                         },
                         y: {
                           title: {
                             display: true,
-                            text: 'Jugadores',
+                            text: "Jugadores",
                           },
                         },
                       },
                     }}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Mayores Recuperaciones */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">
+                    Mayores Recuperaciones
+                  </CardTitle>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <div className="space-y-2">
+                          <p className="font-semibold">
+                            ¿Qué es una Recuperación?
+                          </p>
+                          <p>
+                            Una <strong>recuperación</strong> mide cuánto dinero
+                            logró ganar un jugador después de haber invertido en
+                            cajitas.
+                          </p>
+                          <div className="space-y-1 text-sm">
+                            <p>
+                              <strong>Inversión:</strong> Dinero gastado en
+                              cajitas al inicio
+                            </p>
+                            <p>
+                              <strong>Recuperación:</strong> Inversión total +
+                              ganancia neta final
+                            </p>
+                            <p>
+                              <strong>Solo se cuentan:</strong> Partidas donde
+                              se gana dinero
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Fórmula: Cajitas invertidas + Ganancia neta
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Las remontadas más épicas en una sola partida
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Card destacada para el #1 */}
+                {getTopComeback() && (
+                  <Card className="border-2 border-yellow-500/50 ">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="text-3xl">🥇</div>
+                        <div>
+                          <h3 className="font-bold text-lg">
+                            {getTopComeback()!.jugador}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {getTopComeback()!.fecha}
+                          </p>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            +$
+                            {getTopComeback()!.comeback_amount.toLocaleString()}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Recuperación
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                        <div>
+                          <div className="font-semibold text-blue-600">
+                            {getTopComeback()!.partida_detalle.cajitas}
+                          </div>
+                          <div className="text-muted-foreground">Cajitas</div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-rose-600">
+                            $
+                            {getTopComeback()!.partida_detalle.punto_mas_bajo.toLocaleString()}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Después de invertir
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-emerald-600">
+                            +$
+                            {getTopComeback()!.partida_detalle.dinero_final.toLocaleString()}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Ganancia neta
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Podio 2do y 3er puesto */}
+                <div className="grid grid-cols-2 gap-4">
+                  {formatForPodium()
+                    .slice(1, 3)
+                    .map((comeback, index) => {
+                      const position = index + 2; // +2 porque empezamos desde el 2do puesto
+                      const medals = ["🥈", "🥉"];
+                      const borderColors = [
+                        "border-gray-400/50",
+                        "border-orange-600/50",
+                      ];
+
+                      return (
+                        <Card
+                          key={`${comeback.jugador}-${comeback.fecha}`}
+                          className={`${borderColors[index]} border-2`}
+                        >
+                          <CardContent className="p-3 text-center">
+                            <div className="text-2xl mb-2">{medals[index]}</div>
+                            <div className="font-semibold text-sm mb-1">
+                              {comeback.jugador}
+                            </div>
+                            <div className="text-lg font-bold text-emerald-600 mb-1">
+                              +${comeback.comeback_amount.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {comeback.fecha}
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              $
+                              {comeback.partida_detalle.monto_invertido.toLocaleString()}{" "}
+                              invertido
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+
+                {formatForPodium().length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No hay datos de recuperaciones disponibles</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
