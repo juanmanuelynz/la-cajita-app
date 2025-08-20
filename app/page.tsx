@@ -111,18 +111,18 @@ function LaCajitaPoker() {
   // Utility function to safely format numbers with Spanish locale
   const formatAmount = (amount: number | string | undefined | null): string => {
     // Handle null, undefined, empty string cases
-    if (amount === null || amount === undefined || amount === '') {
-      return '0';
+    if (amount === null || amount === undefined || amount === "") {
+      return "0";
     }
-    
+
     // Convert to number
-    const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
-    
+    const numValue = typeof amount === "string" ? parseFloat(amount) : amount;
+
     // Handle NaN cases
     if (isNaN(numValue)) {
-      return '0';
+      return "0";
     }
-    
+
     // Format with Spanish locale
     return numValue.toLocaleString("es-ES");
   };
