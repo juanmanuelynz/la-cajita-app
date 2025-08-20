@@ -1921,105 +1921,6 @@ function LaCajitaPoker() {
               })}
             </div>
 
-            {/* ROI por Cajita */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-xl">ROI por Cajita (%)</CardTitle>
-                  <AdaptiveTooltip
-                    title="¿Qué es el ROI?"
-                    content={
-                      <div className="space-y-2">
-                        <p>
-                          El <strong>ROI (Return on Investment)</strong> mide
-                          cuánto dinero ganas o pierdes por cada peso que
-                          inviertes en cajitas.
-                        </p>
-                        <div className="space-y-1 text-sm">
-                          <p>
-                            <strong>ROI positivo:</strong> Ganas más de lo que
-                            inviertes
-                          </p>
-                          <p>
-                            <strong>ROI negativo:</strong> Pierdes dinero
-                          </p>
-                          <p>
-                            <strong>ROI = 0%:</strong> Recuperas exactamente tu
-                            inversión
-                          </p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Fórmula: (Dinero ganado / Dinero invertido) × 100
-                        </p>
-                      </div>
-                    }
-                  >
-                    <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-                  </AdaptiveTooltip>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Retorno de inversión promedio por cajita comprada
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <Bar
-                    data={{
-                      labels: formatROIForBarChart().labels,
-                      datasets: [
-                        {
-                          label: "ROI (%)",
-                          data: formatROIForBarChart().data,
-                          backgroundColor:
-                            formatROIForBarChart().backgroundColor,
-                          borderColor: formatROIForBarChart().borderColor,
-                          borderWidth: 1,
-                        },
-                      ],
-                    }}
-                    options={{
-                      indexAxis: "y" as const,
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false,
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (context) => {
-                              const value = context.parsed.x;
-                              return `ROI: ${value.toFixed(1)}%`;
-                            },
-                          },
-                        },
-                      },
-                      scales: {
-                        x: {
-                          beginAtZero: true,
-                          title: {
-                            display: true,
-                            text: "ROI (%)",
-                          },
-                          ticks: {
-                            callback: function (value) {
-                              return value + "%";
-                            },
-                          },
-                        },
-                        y: {
-                          title: {
-                            display: true,
-                            text: "Jugadores",
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Mayores Recuperaciones */}
             <Card>
               <CardHeader>
@@ -2161,6 +2062,105 @@ function LaCajitaPoker() {
                     <p>No hay datos de recuperaciones disponibles</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* ROI por Cajita */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">ROI por Cajita (%)</CardTitle>
+                  <AdaptiveTooltip
+                    title="¿Qué es el ROI?"
+                    content={
+                      <div className="space-y-2">
+                        <p>
+                          El <strong>ROI (Return on Investment)</strong> mide
+                          cuánto dinero ganas o pierdes por cada peso que
+                          inviertes en cajitas.
+                        </p>
+                        <div className="space-y-1 text-sm">
+                          <p>
+                            <strong>ROI positivo:</strong> Ganas más de lo que
+                            inviertes
+                          </p>
+                          <p>
+                            <strong>ROI negativo:</strong> Pierdes dinero
+                          </p>
+                          <p>
+                            <strong>ROI = 0%:</strong> Recuperas exactamente tu
+                            inversión
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Fórmula: (Dinero ganado / Dinero invertido) × 100
+                        </p>
+                      </div>
+                    }
+                  >
+                    <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
+                  </AdaptiveTooltip>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Retorno de inversión promedio por cajita comprada
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <Bar
+                    data={{
+                      labels: formatROIForBarChart().labels,
+                      datasets: [
+                        {
+                          label: "ROI (%)",
+                          data: formatROIForBarChart().data,
+                          backgroundColor:
+                            formatROIForBarChart().backgroundColor,
+                          borderColor: formatROIForBarChart().borderColor,
+                          borderWidth: 1,
+                        },
+                      ],
+                    }}
+                    options={{
+                      indexAxis: "y" as const,
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) => {
+                              const value = context.parsed.x;
+                              return `ROI: ${value.toFixed(1)}%`;
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        x: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: "ROI (%)",
+                          },
+                          ticks: {
+                            callback: function (value) {
+                              return value + "%";
+                            },
+                          },
+                        },
+                        y: {
+                          title: {
+                            display: true,
+                            text: "Jugadores",
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
 
