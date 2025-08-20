@@ -102,6 +102,9 @@ function LaCajitaPoker() {
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(
     new Set()
   );
+  const [expandedPlayerCards, setExpandedPlayerCards] = useState<Set<string>>(
+    new Set()
+  );
   const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">(
     "money"
   );
@@ -591,6 +594,16 @@ function LaCajitaPoker() {
           return a.cajitas - b.cajitas;
         }
       });
+  };
+
+  const togglePlayerCard = (playerId: string) => {
+    const newExpanded = new Set(expandedPlayerCards);
+    if (newExpanded.has(playerId)) {
+      newExpanded.delete(playerId);
+    } else {
+      newExpanded.add(playerId);
+    }
+    setExpandedPlayerCards(newExpanded);
   };
 
   const tabs = [
@@ -1448,119 +1461,154 @@ function LaCajitaPoker() {
         {activeTab === "estadisticas" && (
           <div className="space-y-6">
             {/* Análisis Individual */}
+            <h2 className="text-2xl font-bold">Análisis Individual</h2>
             <div className="space-y-4">
-              {getSortedPlayerStats().map((player) => (
-                <Card key={player.id}>
-                  <CardContent className="p-5 flex flex-col gap-2">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="text-2xl font-light">{player.name}</div>
-                      <div className="text-xl font-semibold">
-                        ${player.moneyWon.toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center">
-                        <Award className="w-8 h-8 mx-auto mb-2" />
-                        <div className="text-xl font-bold">{player.points}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Puntos
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <Cannabis className="w-8 h-8 mx-auto mb-2" />
-                        <div className="text-xl font-bold">
-                          {player.matches}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Partidas
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <Coins className="w-8 h-8 mx-auto mb-2" />
-                        <div className="text-xl font-bold">
-                          {player.cajitas}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Cajitas
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {getPlayerBestMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 bg-emerald-800/30 rounded-lg">
-                          <div className="flex items-center justify-between mb-2 w-full">
-                            <div className="flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 text-emerald-600" />
-                              <span className="text-sm text-emerald-600 font-semibold">
-                                P{getPlayerBestMatch(player.name)?.position}
-                              </span>
+              {getSortedPlayerStats().map((player) => {
+                const isExpanded = expandedPlayerCards.has(player.id);
+                return (
+                  <Card key={player.id}>
+                    <CardContent className="p-0">
+                      {/* Header siempre visible */}
+                      <div
+                        className="p-5 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => togglePlayerCard(player.id)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="text-2xl font-light">
+                            {player.name}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-xl font-semibold">
+                              ${player.moneyWon.toLocaleString()}
                             </div>
-                            <div className="text-sm text-emerald-600 font-semibold">
-                              $
-                              {getPlayerBestMatch(
-                                player.name
-                              )?.moneyWon.toLocaleString()}
+                            {isExpanded ? (
+                              <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contenido colapsable */}
+                      {isExpanded && (
+                        <div className="px-5 pb-5 flex flex-col gap-2">
+                          <div className="grid grid-cols-3 gap-4 mb-6">
+                            <div className="text-center">
+                              <Award className="w-8 h-8 mx-auto mb-2" />
+                              <div className="text-xl font-bold">
+                                {player.points}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Puntos
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <Cannabis className="w-8 h-8 mx-auto mb-2" />
+                              <div className="text-xl font-bold">
+                                {player.matches}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Partidas
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <Coins className="w-8 h-8 mx-auto mb-2" />
+                              <div className="text-xl font-bold">
+                                {player.cajitas}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Cajitas
+                              </div>
                             </div>
                           </div>
+
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            {getPlayerBestMatch(player.name) && (
+                              <div className="flex flex-col items-center p-2 bg-emerald-800/30 rounded-lg">
+                                <div className="flex items-center justify-between mb-2 w-full">
+                                  <div className="flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                                    <span className="text-sm text-emerald-600 font-semibold">
+                                      P
+                                      {
+                                        getPlayerBestMatch(player.name)
+                                          ?.position
+                                      }
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-emerald-600 font-semibold">
+                                    $
+                                    {getPlayerBestMatch(
+                                      player.name
+                                    )?.moneyWon.toLocaleString()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="text-xs text-emerald-50/50">
+                                    {getPlayerBestMatch(player.name)?.date}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            {getPlayerWorstMatch(player.name) && (
+                              <div className="flex flex-col items-center p-2 bg-rose-800/30 rounded-lg">
+                                <div className="flex items-center justify-between mb-2 w-full">
+                                  <div className="flex items-center gap-2">
+                                    <TrendingDown className="w-4 h-4 text-rose-500" />
+                                    <span className="text-sm text-rose-500 font-semibold">
+                                      P
+                                      {
+                                        getPlayerWorstMatch(player.name)
+                                          ?.position
+                                      }
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-rose-500 font-semibold">
+                                    $
+                                    {getPlayerWorstMatch(
+                                      player.name
+                                    )?.moneyWon.toLocaleString()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="text-xs text-rose-50/50">
+                                    {getPlayerWorstMatch(player.name)?.date}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-emerald-50/50">
-                              {getPlayerBestMatch(player.name)?.date}
+                            <span className="text-sm">Últimas 5 partidas</span>
+                            <div className="flex gap-1">
+                              {getPlayerLastMatches(player.name)
+                                .slice(0, 5)
+                                .map((match, index) => (
+                                  <div
+                                    key={index}
+                                    className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
+                                      match.moneyWon >= 0
+                                        ? "bg-emerald-500 text-white"
+                                        : "bg-rose-500 text-white"
+                                    }`}
+                                  >
+                                    {match.position}
+                                  </div>
+                                ))}
                             </div>
                           </div>
                         </div>
                       )}
-                      {getPlayerWorstMatch(player.name) && (
-                        <div className="flex flex-col items-center p-2 bg-rose-800/30 rounded-lg">
-                          <div className="flex items-center justify-between mb-2 w-full">
-                            <div className="flex items-center gap-2">
-                              <TrendingDown className="w-4 h-4 text-rose-500" />
-                              <span className="text-sm text-rose-500 font-semibold">
-                                P{getPlayerWorstMatch(player.name)?.position}
-                              </span>
-                            </div>
-                            <div className="text-sm text-rose-500 font-semibold">
-                              $
-                              {getPlayerWorstMatch(
-                                player.name
-                              )?.moneyWon.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-rose-50/50">
-                              {getPlayerWorstMatch(player.name)?.date}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Últimas 5 partidas</span>
-                      <div className="flex gap-1">
-                        {getPlayerLastMatches(player.name)
-                          .slice(0, 5)
-                          .map((match, index) => (
-                            <div
-                              key={index}
-                              className={`w-5 h-5 rounded-sm flex items-center justify-center text-xs font-normal ${
-                                match.moneyWon >= 0
-                                  ? "bg-emerald-500 text-white"
-                                  : "bg-rose-500 text-white"
-                              }`}
-                            >
-                              {match.position}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Evolución de Puntos */}
+            {/* 
             <Card>
               <CardHeader
                 className="cursor-pointer hover:bg-muted transition-colors"
@@ -1653,6 +1701,7 @@ function LaCajitaPoker() {
                 </CardContent>
               )}
             </Card>
+            */}
           </div>
         )}
 
