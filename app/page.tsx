@@ -2126,7 +2126,7 @@ function LaCajitaPoker() {
                           </p>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Fórmula: Cajitas invertidas + Ganancia neta
+                          Fórmula: Cajitas invertidas + Ganancia final
                         </p>
                       </div>
                     }
@@ -2186,9 +2186,7 @@ function LaCajitaPoker() {
                               getTopComeback()!.partida_detalle.dinero_final
                             )}
                           </div>
-                          <div className="text-muted-foreground">
-                            Ganancia neta
-                          </div>
+                          <div className="text-muted-foreground">Neto</div>
                         </div>
                       </div>
                     </CardContent>
