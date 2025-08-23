@@ -132,6 +132,26 @@ function LaCajitaPoker() {
 
     return sign + formatted;
   };
+
+  // Utility function to format dates as DD-MM-YYYY
+  const formatDate = (dateStr: string): string => {
+    try {
+      // Handle dates in format YYYY-MM-DD
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return dateStr; // Return original if invalid
+      }
+
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+
+      return `${day}-${month}-${year}`;
+    } catch (error) {
+      return dateStr; // Return original if error
+    }
+  };
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -1271,7 +1291,7 @@ function LaCajitaPoker() {
                                 <div className="flex justify-between items-start mb-3">
                                   <div className="flex flex-col gap-2">
                                     <div className="text-lg font-semibold">
-                                      {match.date}
+                                      {formatDate(match.date)}
                                     </div>
                                     {/*
                                     <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
@@ -1699,7 +1719,7 @@ function LaCajitaPoker() {
                           >
                             <div className="flex-1">
                               <div className="text-lg font-semibold">
-                                {match.date}
+                                {formatDate(match.date)}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {match.player_count} jugadores - $
@@ -1780,7 +1800,7 @@ function LaCajitaPoker() {
                                       >
                                         ${formatAmount(mp.money_won)}{" "}
                                         <span className="text-xs text-muted-foreground font-normal">
-                                          ({mp.cajitas} cajita
+                                          ({mp.cajitas} cjt
                                           {mp.cajitas !== 1 ? "s" : ""})
                                         </span>
                                       </span>
@@ -1888,7 +1908,10 @@ function LaCajitaPoker() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <div className="text-xs text-emerald-50/50">
-                                    {getPlayerBestMatch(player.name)?.date}
+                                    {formatDate(
+                                      getPlayerBestMatch(player.name)?.date ||
+                                        ""
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1915,7 +1938,10 @@ function LaCajitaPoker() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <div className="text-xs text-rose-50/50">
-                                    {getPlayerWorstMatch(player.name)?.date}
+                                    {formatDate(
+                                      getPlayerWorstMatch(player.name)?.date ||
+                                        ""
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -2034,7 +2060,7 @@ function LaCajitaPoker() {
                                   ${formatAmount(p.dinero_ganado)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {p.fecha}
+                                  {formatDate(p.fecha)}
                                 </span>
                                 <span className="text-xs text-white/70">
                                   {p.cajitas} cajitas
@@ -2079,7 +2105,7 @@ function LaCajitaPoker() {
                                   ${formatAmount(p.dinero_ganado)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {p.fecha}
+                                  {formatDate(p.fecha)}
                                 </span>
                                 <span className="text-xs text-white/70">
                                   {p.cajitas} cajitas
@@ -2150,7 +2176,7 @@ function LaCajitaPoker() {
                             {getTopComeback()!.jugador}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {getTopComeback()!.fecha}
+                            {formatDate(getTopComeback()!.fecha)}
                           </p>
                         </div>
                         <div className="ml-auto text-right">
@@ -2219,7 +2245,7 @@ function LaCajitaPoker() {
                               +${formatAmount(comeback.comeback_amount)}
                             </div>
                             <div className="text-xs text-muted-foreground mb-1">
-                              {comeback.fecha}
+                              {formatDate(comeback.fecha)}
                             </div>
                             <div className="text-xs text-rose-600">
                               $
