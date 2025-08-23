@@ -26,6 +26,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Trash2,
@@ -133,7 +143,7 @@ function LaCajitaPoker() {
     return sign + formatted;
   };
 
-  // Utility function to format dates as DD-MM-YYYY
+  // Utility function to format dates as DD/MM/YYYY
   const formatDate = (dateStr: string): string => {
     try {
       // Handle dates in format YYYY-MM-DD
@@ -146,7 +156,7 @@ function LaCajitaPoker() {
       const month = (date.getMonth() + 1).toString().padStart(2, "0");
       const year = date.getFullYear();
 
-      return `${day}-${month}-${year}`;
+      return `${day}/${month}/${year}`;
     } catch (error) {
       return dateStr; // Return original if error
     }
@@ -156,6 +166,9 @@ function LaCajitaPoker() {
   const [error, setError] = useState<string | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [matchToDelete, setMatchToDelete] = useState<string | null>(null);
+  const [activeMatchToDelete, setActiveMatchToDelete] = useState<string | null>(
+    null
+  );
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(
     null
@@ -359,12 +372,27 @@ function LaCajitaPoker() {
         setShowRegisterForm(false);
         setEditingMatchId(null);
       }
+
+      // Close the delete confirmation dialog
+      setActiveMatchToDelete(null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error deleting active match"
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle delete confirmation for active match
+  const handleDeleteActiveMatch = (matchId: string) => {
+    setActiveMatchToDelete(matchId);
+  };
+
+  // Confirm active match deletion
+  const confirmDeleteActiveMatch = () => {
+    if (activeMatchToDelete) {
+      deleteActiveMatch(activeMatchToDelete);
     }
   };
 
@@ -1250,130 +1278,133 @@ function LaCajitaPoker() {
             {!showRegisterForm ? (
               <>
                 {/* Partidas Activas */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-2xl">
-                      Partidas ({activeMatches.length})
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Button onClick={createNewActiveMatch} disabled={loading}>
+                {/* Centered Title like Tabla Anual */}
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold">Partidas</h2>
+                </div>
+
+                <div className="space-y-4">
+                  {activeMatches.length === 0 ? (
+                    <div className="space-y-2">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                        <div className="text-center">
+                          <p className="text-muted-foreground text-lg">
+                            ¿Sale poker?
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={createNewActiveMatch}
+                        disabled={loading}
+                        className="w-full"
+                        variant="default"
+                      >
                         {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         ) : (
-                          <Plus className="w-4 h-4 mr-1" />
+                          <Cannabis className="w-4 h-4 mr-2" />
                         )}
-                        Nueva Partida
+                        Nueva partida
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {activeMatches.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="mb-4">No hay partidas activas</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {activeMatches.map((match) => {
-                          const playersWithNames = match.players.filter(
-                            (p) => p.name.trim() !== ""
-                          );
-                          const totalInvestment = match.players.reduce(
-                            (sum, p) => sum + p.cajitas * match.caji_value,
-                            0
-                          );
-                          const isComplete =
-                            playersWithNames.length === match.player_count &&
-                            playersWithNames.every((p) => p.finalChips > 0);
+                  ) : (
+                    activeMatches.map((match) => {
+                      const playersWithNames = match.players.filter(
+                        (p) => p.name.trim() !== ""
+                      );
+                      const totalInvestment = match.players.reduce(
+                        (sum, p) => sum + p.cajitas * match.caji_value,
+                        0
+                      );
 
-                          return (
-                            <Card key={match.id}>
-                              <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-3">
-                                  <div className="flex flex-col gap-2">
-                                    <div className="text-lg font-semibold">
+                      return (
+                        <div key={match.id} className="space-y-4">
+                          {/* Match Card */}
+                          <Card>
+                            <CardContent className="p-6">
+                              <div className="space-y-4">
+                                <div className="">
+                                  {/* Match Header */}
+                                  <div className="flex justify-between items-center">
+                                    <div className="text-xl font-bold">
                                       {formatDate(match.date)}
                                     </div>
-                                    {/*
-                                    <div className={`px-2 py-1 rounded text-xs font-semibold w-fit ${
-                                      isComplete ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
-                                    }`}>
-                                      {isComplete ? "Lista para registrar" : "En progreso"}
+                                    <div className="text-xl font-bold">
+                                      ${formatAmount(totalInvestment)}
                                     </div>
-                                    */}
-                                    <div className="text-sm text-muted-foreground">
-                                      {playersWithNames.length}/
-                                      {match.player_count} jugadores - $
-                                      {formatAmount(totalInvestment)}
-                                    </div>
-                                    {/*
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      Actualizado:{" "}
-                                      {new Date(match.updated_at).toLocaleTimeString()}
-                                    </div>}
-                                    */}
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => editActiveMatch(match.id)}
-                                    >
-                                      <NotebookPen className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        deleteActiveMatch(match.id)
-                                      }
-                                      disabled={loading}
-                                    >
-                                      {loading ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="w-4 h-4" />
-                                      )}
-                                    </Button>
+
+                                  {/* Player Count */}
+                                  <div className="text-sm text-muted-foreground">
+                                    {playersWithNames.length}/
+                                    {match.player_count} jugadores
                                   </div>
                                 </div>
-
+                                {/* Players List */}
                                 {playersWithNames.length > 0 && (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                                  <div className="space-y-2">
                                     {playersWithNames.map((player, index) => (
                                       <div
                                         key={index}
-                                        className="flex items-center justify-between p-2 bg-muted rounded"
+                                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <div className="w-6 h-6 rounded-full bg-muted-foreground flex items-center justify-center text-xs font-bold text-muted">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 rounded-full bg-muted-foreground flex items-center justify-center text-sm font-bold text-muted">
                                             {index + 1}
                                           </div>
-                                          <span className="text-sm">
-                                            {player.name}
+                                          <span className="font-medium">
+                                            {player.name}{" "}
+                                            <span className="text-xs text-muted-foreground font-normal">
+                                              ({player.cajitas} cjt
+                                              {player.cajitas !== 1 ? "s" : ""})
+                                            </span>
                                           </span>
                                         </div>
-                                        <span
-                                          className={`text-sm font-semibold ${
-                                            player.moneyWon >= 0
-                                              ? "text-emerald-500"
-                                              : "text-rose-500"
-                                          }`}
-                                        >
-                                          {/*{player.finalChips > 0 ? `$${player.moneyWon.toLocaleString()}` : "Pendiente"}*/}
-                                          {`$${formatAmount(player.moneyWon)}`}
-                                        </span>
+                                        <div className="text-right">
+                                          <div
+                                            className={`text-lg font-bold ${
+                                              player.moneyWon >= 0
+                                                ? "text-emerald-600"
+                                                : "text-rose-600"
+                                            }`}
+                                          >
+                                            ${formatAmount(player.moneyWon)}
+                                          </div>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
                                 )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Action Buttons Below Card */}
+                          <div className="flex gap-3">
+                            <Button
+                              variant="default"
+                              className="flex-1"
+                              onClick={() => editActiveMatch(match.id)}
+                            >
+                              Editar partida
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDeleteActiveMatch(match.id)}
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Borrar"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </>
             ) : (
               /* Formulario de Registro */
@@ -2638,6 +2669,31 @@ function LaCajitaPoker() {
           ))}
         </div>
       </div>
+
+      {/* Delete Active Match Confirmation Dialog */}
+      <AlertDialog
+        open={!!activeMatchToDelete}
+        onOpenChange={() => setActiveMatchToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar partida activa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente la
+              partida activa y todos sus datos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteActiveMatch}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* PWA Components */}
       <PWAInstall />
