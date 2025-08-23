@@ -1274,451 +1274,143 @@ function LaCajitaPoker() {
 
         {/* Partidas Tab */}
         {activeTab === "partidas" && (
-          <div className="space-y-10">
-            {!showRegisterForm ? (
-              <>
-                {/* Partidas Activas */}
-                {/* Centered Title like Tabla Anual */}
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold">Partidas</h2>
-                </div>
+          <div className="space-y-12">
+            {/* Partidas Activas */}
+            <div>
+              {/* Centered Title like Tabla Anual */}
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold">Partidas</h2>
+              </div>
 
-                <div className="space-y-4">
-                  {activeMatches.length === 0 ? (
-                    <div className="space-y-2">
-                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
-                        <div className="text-center">
-                          <p className="text-muted-foreground text-lg">
-                            ¿Sale poker?
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={createNewActiveMatch}
-                        disabled={loading}
-                        className="w-full"
-                        variant="default"
-                      >
-                        {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <Cannabis className="w-4 h-4 mr-2" />
-                        )}
-                        Nueva partida
-                      </Button>
-                    </div>
-                  ) : (
-                    activeMatches.map((match) => {
-                      const playersWithNames = match.players.filter(
-                        (p) => p.name.trim() !== ""
-                      );
-                      const totalInvestment = match.players.reduce(
-                        (sum, p) => sum + p.cajitas * match.caji_value,
-                        0
-                      );
-
-                      return (
-                        <div key={match.id} className="space-y-4">
-                          {/* Match Card */}
-                          <Card>
-                            <CardContent className="p-6">
-                              <div className="space-y-4">
-                                <div className="">
-                                  {/* Match Header */}
-                                  <div className="flex justify-between items-center">
-                                    <div className="text-xl font-bold">
-                                      {formatDate(match.date)}
-                                    </div>
-                                    <div className="text-xl font-bold">
-                                      ${formatAmount(totalInvestment)}
-                                    </div>
-                                  </div>
-
-                                  {/* Player Count */}
-                                  <div className="text-sm text-muted-foreground">
-                                    {playersWithNames.length}/
-                                    {match.player_count} jugadores
-                                  </div>
-                                </div>
-                                {/* Players List */}
-                                {playersWithNames.length > 0 && (
-                                  <div className="space-y-2">
-                                    {playersWithNames.map((player, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-full bg-muted-foreground flex items-center justify-center text-sm font-bold text-muted">
-                                            {index + 1}
-                                          </div>
-                                          <span className="font-medium">
-                                            {player.name}{" "}
-                                            <span className="text-xs text-muted-foreground font-normal">
-                                              ({player.cajitas} cjt
-                                              {player.cajitas !== 1 ? "s" : ""})
-                                            </span>
-                                          </span>
-                                        </div>
-                                        <div className="text-right">
-                                          <div
-                                            className={`text-lg font-bold ${
-                                              player.moneyWon >= 0
-                                                ? "text-emerald-600"
-                                                : "text-rose-600"
-                                            }`}
-                                          >
-                                            ${formatAmount(player.moneyWon)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Action Buttons Below Card */}
-                          <div className="flex gap-3">
-                            <Button
-                              variant="default"
-                              className="flex-1"
-                              onClick={() => editActiveMatch(match.id)}
-                            >
-                              Editar partida
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDeleteActiveMatch(match.id)}
-                              disabled={loading}
-                            >
-                              {loading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                "Borrar"
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </>
-            ) : (
-              /* Formulario de Registro */
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowRegisterForm(false);
-                        setEditingMatchId(null);
-                      }}
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                    </Button>
-                    <CardTitle className="text-2xl">
-                      {editingMatchId ? "Editando Partida" : "Nueva Partida"}
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="date">Fecha</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            date: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cajiValue">Valor de una Cajita</Label>
-                      <Input
-                        id="cajiValue"
-                        type="number"
-                        value={formData.cajiValue}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            cajiValue: Number(e.target.value),
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="playerCount">Número de Jugadores</Label>
-                      <Select
-                        value={formData.playerCount.toString()}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            playerCount: Number(value),
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[4, 5, 6, 7, 8].map((count) => (
-                            <SelectItem key={count} value={count.toString()}>
-                              {count} jugadores
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Jugadores</h3>
-                    {formData.players.map((player, index) => (
-                      <Card key={index}>
-                        <CardContent className="p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                              <Label>Jugador {index + 1}</Label>
-                              {showNewPlayerInput === index ? (
-                                <div className="flex gap-2">
-                                  <Input
-                                    value={newPlayerName}
-                                    onChange={(e) =>
-                                      setNewPlayerName(e.target.value)
-                                    }
-                                    placeholder="Nombre del nuevo jugador"
-                                  />
-                                  <Button
-                                    onClick={() => createNewPlayer(index)}
-                                    size="sm"
-                                    disabled={!newPlayerName.trim() || loading}
-                                  >
-                                    {loading ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <Plus className="w-4 h-4" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    onClick={() => {
-                                      setShowNewPlayerInput(null);
-                                      setNewPlayerName("");
-                                    }}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    ✕
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex gap-2">
-                                  <Select
-                                    value={player.name}
-                                    onValueChange={(value) => {
-                                      if (value === "new") {
-                                        setShowNewPlayerInput(index);
-                                      } else {
-                                        updatePlayerMoney(index, "name", value);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Seleccionar jugador" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {players
-                                        .filter(
-                                          (p) =>
-                                            !formData.players.some(
-                                              (fp, fpIndex) =>
-                                                fpIndex !== index &&
-                                                fp.name === p.name
-                                            )
-                                        )
-                                        .map((p) => (
-                                          <SelectItem key={p.id} value={p.name}>
-                                            {p.name}
-                                          </SelectItem>
-                                        ))}
-                                      <SelectItem value="new">
-                                        + Crear nuevo jugador
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <Label>Cajitas</Label>
-                                <Input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  value={player.cajitas.toString()}
-                                  onChange={(e) => {
-                                    const value = e.target.value.replace(
-                                      /[^0-9]/g,
-                                      ""
-                                    );
-                                    if (
-                                      value === "" ||
-                                      (Number.parseInt(value) >= 1 &&
-                                        Number.parseInt(value) <= 999)
-                                    ) {
-                                      updatePlayerMoney(
-                                        index,
-                                        "cajitas",
-                                        value === ""
-                                          ? 1
-                                          : Number.parseInt(value)
-                                      );
-                                    }
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  className="text-center"
-                                  min="1"
-                                  placeholder="1"
-                                />
-                              </div>
-                              <div>
-                                <Label>Fichas Totales</Label>
-                                <Input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  value={
-                                    player.finalChips === 0
-                                      ? ""
-                                      : player.finalChips.toString()
-                                  }
-                                  onChange={(e) => {
-                                    const value = e.target.value.replace(
-                                      /[^0-9]/g,
-                                      ""
-                                    );
-                                    updatePlayerMoney(
-                                      index,
-                                      "finalChips",
-                                      value === "" ? 0 : Number.parseInt(value)
-                                    );
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  className="text-center"
-                                  min="0"
-                                  placeholder="0"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <Label>Dinero Ganado/Perdido</Label>
-                              <div
-                                className={`p-2 rounded text-center font-semibold ${
-                                  player.moneyWon >= 0
-                                    ? "text-emerald-500"
-                                    : "text-rose-500"
-                                }`}
-                              >
-                                ${formatAmount(player.moneyWon)}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  <Card
-                    className={`border-2 ${
-                      validateBalance()
-                        ? "border-emerald-500"
-                        : "border-rose-500"
-                    }`}
-                  >
-                    <CardContent className="p-4">
+              <div className="space-y-4">
+                {activeMatches.length === 0 ? (
+                  <div className="space-y-2">
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
                       <div className="text-center">
-                        <div
-                          className={`text-lg font-semibold ${
-                            validateBalance()
-                              ? "text-emerald-600"
-                              : "text-rose-600"
-                          }`}
-                        >
-                          {validateBalance()
-                            ? "✅ Balance Correcto"
-                            : "❌ Balance Incorrecto"}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-2">
-                          Total Invertido: $
-                          {formatAmount(
-                            formData.players.reduce(
-                              (sum, p) => sum + p.cajitas * formData.cajiValue,
-                              0
-                            )
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Total Fichas Finales: $
-                          {formatAmount(
-                            formData.players.reduce(
-                              (sum, p) => sum + p.finalChips,
-                              0
-                            )
-                          )}
-                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          ¿Sa-Sa Sale?
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="flex gap-3">
+                    </div>
                     <Button
-                      onClick={() => {
-                        setShowRegisterForm(false);
-                        setEditingMatchId(null);
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Volver
-                    </Button>
-                    <Button
-                      onClick={registerMatch}
-                      disabled={
-                        !validateBalance() ||
-                        formData.players.some((p) => !p.name) ||
-                        loading
-                      }
-                      className="flex-1"
+                      onClick={createNewActiveMatch}
+                      disabled={loading}
+                      className="w-full"
+                      variant="default"
                     >
                       {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Registrando...
-                        </>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : (
-                        "Validar y Registrar Partida"
+                        <Cannabis className="w-4 h-4 mr-2" />
                       )}
+                      Nueva partida
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  activeMatches.map((match) => {
+                    const playersWithNames = match.players.filter(
+                      (p) => p.name.trim() !== ""
+                    );
+                    const totalInvestment = match.players.reduce(
+                      (sum, p) => sum + p.cajitas * match.caji_value,
+                      0
+                    );
+
+                    return (
+                      <div key={match.id} className="space-y-4">
+                        {/* Match Card */}
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="space-y-4">
+                              <div className="">
+                                {/* Match Header */}
+                                <div className="flex justify-between items-center">
+                                  <div className="text-xl font-bold">
+                                    {formatDate(match.date)}
+                                  </div>
+                                  <div className="text-xl font-bold">
+                                    ${formatAmount(totalInvestment)}
+                                  </div>
+                                </div>
+
+                                {/* Player Count */}
+                                <div className="text-sm text-muted-foreground">
+                                  {playersWithNames.length}/{match.player_count}{" "}
+                                  jugadores
+                                </div>
+                              </div>
+                              {/* Players List */}
+                              {playersWithNames.length > 0 && (
+                                <div className="space-y-2">
+                                  {playersWithNames.map((player, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-muted-foreground flex items-center justify-center text-sm font-bold text-muted">
+                                          {index + 1}
+                                        </div>
+                                        <span className="font-medium">
+                                          {player.name}{" "}
+                                          <span className="text-xs text-muted-foreground font-normal">
+                                            ({player.cajitas} cjt
+                                            {player.cajitas !== 1 ? "s" : ""})
+                                          </span>
+                                        </span>
+                                      </div>
+                                      <div className="text-right">
+                                        <div
+                                          className={`text-lg font-bold ${
+                                            player.moneyWon >= 0
+                                              ? "text-emerald-600"
+                                              : "text-rose-600"
+                                          }`}
+                                        >
+                                          ${formatAmount(player.moneyWon)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Action Buttons Below Card */}
+                        <div className="flex gap-3">
+                          <Button
+                            variant="default"
+                            className="flex-1"
+                            onClick={() => editActiveMatch(match.id)}
+                          >
+                            Editar partida
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleDeleteActiveMatch(match.id)}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "Borrar"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
 
             {/* Historial de Partidas */}
             <div className="space-y-1">
               <div className="flex flex-row align-center justify-between">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold">Historial de Partidas</h2>
+                  <h2 className="text-xl font-normal">Historial de Partidas</h2>
                 </div>
                 <Button
                   onClick={refreshData}
