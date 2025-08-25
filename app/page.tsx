@@ -1544,7 +1544,7 @@ function LaCajitaPoker() {
         {activeTab === "estadisticas" && (
           <div className="space-y-6">
             {/* Análisis Individual */}
-            <h2 className="text-2xl font-bold">Análisis Individual</h2>
+            <h2 className="text-2xl font-bold text-center">Estadísticas</h2>
             <div className="space-y-4">
               {getSortedPlayerStats().map((player) => {
                 const isExpanded = expandedPlayerCards.has(player.id);
