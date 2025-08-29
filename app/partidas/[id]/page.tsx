@@ -360,7 +360,9 @@ export default function EditActiveMatchPage() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="date">Fecha</Label>
+              <Label htmlFor="date" className="text-muted-foreground">
+                Fecha
+              </Label>
               <Input
                 id="date"
                 type="date"
@@ -371,7 +373,9 @@ export default function EditActiveMatchPage() {
               />
             </div>
             <div>
-              <Label htmlFor="cajiValue">Valor de una Cajita</Label>
+              <Label htmlFor="cajiValue" className="text-muted-foreground">
+                Valor de una Cajita
+              </Label>
               <Input
                 id="cajiValue"
                 type="number"
@@ -385,7 +389,9 @@ export default function EditActiveMatchPage() {
               />
             </div>
             <div>
-              <Label htmlFor="playerCount">Número de Jugadores</Label>
+              <Label htmlFor="playerCount" className="text-muted-foreground">
+                Número de Jugadores
+              </Label>
               <Select
                 value={String(formData.playerCount)}
                 onValueChange={(v) =>
@@ -443,91 +449,97 @@ export default function EditActiveMatchPage() {
                     index={index}
                   >
                     <Card className="">
-                      <CardContent className="p-4 pl-8 pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            {/*  <Label>Jugador {index + 1}</Label> */}
-                            {newPlayerInputIndex === index ? (
-                              <div className="flex gap-2">
-                                <Input
-                                  value={newPlayerName}
-                                  onChange={(e) =>
-                                    setNewPlayerName(e.target.value)
-                                  }
-                                  placeholder="Nombre del nuevo jugador"
-                                  className="h-12 text-xl"
-                                />
-                                <Button
-                                  onClick={() => createNewPlayer(index)}
-                                  size="sm"
-                                  disabled={
-                                    !newPlayerName.trim() || creatingPlayer
-                                  }
-                                >
-                                  {creatingPlayer ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Plus className="w-4 h-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    setNewPlayerInputIndex(null);
-                                    setNewPlayerName("");
-                                  }}
-                                  size="sm"
-                                  variant="outline"
-                                >
-                                  ✕
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2">
-                                <Select
-                                  value={player.name}
-                                  onValueChange={(value) => {
-                                    if (value === "new") {
-                                      setNewPlayerInputIndex(index);
-                                    } else {
-                                      updatePlayerMoney(index, "name", value);
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="h-12 text-xl">
-                                    <SelectValue placeholder="Seleccionar jugador" />
-                                  </SelectTrigger>
-                                  <SelectContent className="text-base">
-                                    {playersList
-                                      .filter(
-                                        (p) =>
-                                          !formData.players.some(
-                                            (fp, fpIndex) =>
-                                              fpIndex !== index && fp.name === p
-                                          )
-                                      )
-                                      .map((name) => (
-                                        <SelectItem
-                                          key={name}
-                                          value={name}
-                                          className="text-base py-3"
-                                        >
-                                          {name}
-                                        </SelectItem>
-                                      ))}
-                                    <SelectItem
-                                      value="new"
-                                      className="text-base py-3"
-                                    >
-                                      + Crear nuevo jugador
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between gap-4">
+                      <CardContent className="p-4 pl-6">
+                        <div className="space-y-4">
+                          {/* First Row: Player Select and Cajitas */}
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label>Cajitas</Label>
+                              <Label className="text-muted-foreground">
+                                Jugador {index + 1}
+                              </Label>
+                              {newPlayerInputIndex === index ? (
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={newPlayerName}
+                                    onChange={(e) =>
+                                      setNewPlayerName(e.target.value)
+                                    }
+                                    placeholder="Nombre del nuevo jugador"
+                                    className="h-12 text-xl"
+                                  />
+                                  <Button
+                                    onClick={() => createNewPlayer(index)}
+                                    size="md"
+                                    disabled={
+                                      !newPlayerName.trim() || creatingPlayer
+                                    }
+                                  >
+                                    {creatingPlayer ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Plus className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      setNewPlayerInputIndex(null);
+                                      setNewPlayerName("");
+                                    }}
+                                    size="md"
+                                    variant="outline"
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <Select
+                                    value={player.name}
+                                    onValueChange={(value) => {
+                                      if (value === "new") {
+                                        setNewPlayerInputIndex(index);
+                                      } else {
+                                        updatePlayerMoney(index, "name", value);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-12 text-xl">
+                                      <SelectValue placeholder="Seleccionar jugador" />
+                                    </SelectTrigger>
+                                    <SelectContent className="text-base">
+                                      {playersList
+                                        .filter(
+                                          (p) =>
+                                            !formData.players.some(
+                                              (fp, fpIndex) =>
+                                                fpIndex !== index &&
+                                                fp.name === p
+                                            )
+                                        )
+                                        .map((name) => (
+                                          <SelectItem
+                                            key={name}
+                                            value={name}
+                                            className="text-base py-3"
+                                          >
+                                            {name}
+                                          </SelectItem>
+                                        ))}
+                                      <SelectItem
+                                        value="new"
+                                        className="text-base py-3"
+                                      >
+                                        + Crear nuevo jugador
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">
+                                Cajitas
+                              </Label>
                               <Input
                                 type="text"
                                 inputMode="numeric"
@@ -551,13 +563,19 @@ export default function EditActiveMatchPage() {
                                   }
                                 }}
                                 onFocus={(e) => e.currentTarget.select()}
-                                className="text-center"
+                                className="text-center text-xl h-12"
                                 min={1}
                                 placeholder="1"
                               />
                             </div>
+                          </div>
+
+                          {/* Second Row: Total Fichas and Balance */}
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label>Total Fichas</Label>
+                              <Label className="text-muted-foreground">
+                                Total en Fichas
+                              </Label>
                               <Input
                                 type="text"
                                 inputMode="numeric"
@@ -584,17 +602,19 @@ export default function EditActiveMatchPage() {
                                 placeholder="0"
                               />
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Label>Dinero Ganado/Perdido</Label>
-                            <div
-                              className={`p-2 rounded text-center font-semibold ${
-                                player.moneyWon >= 0
-                                  ? "text-emerald-500"
-                                  : "text-rose-500"
-                              }`}
-                            >
-                              ${player.moneyWon.toLocaleString()}
+                            <div>
+                              <Label className="text-muted-foreground opacity-0">
+                                Balance
+                              </Label>
+                              <div
+                                className={`p-2 rounded text-center font-semibold text-xl ${
+                                  player.moneyWon >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500"
+                                }`}
+                              >
+                                ${player.moneyWon.toLocaleString()}
+                              </div>
                             </div>
                           </div>
                         </div>
