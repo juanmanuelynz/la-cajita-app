@@ -469,7 +469,7 @@ export default function EditActiveMatchPage() {
                                   />
                                   <Button
                                     onClick={() => createNewPlayer(index)}
-                                    size="md"
+                                    size="sm"
                                     disabled={
                                       !newPlayerName.trim() || creatingPlayer
                                     }
@@ -485,7 +485,7 @@ export default function EditActiveMatchPage() {
                                       setNewPlayerInputIndex(null);
                                       setNewPlayerName("");
                                     }}
-                                    size="md"
+                                    size="sm"
                                     variant="outline"
                                   >
                                     ✕
