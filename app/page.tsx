@@ -1019,7 +1019,7 @@ function LaCajitaPoker() {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="backdrop-blur-sm border-b sticky top-0 z-50">
+      <div className="backdrop-blur-sm border-b sticky top-0 z-50 bg-slate-300/27">
         <div className="container mx-auto px-4 py-4">
           <div className="text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-2">
