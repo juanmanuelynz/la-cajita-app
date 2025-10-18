@@ -477,7 +477,7 @@ export default function EditActiveMatchPage() {
                         <Card className="border-0 bg-transparent">
                           <CardContent className="p-4 pl-6">
                             <div className="space-y-4">
-                              {/* First Row: Player Select and Cajitas */}
+                              {/* Player Select and Cajitas */}
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label className="text-muted-foreground">
