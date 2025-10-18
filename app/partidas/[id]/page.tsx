@@ -389,8 +389,8 @@ export default function EditActiveMatchPage() {
                     <CardContent className="p-0 py-2">
                       <div className="space-y-4">
                         {/* Player Select and Cajitas */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
+                        <div className="flex gap-4">
+                          <div className="w-full min-w-[90px]">
                             {/* <Label className="text-muted-foreground">
                               Jugador {index + 1}
                             </Label>*/}
@@ -472,7 +472,7 @@ export default function EditActiveMatchPage() {
                               </div>
                             )}
                           </div>
-                          <div>
+                          <div className="w-full">
                             {/*<Label
                               className="text-muted-foreground"
                               style={{ opacity: 0 }}
