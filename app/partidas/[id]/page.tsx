@@ -469,166 +469,163 @@ export default function EditActiveMatchPage() {
                     strategy={verticalListSortingStrategy}
                   >
                     {formData.players.map((player, index) => (
-                      <SortablePlayerRow
+                      <Card
+                        className="border-0 bg-transparent"
                         key={index}
                         id={index.toString()}
-                        index={index}
                       >
-                        <Card className="border-0 bg-transparent">
-                          <CardContent className="p-4 pl-6">
-                            <div className="space-y-4">
-                              {/* Player Select and Cajitas */}
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label className="text-muted-foreground">
-                                    Jugador {index + 1}
-                                  </Label>
-                                  {newPlayerInputIndex === index ? (
-                                    <div className="flex gap-2">
-                                      <Input
-                                        value={newPlayerName}
-                                        onChange={(e) =>
-                                          setNewPlayerName(e.target.value)
-                                        }
-                                        placeholder="Nombre del nuevo jugador"
-                                        className="h-12 text-xl"
-                                      />
-                                      <Button
-                                        onClick={() => createNewPlayer(index)}
-                                        size="sm"
-                                        disabled={
-                                          !newPlayerName.trim() ||
-                                          creatingPlayer
-                                        }
-                                      >
-                                        {creatingPlayer ? (
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Plus className="w-4 h-4" />
-                                        )}
-                                      </Button>
-                                      <Button
-                                        onClick={() => {
-                                          setNewPlayerInputIndex(null);
-                                          setNewPlayerName("");
-                                        }}
-                                        size="sm"
-                                        variant="outline"
-                                      >
-                                        ✕
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex gap-2">
-                                      <Select
-                                        value={player.name}
-                                        onValueChange={(value) => {
-                                          if (value === "new") {
-                                            setNewPlayerInputIndex(index);
-                                          } else {
-                                            updatePlayerMoney(
-                                              index,
-                                              "name",
-                                              value
-                                            );
-                                          }
-                                        }}
-                                      >
-                                        <SelectTrigger className="h-12 text-xl">
-                                          <SelectValue placeholder="Seleccionar jugador" />
-                                        </SelectTrigger>
-                                        <SelectContent className="text-base">
-                                          {playersList
-                                            .filter(
-                                              (p) =>
-                                                !formData.players.some(
-                                                  (fp, fpIndex) =>
-                                                    fpIndex !== index &&
-                                                    fp.name === p
-                                                )
-                                            )
-                                            .map((name) => (
-                                              <SelectItem
-                                                key={name}
-                                                value={name}
-                                                className="text-base py-3"
-                                              >
-                                                {name}
-                                              </SelectItem>
-                                            ))}
-                                          <SelectItem
-                                            value="new"
-                                            className="text-base py-3"
-                                          >
-                                            + Crear nuevo jugador
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <Label
-                                    className="text-muted-foreground"
-                                    style={{ opacity: 0 }}
-                                  >
-                                    Cajitas
-                                  </Label>
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-12 w-12 flex-shrink-0"
-                                      onClick={() => {
-                                        const newValue = Math.max(
-                                          1,
-                                          player.cajitas - 1
-                                        );
-                                        updatePlayerMoney(
-                                          index,
-                                          "cajitas",
-                                          newValue
-                                        );
-                                      }}
-                                      disabled={player.cajitas <= 1}
-                                    >
-                                      -
-                                    </Button>
+                        <CardContent className="p-0">
+                          <div className="space-y-4">
+                            {/* Player Select and Cajitas */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-muted-foreground">
+                                  Jugador {index + 1}
+                                </Label>
+                                {newPlayerInputIndex === index ? (
+                                  <div className="flex gap-2">
                                     <Input
-                                      type="text"
-                                      value={player.cajitas.toString()}
-                                      readOnly
-                                      className="text-center text-xl h-12 bg-muted cursor-default"
-                                      placeholder="1"
+                                      value={newPlayerName}
+                                      onChange={(e) =>
+                                        setNewPlayerName(e.target.value)
+                                      }
+                                      placeholder="Nombre del nuevo jugador"
+                                      className="h-12 text-xl"
                                     />
                                     <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-12 w-12 flex-shrink-0"
-                                      onClick={() => {
-                                        const newValue = Math.min(
-                                          999,
-                                          player.cajitas + 1
-                                        );
-                                        updatePlayerMoney(
-                                          index,
-                                          "cajitas",
-                                          newValue
-                                        );
-                                      }}
-                                      disabled={player.cajitas >= 999}
+                                      onClick={() => createNewPlayer(index)}
+                                      size="sm"
+                                      disabled={
+                                        !newPlayerName.trim() || creatingPlayer
+                                      }
                                     >
-                                      +
+                                      {creatingPlayer ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Plus className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setNewPlayerInputIndex(null);
+                                        setNewPlayerName("");
+                                      }}
+                                      size="sm"
+                                      variant="outline"
+                                    >
+                                      ✕
                                     </Button>
                                   </div>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <Select
+                                      value={player.name}
+                                      onValueChange={(value) => {
+                                        if (value === "new") {
+                                          setNewPlayerInputIndex(index);
+                                        } else {
+                                          updatePlayerMoney(
+                                            index,
+                                            "name",
+                                            value
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-12 text-xl">
+                                        <SelectValue placeholder="Seleccionar jugador" />
+                                      </SelectTrigger>
+                                      <SelectContent className="text-base">
+                                        {playersList
+                                          .filter(
+                                            (p) =>
+                                              !formData.players.some(
+                                                (fp, fpIndex) =>
+                                                  fpIndex !== index &&
+                                                  fp.name === p
+                                              )
+                                          )
+                                          .map((name) => (
+                                            <SelectItem
+                                              key={name}
+                                              value={name}
+                                              className="text-base py-3"
+                                            >
+                                              {name}
+                                            </SelectItem>
+                                          ))}
+                                        <SelectItem
+                                          value="new"
+                                          className="text-base py-3"
+                                        >
+                                          + Crear nuevo jugador
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <Label
+                                  className="text-muted-foreground"
+                                  style={{ opacity: 0 }}
+                                >
+                                  Cajitas
+                                </Label>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 flex-shrink-0"
+                                    onClick={() => {
+                                      const newValue = Math.max(
+                                        1,
+                                        player.cajitas - 1
+                                      );
+                                      updatePlayerMoney(
+                                        index,
+                                        "cajitas",
+                                        newValue
+                                      );
+                                    }}
+                                    disabled={player.cajitas <= 1}
+                                  >
+                                    -
+                                  </Button>
+                                  <Input
+                                    type="text"
+                                    value={player.cajitas.toString()}
+                                    readOnly
+                                    className="text-center text-xl h-12 bg-muted cursor-default"
+                                    placeholder="1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 flex-shrink-0"
+                                    onClick={() => {
+                                      const newValue = Math.min(
+                                        999,
+                                        player.cajitas + 1
+                                      );
+                                      updatePlayerMoney(
+                                        index,
+                                        "cajitas",
+                                        newValue
+                                      );
+                                    }}
+                                    disabled={player.cajitas >= 999}
+                                  >
+                                    +
+                                  </Button>
                                 </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      </SortablePlayerRow>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </SortableContext>
                 </DndContext>
