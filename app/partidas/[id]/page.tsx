@@ -547,9 +547,6 @@ export default function EditActiveMatchPage() {
         {currentView === "close" && (
           <>
             <div className="flex items-center gap-3 mb-6">
-              <Button variant="outline" size="sm" onClick={goBackToEdit}>
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
               <h2 className="text-xl font-semibold">Cierre de Partida</h2>
             </div>
 
@@ -559,11 +556,13 @@ export default function EditActiveMatchPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Jugador</TableHead>
-                      <TableHead className="text-center">Cajitas</TableHead>
-                      <TableHead className="text-center">
+                      <TableHead className="text-center px-2">Cjts.</TableHead>
+                      <TableHead className="text-center pr-2">
                         Fichas Finales
                       </TableHead>
-                      <TableHead className="text-center">Balance</TableHead>
+                      <TableHead className="text-center pl-3">
+                        Balance
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -572,10 +571,10 @@ export default function EditActiveMatchPage() {
                         <TableCell className="font-medium">
                           {player.name}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center px-2">
                           {player.cajitas}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center pr-2">
                           <Input
                             type="text"
                             inputMode="numeric"
@@ -602,7 +601,7 @@ export default function EditActiveMatchPage() {
                             placeholder="0"
                           />
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center pl-3">
                           <div
                             className={`font-semibold ${
                               player.moneyWon >= 0
