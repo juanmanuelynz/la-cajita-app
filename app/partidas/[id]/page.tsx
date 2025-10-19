@@ -550,7 +550,7 @@ export default function EditActiveMatchPage() {
               <h2 className="text-xl font-semibold">Cierre de Partida</h2>
             </div>
 
-            <Card className="border-0 bg-transparent">
+            <Card className="border-0 bg-transparent shadow-none">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
