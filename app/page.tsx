@@ -57,6 +57,7 @@ import {
   TrendingUp,
   TrendingDown,
   HelpCircle,
+  LogOut,
 } from "lucide-react";
 import { Line, Bar, Scatter } from "react-chartjs-2";
 import {
@@ -78,6 +79,7 @@ import type {
   ActiveMatch,
 } from "../lib/supabase";
 import { PWAInstall } from "@/components/pwa-install";
+import { useAuth } from "@/hooks/use-auth";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
@@ -117,6 +119,7 @@ function LaCajitaPoker() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("ranking");
+  const { logout } = useAuth();
 
   // Utility function to safely format numbers with Spanish locale
   const formatAmount = (amount: number | string | undefined | null): string => {
@@ -1021,10 +1024,32 @@ function LaCajitaPoker() {
       {/* Header */}
       <div className="backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold mb-2">
-              ♠️ La Cajita
-            </h1>
+          <div className="flex items-center justify-between">
+            <div className="flex-1"></div>
+            <div className="text-center">
+              <h1 className="text-3xl md:text-5xl font-bold mb-2">
+                ♠️ La Cajita
+              </h1>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={logout}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cerrar sesión</p>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
       </div>
