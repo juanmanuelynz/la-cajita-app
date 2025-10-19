@@ -146,7 +146,24 @@ function LaCajitaPoker() {
   // Utility function to format dates as DD/MM/YYYY
   const formatDate = (dateStr: string): string => {
     try {
-      // Handle dates in format YYYY-MM-DD
+      // Handle dates in format YYYY-MM-DD - parse as local date
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateStr.split("-").map(Number);
+        // Create date in local timezone (month is 0-indexed)
+        const date = new Date(year, month - 1, day);
+
+        if (isNaN(date.getTime())) {
+          return dateStr; // Return original if invalid
+        }
+
+        const dayStr = date.getDate().toString().padStart(2, "0");
+        const monthStr = (date.getMonth() + 1).toString().padStart(2, "0");
+        const yearStr = date.getFullYear();
+
+        return `${dayStr}/${monthStr}/${yearStr}`;
+      }
+
+      // Fallback for other date formats
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) {
         return dateStr; // Return original if invalid
@@ -160,6 +177,16 @@ function LaCajitaPoker() {
     } catch (error) {
       return dateStr; // Return original if error
     }
+  };
+
+  // Utility function to get today's date in local timezone
+  const getTodayLocalDate = (): string => {
+    const today = new Date();
+    // Ajustar la fecha para obtener la fecha local correcta
+    const localDate = new Date(
+      today.getTime() - today.getTimezoneOffset() * 60000
+    );
+    return localDate.toISOString().split("T")[0];
   };
 
   const [loading, setLoading] = useState(false);
@@ -215,7 +242,7 @@ function LaCajitaPoker() {
 
   // Form states
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayLocalDate(),
     cajiValue: 2000,
     playerCount: 4,
     players: Array(4)
@@ -320,7 +347,7 @@ function LaCajitaPoker() {
       console.log("🆕 Creating new active match...");
 
       const newMatch = await DatabaseService.createActiveMatch({
-        date: new Date().toISOString().split("T")[0],
+        date: getTodayLocalDate(),
         cajiValue: 2000,
         playerCount: 4,
         players: Array(4)
@@ -1022,8 +1049,8 @@ function LaCajitaPoker() {
       <div className="backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold mb-2">
-              ♠️ La Cajita
+            <h1 className="text-xl md:text-2xl font-bold mb-2">
+              ♠️♥️ La Cajita ♦️♣️
             </h1>
           </div>
         </div>

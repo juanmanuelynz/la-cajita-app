@@ -42,6 +42,28 @@ interface FormPlayer {
   tieBreak?: number;
 }
 
+// Utility functions for date handling
+const convertDateToLocal = (dateStr: string): string => {
+  try {
+    // Para fechas en formato YYYY-MM-DD, simplemente las devolvemos tal como están
+    // ya que los inputs de tipo date esperan este formato
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+    return dateStr; // Return original if not in expected format
+  } catch (error) {
+    return dateStr; // Return original if error
+  }
+};
+
+const getTodayLocalDate = (): string => {
+  const today = new Date();
+  const localDate = new Date(
+    today.getTime() - today.getTimezoneOffset() * 60000
+  );
+  return localDate.toISOString().split("T")[0];
+};
+
 export default function EditActiveMatchPage() {
   const params = useParams();
   const rawId = (params as any)?.id;
@@ -81,7 +103,7 @@ export default function EditActiveMatchPage() {
       if (!mounted) return;
       if (match) {
         setFormData({
-          date: match.date,
+          date: convertDateToLocal(match.date),
           cajiValue: match.caji_value,
           playerCount: match.player_count,
           players: (
