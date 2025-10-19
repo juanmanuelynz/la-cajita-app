@@ -1048,10 +1048,12 @@ function LaCajitaPoker() {
       {/* Header */}
       <div className="backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="text-center">
-            <h1 className="text-xl md:text-2xl font-bold mb-2">
-              ♠️♥️ La Cajita ♦️♣️
-            </h1>
+          <div className="flex justify-around items-center">
+            <h1 className="text-xl md:text-2xl font-bold">♠️</h1>
+            <h1 className="text-xl md:text-2xl font-bold">♥️</h1>
+            <h1 className="text-xl md:text-2xl font-bold">La Cajita</h1>
+            <h1 className="text-xl md:text-2xl font-bold">♦️</h1>
+            <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
           </div>
         </div>
       </div>
