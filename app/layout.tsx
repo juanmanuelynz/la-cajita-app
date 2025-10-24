@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "La Cajita Poker",
   },
   formatDetection: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: "#111827",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -60,12 +60,15 @@ export default function RootLayout({
         {/* PWA Meta Tags */}
         <meta name="application-name" content="La Cajita Poker" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="La Cajita" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#16a34a" />
+        <meta name="msapplication-TileColor" content="#111827" />
         <meta name="msapplication-tap-highlight" content="no" />
 
         {/* Apple Splash Screen */}
