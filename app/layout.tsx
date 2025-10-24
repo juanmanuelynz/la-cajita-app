@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#111827",
+  themeColor: "#09090b",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -68,7 +68,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#111827" />
+        <meta name="msapplication-TileColor" content="#09090b" />
         <meta name="msapplication-tap-highlight" content="no" />
 
         {/* Apple Splash Screen */}
