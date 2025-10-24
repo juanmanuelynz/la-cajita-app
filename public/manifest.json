@@ -4,7 +4,7 @@
   "description": "Eleva tus noches de poker con La Cajita Poker: la app definitiva para entusiastas del poker que buscan diversión, estrategia y comunidad en un solo lugar.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1f2937",
+  "background_color": "#111827",
   "theme_color": "#16a34a",
   "orientation": "portrait",
   "scope": "/",
