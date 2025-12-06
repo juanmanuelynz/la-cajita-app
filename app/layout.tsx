@@ -69,6 +69,7 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
 
         {/* Apple Splash Screen */}
+        {/* Agrego un comment para redeployar automaticamente */}
         <link rel="apple-touch-startup-image" href="/icon-512.png" />
 
         {/* Service Worker Registration */}
