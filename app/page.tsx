@@ -210,6 +210,9 @@ function LaCajitaPoker() {
   const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">(
     "money"
   );
+  const [evolutionSortBy, setEvolutionSortBy] = useState<"points" | "money">(
+    "money"
+  );
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
 
@@ -817,6 +820,141 @@ function LaCajitaPoker() {
       backgroundColor,
       borderColor,
     };
+  };
+
+  // Función para obtener top 3 jugadores con más victorias y su máximo pozo
+  const getTopWinners = () => {
+    const playerWins: {
+      [playerName: string]: {
+        wins: number;
+        maxPot: number;
+        maxPotDate: string;
+        maxPotCajitas: number;
+      };
+    } = {};
+
+    // Contar victorias (position = 1) y encontrar máximo pozo
+    matches.forEach((match) => {
+      match.match_players.forEach((mp) => {
+        const playerName = mp.players.name;
+
+        if (!playerWins[playerName]) {
+          playerWins[playerName] = {
+            wins: 0,
+            maxPot: mp.money_won,
+            maxPotDate: match.date,
+            maxPotCajitas: mp.cajitas,
+          };
+        }
+
+        // Contar victoria si fue primero
+        if (mp.position === 1) {
+          playerWins[playerName].wins += 1;
+        }
+
+        // Actualizar máximo pozo si es mayor
+        if (mp.money_won > playerWins[playerName].maxPot) {
+          playerWins[playerName].maxPot = mp.money_won;
+          playerWins[playerName].maxPotDate = match.date;
+          playerWins[playerName].maxPotCajitas = mp.cajitas;
+        }
+      });
+    });
+
+    // Convertir a array y ordenar por número de victorias
+    return Object.entries(playerWins)
+      .map(([name, data]) => ({
+        jugador: name,
+        victorias: data.wins,
+        maxPot: data.maxPot,
+        maxPotDate: data.maxPotDate,
+        maxPotCajitas: data.maxPotCajitas,
+      }))
+      .sort((a, b) => {
+        // Primero por victorias
+        if (b.victorias !== a.victorias) {
+          return b.victorias - a.victorias;
+        }
+        // Desempate por máximo pozo
+        return b.maxPot - a.maxPot;
+      })
+      .slice(0, 3);
+  };
+
+  // Función para obtener la evolución de posiciones de cada jugador por fecha
+  const getPositionEvolutionData = (sortBy: "money" | "points" = "money") => {
+    // Obtener todas las fechas únicas ordenadas
+    const dates = [...new Set(matches.map((m) => m.date))].sort();
+
+    // Acumular stats por jugador hasta cada fecha
+    const playerCumulativeStats: {
+      [playerName: string]: {
+        [date: string]: { money: number; points: number };
+      };
+    } = {};
+
+    // Construir acumulados progresivos
+    dates.forEach((date) => {
+      const matchesUpToDate = matches.filter((m) => m.date <= date);
+
+      // Calcular stats acumuladas para cada jugador
+      const statsAtDate: { [playerName: string]: { money: number; points: number } } = {};
+      
+      matchesUpToDate.forEach((match) => {
+        match.match_players.forEach((mp) => {
+          const playerName = mp.players.name;
+          if (!statsAtDate[playerName]) {
+            statsAtDate[playerName] = { money: 0, points: 0 };
+          }
+          statsAtDate[playerName].money += mp.money_won;
+          statsAtDate[playerName].points += mp.points;
+        });
+      });
+
+      // Guardar stats de esta fecha para cada jugador
+      Object.entries(statsAtDate).forEach(([playerName, stats]) => {
+        if (!playerCumulativeStats[playerName]) {
+          playerCumulativeStats[playerName] = {};
+        }
+        playerCumulativeStats[playerName][date] = stats;
+      });
+    });
+
+    // Para cada fecha, calcular el ranking
+    const evolutionData: {
+      [playerName: string]: { date: string; position: number }[];
+    } = {};
+
+    dates.forEach((date) => {
+      // Obtener todos los jugadores con stats en esta fecha
+      const playersAtDate = Object.entries(playerCumulativeStats)
+        .filter(([_, stats]) => stats[date])
+        .map(([name, stats]) => ({
+          name,
+          money: stats[date].money,
+          points: stats[date].points,
+        }))
+        .sort((a, b) => {
+          if (sortBy === "points") {
+            return b.points - a.points || b.money - a.money;
+          } else {
+            return b.money - a.money || b.points - a.points;
+          }
+        });
+
+      // Asignar posición
+      playersAtDate.forEach((player, index) => {
+        if (!evolutionData[player.name]) {
+          evolutionData[player.name] = [];
+        }
+        evolutionData[player.name].push({
+          date,
+          position: index + 1,
+        });
+      });
+    });
+
+    return { dates, evolutionData };
   };
 
   // Función para calcular las mayores recuperaciones en una sola noche
@@ -1737,151 +1875,243 @@ function LaCajitaPoker() {
               })}
             </div>
 
-            {/* Top 3 */}
-            {/* Helper functions */}
-            {(() => {
-              // Flatten all partidas individuales
-              type PartidaFlat = {
-                jugador: string;
-                dinero_ganado: number;
-                fecha: string;
-                cajitas: number;
-                rank?: number;
-              };
-              const partidasFlat: PartidaFlat[] = matches.flatMap((match) =>
-                match.match_players.map((mp) => ({
-                  jugador: mp.players.name,
-                  dinero_ganado: mp.money_won,
-                  fecha: match.date,
-                  cajitas: mp.cajitas,
-                }))
-              );
-
-              // Top 3 ganadores
-              const getTopWins = (
-                partidas: PartidaFlat[],
-                limit: number = 3
-              ): PartidaFlat[] =>
-                partidas
-                  .filter((p: PartidaFlat) => p.dinero_ganado > 0)
-                  .sort(
-                    (a: PartidaFlat, b: PartidaFlat) =>
-                      b.dinero_ganado - a.dinero_ganado
-                  )
-                  .slice(0, limit)
-                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
-
-              // Top 3 perdedores
-              const getTopLosses = (
-                partidas: PartidaFlat[],
-                limit: number = 3
-              ): PartidaFlat[] =>
-                partidas
-                  .filter((p: PartidaFlat) => p.dinero_ganado < 0)
-                  .sort(
-                    (a: PartidaFlat, b: PartidaFlat) =>
-                      a.dinero_ganado - b.dinero_ganado
-                  )
-                  .slice(0, limit)
-                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
-
-              const topWins: PartidaFlat[] = getTopWins(partidasFlat);
-              const topLosses: PartidaFlat[] = getTopLosses(partidasFlat);
-
-              return (
-                <>
-                  {/* Card 1: Mejores Partidas */}
-                  <Card className="flex-1 ">
-                    <CardHeader>
-                      <CardTitle className="text-white text-xl flex items-center gap-2">
-                        💰 Mejores Partidas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {topWins.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-6">
-                          No hay datos
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {topWins.map((p: PartidaFlat) => (
-                            <div
-                              key={p.rank}
-                              className="flex items-center justify-between p-3 rounded-lg bg-white/5"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="text-white text-xl font-bold w-6 text-center">
-                                  {p.rank}
-                                </span>
-                                <span className="text-white font-semibold text-base md:text-lg">
-                                  {p.jugador}
-                                </span>
+            {/* Top 3 Ganadores de Partidas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  🏆 Top 3 Ganadores de Partidas
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Jugadores con más victorias y su máximo pozo ganado
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {getTopWinners().length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No hay datos de victorias disponibles</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Card destacada para el #1 */}
+                    {getTopWinners()[0] && (
+                      <Card className="border-2 border-yellow-500/50">
+                        <CardContent className="p-4 flex flex-col gap-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="text-3xl">🥇</div>
+                            <div>
+                              <h3 className="font-bold text-lg">
+                                {getTopWinners()[0].jugador}
+                              </h3>                              
+                            </div>
+                            <div className="ml-auto text-right">
+                              <div className="text-2xl font-bold text-white">                                
+                                {getTopWinners()[0].victorias}
                               </div>
-                              <div className="flex flex-col items-end">
-                                <span className="font-bold text-emerald-400 text-lg">
-                                  ${formatAmount(p.dinero_ganado)}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(p.fecha)}
-                                </span>
-                                <span className="text-xs text-white/70">
-                                  {p.cajitas} cajitas
-                                </span>
+                              {/*<p className="text-xs text-muted-foreground">
+                                {getTopWinners()[0].victorias === 1
+                                  ? "victoria"
+                                  : "victorias"}
+                              </p>*/}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                            <div>
+                              <div className="font-semibold text-white">
+                                ${formatAmount(getTopWinners()[0].maxPot)}
+                              </div>
+                              <div className="text-muted-foreground">
+                                Máximo Pozo
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Card 2: Peores Partidas */}
-                  <Card className="flex-1">
-                    <CardHeader>
-                      <CardTitle className="text-white text-xl flex items-center gap-2">
-                        💸 Peores Partidas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {topLosses.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-6">
-                          No hay datos
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {topLosses.map((p: PartidaFlat) => (
-                            <div
-                              key={p.rank}
-                              className="flex items-center justify-between p-3 rounded-lg bg-white/5"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="text-white text-xl font-bold w-6 text-center">
-                                  {p.rank}
-                                </span>
-                                <span className="text-white font-semibold text-base md:text-lg">
-                                  {p.jugador}
-                                </span>
+                            <div>
+                              <div className="font-semibold text-white">
+                                {getTopWinners()[0].maxPotCajitas}
                               </div>
-                              <div className="flex flex-col items-end">
-                                <span className="font-bold text-rose-400 text-lg">
-                                  ${formatAmount(p.dinero_ganado)}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(p.fecha)}
-                                </span>
-                                <span className="text-xs text-white/70">
-                                  {p.cajitas} cajitas
-                                </span>
-                              </div>
+                              <div className="text-muted-foreground">Cajitas</div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              );
-            })()}
+                            <div>
+                              <div className="font-semibold text-white">
+                                {formatDate(getTopWinners()[0].maxPotDate)}
+                              </div>
+                              <div className="text-muted-foreground">Fecha</div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Podio 2do y 3er puesto */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {getTopWinners()
+                        .slice(1, 3)
+                        .map((winner, index) => {
+                          const medals = ["🥈", "🥉"];
+                          const borderColors = [
+                            "border-gray-400/50",
+                            "border-orange-600/50",
+                          ];
+
+                          return (
+                            <Card
+                              key={winner.jugador}
+                              className={`${borderColors[index]} border-2`}
+                            >
+                              <CardContent className="p-3 text-center">
+                                <div className="text-2xl mb-2">
+                                  {medals[index]}
+                                </div>
+                                <div className="font-semibold text-sm mb-1">
+                                  {winner.jugador}
+                                </div>
+                                <div className="text-lg font-bold text-white mb-1">                                  
+                                  {winner.victorias}
+                                </div>
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  ${formatAmount(winner.maxPot)} / {winner.maxPotCajitas}
+                                </div>
+                                <div className="text-xs text-white/70">                                  
+                                  {formatDate(winner.maxPotDate)}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Evolución de Posiciones */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  📈 Evolución de Posiciones
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Trayectoria del ranking de cada jugador fecha tras fecha
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Toggle para cambiar entre dinero y puntos */}
+                <div className="flex items-center justify-center gap-4 pb-2">
+                  <span
+                    className={`text-sm font-medium ${
+                      evolutionSortBy === "money" ? "" : "text-muted-foreground"
+                    }`}
+                  >
+                    Dinero
+                  </span>
+                  <Switch
+                    checked={evolutionSortBy === "points"}
+                    onCheckedChange={(checked) =>
+                      setEvolutionSortBy(checked ? "points" : "money")
+                    }
+                    aria-label="Cambiar orden de evolución"
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      evolutionSortBy === "points" ? "" : "text-muted-foreground"
+                    }`}
+                  >
+                    Puntos
+                  </span>
+                </div>
+
+                {matches.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-6">
+                    No hay datos de partidas
+                  </div>
+                ) : (
+                  <div className="h-96">
+                    {(() => {
+                      const { dates, evolutionData } =
+                        getPositionEvolutionData(evolutionSortBy);
+
+                      // Preparar datasets para el gráfico
+                      const colors = [
+                        "rgba(59, 130, 246, 1)", // blue
+                        "rgba(239, 68, 68, 1)", // red
+                        "rgba(34, 197, 94, 1)", // green
+                        "rgba(234, 179, 8, 1)", // yellow
+                        "rgba(168, 85, 247, 1)", // purple
+                        "rgba(236, 72, 153, 1)", // pink
+                        "rgba(251, 146, 60, 1)", // orange
+                        "rgba(20, 184, 166, 1)", // teal
+                      ];
+
+                      const datasets = Object.entries(evolutionData).map(
+                        ([playerName, positions], index) => ({
+                          label: playerName,
+                          data: positions.map((p) => p.position),
+                          borderColor: colors[index % colors.length],
+                          backgroundColor: colors[index % colors.length],
+                          tension: 0.3,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                        })
+                      );
+
+                      return (
+                        <Line
+                          data={{
+                            labels: dates.map((d) => formatDate(d)),
+                            datasets,
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                position: "bottom" as const,
+                                labels: {
+                                  usePointStyle: true,
+                                  padding: 15,
+                                },
+                              },
+                              tooltip: {
+                                callbacks: {
+                                  label: (context) => {
+                                    return `${context.dataset.label}: Pos ${context.parsed.y}`;
+                                  },
+                                },
+                              },
+                            },
+                            scales: {
+                              y: {
+                                reverse: true, // Posición 1 arriba
+                                beginAtZero: false,
+                                ticks: {
+                                  stepSize: 1,
+                                  callback: function (value) {
+                                    return `${value}°`;
+                                  },
+                                },
+                                title: {
+                                  display: true,
+                                  text: "Posición",
+                                },
+                              },
+                              x: {
+                                title: {
+                                  display: true,
+                                  text: "Fecha",
+                                },
+                                ticks: {
+                                  maxRotation: 45,
+                                  minRotation: 45,
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      );
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Mayores Recuperaciones */}
             <Card>
@@ -2030,6 +2260,274 @@ function LaCajitaPoker() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Mejores Partidas */}
+            {(() => {
+              // Flatten all partidas individuales
+              type PartidaFlat = {
+                jugador: string;
+                dinero_ganado: number;
+                fecha: string;
+                cajitas: number;
+                rank?: number;
+              };
+              const partidasFlat: PartidaFlat[] = matches.flatMap((match) =>
+                match.match_players.map((mp) => ({
+                  jugador: mp.players.name,
+                  dinero_ganado: mp.money_won,
+                  fecha: match.date,
+                  cajitas: mp.cajitas,
+                }))
+              );
+
+              // Top 3 ganadores
+              const getTopWins = (
+                partidas: PartidaFlat[],
+                limit: number = 3
+              ): PartidaFlat[] =>
+                partidas
+                  .filter((p: PartidaFlat) => p.dinero_ganado > 0)
+                  .sort(
+                    (a: PartidaFlat, b: PartidaFlat) =>
+                      b.dinero_ganado - a.dinero_ganado
+                  )
+                  .slice(0, limit)
+                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
+
+              const topWins: PartidaFlat[] = getTopWins(partidasFlat);
+
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      💰 Mejores Partidas
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Las 3 partidas individuales con mayores ganancias
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {topWins.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Coins className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay datos disponibles</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Card destacada para el #1 */}
+                        {topWins[0] && (
+                          <Card className="border-2 border-yellow-500/50">
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="text-3xl">🥇</div>
+                                <div>
+                                  <h3 className="font-bold text-lg">
+                                    {topWins[0].jugador}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDate(topWins[0].fecha)}
+                                  </p>
+                                </div>
+                                <div className="ml-auto text-right">
+                                  <div className="text-2xl font-bold text-emerald-600">
+                                    ${formatAmount(topWins[0].dinero_ganado)}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Ganancia
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                <div>
+                                  <div className="font-semibold text-white">
+                                    {topWins[0].cajitas}
+                                  </div>
+                                  <div className="text-muted-foreground">Cajitas</div>
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-emerald-600">
+                                    ${formatAmount(topWins[0].dinero_ganado)}
+                                  </div>
+                                  <div className="text-muted-foreground">Ganado</div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Podio 2do y 3er puesto */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {topWins.slice(1, 3).map((p, index) => {
+                            const medals = ["🥈", "🥉"];
+                            const borderColors = [
+                              "border-gray-400/50",
+                              "border-orange-600/50",
+                            ];
+
+                            return (
+                              <Card
+                                key={`${p.jugador}-${p.fecha}`}
+                                className={`${borderColors[index]} border-2`}
+                              >
+                                <CardContent className="p-3 text-center">
+                                  <div className="text-2xl mb-2">{medals[index]}</div>
+                                  <div className="font-semibold text-sm mb-1">
+                                    {p.jugador}
+                                  </div>
+                                  <div className="text-lg font-bold text-emerald-600 mb-1">
+                                    ${formatAmount(p.dinero_ganado)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    {formatDate(p.fecha)}
+                                  </div>
+                                  <div className="text-xs text-white/70">
+                                    {p.cajitas} cajitas
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            {/* Peores Partidas */}
+            {(() => {
+              // Flatten all partidas individuales
+              type PartidaFlat = {
+                jugador: string;
+                dinero_ganado: number;
+                fecha: string;
+                cajitas: number;
+                rank?: number;
+              };
+              const partidasFlat: PartidaFlat[] = matches.flatMap((match) =>
+                match.match_players.map((mp) => ({
+                  jugador: mp.players.name,
+                  dinero_ganado: mp.money_won,
+                  fecha: match.date,
+                  cajitas: mp.cajitas,
+                }))
+              );
+
+              // Top 3 perdedores
+              const getTopLosses = (
+                partidas: PartidaFlat[],
+                limit: number = 3
+              ): PartidaFlat[] =>
+                partidas
+                  .filter((p: PartidaFlat) => p.dinero_ganado < 0)
+                  .sort(
+                    (a: PartidaFlat, b: PartidaFlat) =>
+                      a.dinero_ganado - b.dinero_ganado
+                  )
+                  .slice(0, limit)
+                  .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
+
+              const topLosses: PartidaFlat[] = getTopLosses(partidasFlat);
+
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      💸 Peores Partidas
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Las 3 partidas individuales con mayores pérdidas
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {topLosses.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <TrendingDown className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay datos disponibles</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Card destacada para el #1 (peor partida) */}
+                        {topLosses[0] && (
+                          <Card className="border-2 border-rose-500/50">
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="text-3xl">💔</div>
+                                <div>
+                                  <h3 className="font-bold text-lg">
+                                    {topLosses[0].jugador}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDate(topLosses[0].fecha)}
+                                  </p>
+                                </div>
+                                <div className="ml-auto text-right">
+                                  <div className="text-2xl font-bold text-rose-600">
+                                    ${formatAmount(topLosses[0].dinero_ganado)}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Pérdida
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                                <div>
+                                  <div className="font-semibold text-white">
+                                    {topLosses[0].cajitas}
+                                  </div>
+                                  <div className="text-muted-foreground">Cajitas</div>
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-rose-600">
+                                    ${formatAmount(topLosses[0].dinero_ganado)}
+                                  </div>
+                                  <div className="text-muted-foreground">Perdido</div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Podio 2do y 3er puesto */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {topLosses.slice(1, 3).map((p, index) => {
+                            const emojis = ["😢", "😔"];
+                            const borderColors = [
+                              "border-rose-400/50",
+                              "border-rose-300/50",
+                            ];
+
+                            return (
+                              <Card
+                                key={`${p.jugador}-${p.fecha}`}
+                                className={`${borderColors[index]} border-2`}
+                              >
+                                <CardContent className="p-3 text-center">
+                                  <div className="text-2xl mb-2">{emojis[index]}</div>
+                                  <div className="font-semibold text-sm mb-1">
+                                    {p.jugador}
+                                  </div>
+                                  <div className="text-lg font-bold text-rose-600 mb-1">
+                                    ${formatAmount(p.dinero_ganado)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    {formatDate(p.fecha)}
+                                  </div>
+                                  <div className="text-xs text-white/70">
+                                    {p.cajitas} cajitas
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* ROI por Cajita */}
             <Card>
