@@ -52,6 +52,7 @@ export interface ActiveMatch {
   date: string
   caji_value: number
   player_count: number
+  tournament_id: string
   players: Array<{
     name: string
     cajitas: number
@@ -61,4 +62,11 @@ export interface ActiveMatch {
   }>
   created_at: string
   updated_at: string
+}
+
+export interface Tournament {
+  id: string
+  name: string
+  closed_at: string | null
+  created_at: string
 }

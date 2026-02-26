@@ -1,4 +1,4 @@
-import { supabase, type Player, type MatchWithPlayers, type PlayerStats } from "./supabase"
+import { supabase, type Player, type MatchWithPlayers, type PlayerStats, type ActiveMatch, type Tournament } from "./supabase"
 
 const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]
 
@@ -25,8 +25,39 @@ export class DatabaseService {
     return data
   }
 
+  // Tournament operations
+  static async getTournaments(): Promise<Tournament[]> {
+    const { data, error } = await supabase
+      .from("tournaments")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async createTournament(name: string): Promise<Tournament> {
+    const { data, error } = await supabase
+      .from("tournaments")
+      .insert({ name })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async closeTournament(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("tournaments")
+      .update({ closed_at: new Date().toISOString() })
+      .eq("id", id)
+
+    if (error) throw error
+  }
+
   // Match operations
-  static async getAllMatches(): Promise<MatchWithPlayers[]> {
+  static async getAllMatches(tournamentId: string): Promise<MatchWithPlayers[]> {
     const { data, error } = await supabase
       .from("matches")
       .select(`
@@ -36,6 +67,7 @@ export class DatabaseService {
           players (*)
         )
       `)
+      .eq("tournament_id", tournamentId)
       .order("date", { ascending: false })
 
     if (error) throw error
@@ -45,6 +77,7 @@ export class DatabaseService {
   static async createMatch(matchData: {
     date: string
     cajiValue: number
+    tournamentId: string
     players: Array<{
       name: string
       cajitas: number
@@ -78,6 +111,7 @@ export class DatabaseService {
         caji_value: matchData.cajiValue,
         total_money: totalMoney,
         player_count: matchData.players.length,
+        tournament_id: matchData.tournamentId,
       })
       .select()
       .single()
@@ -130,44 +164,55 @@ export class DatabaseService {
   }
 
   // Statistics operations
-  static async getPlayerStats(): Promise<PlayerStats[]> {
-    const { data, error } = await supabase.from("players").select(`
-        id,
-        name,
-        match_players (
-          points,
-          cajitas,
-          money_won
-        )
+  static async getPlayerStats(tournamentId: string): Promise<PlayerStats[]> {
+    const { data, error } = await supabase
+      .from("match_players")
+      .select(`
+        player_id,
+        points,
+        cajitas,
+        money_won,
+        players (id, name),
+        matches!inner (tournament_id)
       `)
+      .eq("matches.tournament_id", tournamentId)
 
     if (error) throw error
 
-    const playerStats: PlayerStats[] = (data || [])
-      .map((player) => {
-        const matches = player.match_players || []
-        const totalPoints = matches.reduce((sum, mp) => sum + mp.points, 0)
-        const totalCajitas = matches.reduce((sum, mp) => sum + mp.cajitas, 0)
-        const totalMoneyWon = matches.reduce((sum, mp) => sum + mp.money_won, 0)
-        const matchCount = matches.length
+    // Aggregate by player in JS
+    const playerMap = new Map<string, PlayerStats>()
 
-        return {
-          id: player.id,
+    for (const mp of data || []) {
+      const player = mp.players as any
+      if (!player) continue
+
+      if (!playerMap.has(mp.player_id)) {
+        playerMap.set(mp.player_id, {
+          id: mp.player_id,
           name: player.name,
-          points: totalPoints,
-          matches: matchCount,
-          cajitas: totalCajitas,
-          moneyWon: totalMoneyWon,
-          averagePerMatch: matchCount > 0 ? totalMoneyWon / matchCount : 0,
-        }
-      })
-      .sort((a, b) => b.points - a.points)
+          points: 0,
+          matches: 0,
+          cajitas: 0,
+          moneyWon: 0,
+          averagePerMatch: 0,
+        })
+      }
 
-    return playerStats
+      const stats = playerMap.get(mp.player_id)!
+      stats.points += mp.points
+      stats.cajitas += mp.cajitas
+      stats.moneyWon += mp.money_won
+      stats.matches += 1
+    }
+
+    return Array.from(playerMap.values())
+      .map((s) => ({ ...s, averagePerMatch: s.matches > 0 ? s.moneyWon / s.matches : 0 }))
+      .sort((a, b) => b.points - a.points)
   }
 
   static async getPlayerLastMatches(
     playerName: string,
+    tournamentId: string,
     limit = 5,
   ): Promise<
     Array<{
@@ -181,10 +226,11 @@ export class DatabaseService {
       .select(`
         position,
         money_won,
-        matches (date),
+        matches!inner (date, tournament_id),
         players!inner (name)
       `)
       .eq("players.name", playerName)
+      .eq("matches.tournament_id", tournamentId)
       .order("created_at", { ascending: false })
       .limit(limit)
 
@@ -197,9 +243,12 @@ export class DatabaseService {
     }))
   }
 
-  static async getOverallStats() {
+  static async getOverallStats(tournamentId: string) {
     const [matchesResult, playersResult] = await Promise.all([
-      supabase.from("matches").select("total_money, match_players(cajitas)"),
+      supabase
+        .from("matches")
+        .select("total_money, match_players(cajitas)")
+        .eq("tournament_id", tournamentId),
       supabase.from("players").select("id"),
     ])
 
@@ -275,25 +324,22 @@ export class DatabaseService {
   }
 
   // Active Match operations
-  static async getAllActiveMatches(): Promise<ActiveMatch[]> {
-    console.log("🔍 Fetching active matches from database...")
-
-    const { data, error } = await supabase.from("active_matches").select("*").order("created_at", { ascending: false })
+  static async getAllActiveMatches(tournamentId: string): Promise<ActiveMatch[]> {
+    const { data, error } = await supabase
+      .from("active_matches")
+      .select("*")
+      .eq("tournament_id", tournamentId)
+      .order("created_at", { ascending: false })
 
     if (error) {
       console.error("❌ Error fetching active matches:", error)
       throw error
     }
 
-    console.log("✅ Active matches fetched:", data?.length || 0, "matches")
-    console.log("📊 Active matches data:", data)
-
     return data || []
   }
 
   static async getActiveMatchById(matchId: string): Promise<ActiveMatch | null> {
-    console.log("🔍 Fetching active match by id...", matchId)
-
     const { data, error } = await supabase
       .from("active_matches")
       .select("*")
@@ -312,6 +358,7 @@ export class DatabaseService {
     date: string
     cajiValue: number
     playerCount: number
+    tournamentId: string
     players: Array<{
       name: string
       cajitas: number
@@ -320,11 +367,8 @@ export class DatabaseService {
       tieBreak?: number
     }>
   }): Promise<ActiveMatch> {
-    console.log("🆕 Creating active match:", matchData)
-
     const playersWithTieBreak = matchData.players.map((p) => ({
       ...p,
-      // ensure deterministic tie-break value is stored
       tieBreak: (p as any).tieBreak ?? Math.random(),
     }))
 
@@ -334,6 +378,7 @@ export class DatabaseService {
         date: matchData.date,
         caji_value: matchData.cajiValue,
         player_count: matchData.playerCount,
+        tournament_id: matchData.tournamentId,
         players: playersWithTieBreak,
       })
       .select()
@@ -344,7 +389,6 @@ export class DatabaseService {
       throw error
     }
 
-    console.log("✅ Active match created:", data)
     return data
   }
 
@@ -363,8 +407,6 @@ export class DatabaseService {
       }>
     },
   ): Promise<ActiveMatch> {
-    console.log("📝 Updating active match:", matchId, matchData)
-
     const playersWithTieBreak = matchData.players.map((p) => ({
       ...p,
       tieBreak: (p as any).tieBreak ?? Math.random(),
@@ -387,26 +429,19 @@ export class DatabaseService {
       throw error
     }
 
-    console.log("✅ Active match updated:", data)
     return data
   }
 
   static async deleteActiveMatch(matchId: string): Promise<void> {
-    console.log("🗑️ Deleting active match:", matchId)
-
     const { error } = await supabase.from("active_matches").delete().eq("id", matchId)
 
     if (error) {
       console.error("❌ Error deleting active match:", error)
       throw error
     }
-
-    console.log("✅ Active match deleted")
   }
 
   static async registerActiveMatch(matchId: string): Promise<MatchWithPlayers> {
-    console.log("📋 Registering active match:", matchId)
-
     // Get the active match
     const { data: activeMatch, error: fetchError } = await supabase
       .from("active_matches")
@@ -419,34 +454,30 @@ export class DatabaseService {
       throw fetchError
     }
 
-    console.log("📊 Active match to register:", activeMatch)
-
-    // Create the real match
+    // Create the real match (preserving tournament_id)
     const realMatch = await this.createMatch({
       date: activeMatch.date,
       cajiValue: activeMatch.caji_value,
+      tournamentId: activeMatch.tournament_id,
       players: activeMatch.players,
     })
 
     // Delete the active match
     await this.deleteActiveMatch(matchId)
 
-    console.log("✅ Active match registered successfully")
     return realMatch
   }
 
   // Debug function to test database connection
   static async testConnection(): Promise<boolean> {
     try {
-      console.log("🔗 Testing database connection...")
-      const { data, error } = await supabase.from("active_matches").select("count", { count: "exact", head: true })
+      const { error } = await supabase.from("active_matches").select("count", { count: "exact", head: true })
 
       if (error) {
         console.error("❌ Database connection test failed:", error)
         return false
       }
 
-      console.log("✅ Database connection successful. Active matches count:", data)
       return true
     } catch (err) {
       console.error("❌ Database connection test error:", err)
@@ -457,9 +488,8 @@ export class DatabaseService {
   // Función temporal para actualizar el sistema de puntos
   static async updatePointsSystem(): Promise<void> {
     console.log("🔄 Iniciando actualización del sistema de puntos...")
-    
+
     try {
-      // Obtener todas las partidas
       const { data: matches, error: matchesError } = await supabase
         .from("matches")
         .select("id")
@@ -468,9 +498,6 @@ export class DatabaseService {
       if (matchesError) throw matchesError
 
       for (const match of matches || []) {
-        console.log(`🔄 Procesando partida: ${match.id}`)
-        
-        // Obtener jugadores de la partida ordenados por dinero ganado (desc) y cajitas (asc)
         const { data: players, error: playersError } = await supabase
           .from("match_players")
           .select("*")
@@ -480,7 +507,6 @@ export class DatabaseService {
 
         if (playersError) throw playersError
 
-        // Actualizar posición y puntos de cada jugador
         for (let i = 0; i < (players || []).length; i++) {
           const player = players![i]
           const newPosition = i + 1
@@ -488,9 +514,9 @@ export class DatabaseService {
 
           const { error: updateError } = await supabase
             .from("match_players")
-            .update({ 
-              position: newPosition, 
-              points: newPoints 
+            .update({
+              position: newPosition,
+              points: newPoints
             })
             .eq("id", player.id)
 
@@ -506,17 +532,4 @@ export class DatabaseService {
   }
 }
 
-export interface ActiveMatch {
-  id: string
-  date: string
-  caji_value: number
-  player_count: number
-  players: Array<{
-    name: string
-    cajitas: number
-    finalChips: number
-    moneyWon: number
-  }>
-  created_at: string
-  updated_at: string
-}
+export type { ActiveMatch, Tournament }

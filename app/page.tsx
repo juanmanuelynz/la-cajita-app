@@ -22,6 +22,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -76,6 +77,7 @@ import type {
   MatchWithPlayers,
   PlayerStats,
   ActiveMatch,
+  Tournament,
 } from "../lib/supabase";
 import { PWAInstall } from "@/components/pwa-install";
 import { OfflineIndicator } from "@/components/offline-indicator";
@@ -91,7 +93,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface FormPlayer {
@@ -184,7 +186,7 @@ function LaCajitaPoker() {
     const today = new Date();
     // Ajustar la fecha para obtener la fecha local correcta
     const localDate = new Date(
-      today.getTime() - today.getTimezoneOffset() * 60000
+      today.getTime() - today.getTimezoneOffset() * 60000,
     );
     return localDate.toISOString().split("T")[0];
   };
@@ -194,24 +196,24 @@ function LaCajitaPoker() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [matchToDelete, setMatchToDelete] = useState<string | null>(null);
   const [activeMatchToDelete, setActiveMatchToDelete] = useState<string | null>(
-    null
+    null,
   );
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(
-    null
+    null,
   );
   const [showEvolutionChart, setShowEvolutionChart] = useState(true);
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [expandedPlayerCards, setExpandedPlayerCards] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [rankingSortBy, setRankingSortBy] = useState<"points" | "money">(
-    "money"
+    "money",
   );
   const [evolutionSortBy, setEvolutionSortBy] = useState<"points" | "money">(
-    "money"
+    "money",
   );
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -227,9 +229,20 @@ function LaCajitaPoker() {
     return raw
       ? `hsl(${raw})`
       : varName === "--foreground"
-      ? "#111"
-      : "#e5e5e5";
+        ? "#111"
+        : "#e5e5e5";
   };
+
+  // Tournament states
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState<
+    string | null
+  >(null);
+  const [showCreateTournament, setShowCreateTournament] = useState(false);
+  const [newTournamentName, setNewTournamentName] = useState("");
+  const [creatingTournament, setCreatingTournament] = useState(false);
+  const [showCloseTournamentDialog, setShowCloseTournamentDialog] =
+    useState(false);
 
   // Data states
   const [players, setPlayers] = useState<Player[]>([]);
@@ -256,7 +269,7 @@ function LaCajitaPoker() {
   const [selectedAnalysisPlayer, setSelectedAnalysisPlayer] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [showNewPlayerInput, setShowNewPlayerInput] = useState<number | null>(
-    null
+    null,
   );
 
   // Load initial data
@@ -283,25 +296,28 @@ function LaCajitaPoker() {
   }, [playerStats]);
 
   const testConnectionAndLoadData = async () => {
-    console.log("🚀 Starting app initialization...");
-
-    // Test database connection first
     const isConnected = await DatabaseService.testConnection();
     setConnectionStatus(isConnected);
 
     if (isConnected) {
-      await loadAllData();
+      const tournamentsData = await DatabaseService.getTournaments();
+      setTournaments(tournamentsData);
+
+      const mostRecentId = tournamentsData[0]?.id || null;
+      setSelectedTournamentId(mostRecentId);
+
+      if (mostRecentId) {
+        await loadAllData(mostRecentId);
+      }
     } else {
       setError("No se pudo conectar a la base de datos. Verifica tu conexión.");
     }
   };
 
-  const loadAllData = async () => {
+  const loadAllData = async (tournamentId: string) => {
     setLoading(true);
     setError(null);
     try {
-      console.log("📊 Loading all data...");
-
       const [
         playersData,
         matchesData,
@@ -310,16 +326,11 @@ function LaCajitaPoker() {
         activeMatchesData,
       ] = await Promise.all([
         DatabaseService.getAllPlayers(),
-        DatabaseService.getAllMatches(),
-        DatabaseService.getPlayerStats(),
-        DatabaseService.getOverallStats(),
-        DatabaseService.getAllActiveMatches(),
+        DatabaseService.getAllMatches(tournamentId),
+        DatabaseService.getPlayerStats(tournamentId),
+        DatabaseService.getOverallStats(tournamentId),
+        DatabaseService.getAllActiveMatches(tournamentId),
       ]);
-
-      console.log("✅ Data loaded successfully:");
-      console.log("- Players:", playersData.length);
-      console.log("- Matches:", matchesData.length);
-      console.log("- Active matches:", activeMatchesData.length);
 
       setPlayers(playersData);
       setMatches(matchesData);
@@ -328,7 +339,6 @@ function LaCajitaPoker() {
       setActiveMatches(activeMatchesData);
       setConnectionStatus(true);
     } catch (err) {
-      console.error("❌ Error loading data:", err);
       setError(err instanceof Error ? err.message : "Error loading data");
       setConnectionStatus(false);
     } finally {
@@ -338,21 +348,73 @@ function LaCajitaPoker() {
 
   // Manual refresh function
   const refreshData = async () => {
-    console.log("🔄 Manual refresh triggered");
-    await loadAllData();
+    if (selectedTournamentId) {
+      await loadAllData(selectedTournamentId);
+    }
   };
+
+  // Handle tournament selection change
+  const handleTournamentChange = async (tournamentId: string) => {
+    setSelectedTournamentId(tournamentId);
+    setSelectedPlayers([]);
+    await loadAllData(tournamentId);
+  };
+
+  // Create a new tournament
+  const handleCreateTournament = async () => {
+    if (!newTournamentName.trim()) return;
+    setCreatingTournament(true);
+    try {
+      const created = await DatabaseService.createTournament(
+        newTournamentName.trim(),
+      );
+      const tournamentsData = await DatabaseService.getTournaments();
+      setTournaments(tournamentsData);
+      setShowCreateTournament(false);
+      setNewTournamentName("");
+      // Switch to the new tournament
+      setSelectedTournamentId(created.id);
+      setSelectedPlayers([]);
+      await loadAllData(created.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error creando torneo");
+    } finally {
+      setCreatingTournament(false);
+    }
+  };
+
+  // Close current tournament
+  const handleCloseTournament = async () => {
+    if (!selectedTournamentId) return;
+    setCreatingTournament(true);
+    try {
+      await DatabaseService.closeTournament(selectedTournamentId);
+      const tournamentsData = await DatabaseService.getTournaments();
+      setTournaments(tournamentsData);
+      setShowCloseTournamentDialog(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error cerrando torneo");
+    } finally {
+      setCreatingTournament(false);
+    }
+  };
+
+  const selectedTournament = tournaments.find(
+    (t) => t.id === selectedTournamentId,
+  );
+  const isTournamentClosed = !!selectedTournament?.closed_at;
 
   // Create new active match
   const createNewActiveMatch = async () => {
+    if (!selectedTournamentId) return;
     setLoading(true);
     setError(null);
     try {
-      console.log("🆕 Creating new active match...");
-
       const newMatch = await DatabaseService.createActiveMatch({
         date: getTodayLocalDate(),
         cajiValue: 2000,
         playerCount: 4,
+        tournamentId: selectedTournamentId,
         players: Array(4)
           .fill(null)
           .map(() => ({
@@ -363,18 +425,11 @@ function LaCajitaPoker() {
           })),
       });
 
-      console.log("✅ New active match created:", newMatch);
-
-      // Reload active matches
-      const activeMatchesData = await DatabaseService.getAllActiveMatches();
-      setActiveMatches(activeMatchesData);
-
       // Navegar a pantalla de edición separada
       router.push(`/partidas/${newMatch.id}`);
     } catch (err) {
-      console.error("❌ Error creating active match:", err);
       setError(
-        err instanceof Error ? err.message : "Error creating active match"
+        err instanceof Error ? err.message : "Error creating active match",
       );
     } finally {
       setLoading(false);
@@ -393,9 +448,12 @@ function LaCajitaPoker() {
     try {
       await DatabaseService.deleteActiveMatch(matchId);
 
-      // Reload active matches
-      const activeMatchesData = await DatabaseService.getAllActiveMatches();
-      setActiveMatches(activeMatchesData);
+      // Reload active matches filtered by current tournament
+      if (selectedTournamentId) {
+        const activeMatchesData =
+          await DatabaseService.getAllActiveMatches(selectedTournamentId);
+        setActiveMatches(activeMatchesData);
+      }
 
       // If we're editing this match, close the form
       if (editingMatchId === matchId) {
@@ -407,7 +465,7 @@ function LaCajitaPoker() {
       setActiveMatchToDelete(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error deleting active match"
+        err instanceof Error ? err.message : "Error deleting active match",
       );
     } finally {
       setLoading(false);
@@ -439,8 +497,11 @@ function LaCajitaPoker() {
       });
 
       // Reload active matches to get updated data
-      const activeMatchesData = await DatabaseService.getAllActiveMatches();
-      setActiveMatches(activeMatchesData);
+      if (selectedTournamentId) {
+        const activeMatchesData =
+          await DatabaseService.getAllActiveMatches(selectedTournamentId);
+        setActiveMatches(activeMatchesData);
+      }
     } catch (err) {
       console.error("Error updating active match:", err);
     }
@@ -490,18 +551,18 @@ function LaCajitaPoker() {
   const validateBalance = () => {
     const totalInvestment = formData.players.reduce(
       (sum, p) => sum + p.cajitas * formData.cajiValue,
-      0
+      0,
     );
     const totalFinalChips = formData.players.reduce(
       (sum, p) => sum + p.finalChips,
-      0
+      0,
     );
     return Math.abs(totalInvestment - totalFinalChips) < 0.01;
   };
 
   // Register match (convert active match to real match)
   const registerMatch = async () => {
-    if (!validateBalance() || !editingMatchId) return;
+    if (!validateBalance() || !editingMatchId || !selectedTournamentId) return;
 
     setLoading(true);
     setError(null);
@@ -511,7 +572,7 @@ function LaCajitaPoker() {
       // Close form and reload all data
       setShowRegisterForm(false);
       setEditingMatchId(null);
-      await loadAllData();
+      await loadAllData(selectedTournamentId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error registering match");
     } finally {
@@ -545,12 +606,12 @@ function LaCajitaPoker() {
   };
 
   const deleteMatch = async () => {
-    if (!matchToDelete) return;
+    if (!matchToDelete || !selectedTournamentId) return;
 
     setLoading(true);
     try {
       await DatabaseService.deleteMatch(matchToDelete);
-      await loadAllData();
+      await loadAllData(selectedTournamentId);
       setMatchToDelete(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting match");
@@ -566,16 +627,16 @@ function LaCajitaPoker() {
       .map((playerName, index) => {
         const playerMatches = matches
           .filter((match) =>
-            match.match_players.some((mp) => mp.players?.name === playerName)
+            match.match_players.some((mp) => mp.players?.name === playerName),
           )
           .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
         let cumulativePoints = 0;
         const data = playerMatches.map((match) => {
           const playerInMatch = match.match_players.find(
-            (mp) => mp.players?.name === playerName
+            (mp) => mp.players?.name === playerName,
           );
           cumulativePoints += playerInMatch?.points || 0;
           return cumulativePoints;
@@ -593,7 +654,7 @@ function LaCajitaPoker() {
     const maxLength = Math.max(...datasets.map((d) => d.data.length));
     const labels = Array.from(
       { length: maxLength },
-      (_, i) => `Partida ${i + 1}`
+      (_, i) => `Partida ${i + 1}`,
     );
 
     return { labels, datasets };
@@ -603,13 +664,13 @@ function LaCajitaPoker() {
   const getPlayerLastMatches = (playerName: string) => {
     return matches
       .filter((match) =>
-        match.match_players.some((mp) => mp.players?.name === playerName)
+        match.match_players.some((mp) => mp.players?.name === playerName),
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
       .map((match) => {
         const playerMatch = match.match_players.find(
-          (mp) => mp.players?.name === playerName
+          (mp) => mp.players?.name === playerName,
         )!;
         return {
           position: playerMatch.position,
@@ -634,19 +695,19 @@ function LaCajitaPoker() {
   // Get player's best match
   const getPlayerBestMatch = (playerName: string) => {
     const playerMatches = matches.filter((match) =>
-      match.match_players.some((mp) => mp.players?.name === playerName)
+      match.match_players.some((mp) => mp.players?.name === playerName),
     );
 
     if (playerMatches.length === 0) return null;
 
     let bestMatch = playerMatches[0];
     let bestMp = bestMatch.match_players.find(
-      (mp) => mp.players?.name === playerName
+      (mp) => mp.players?.name === playerName,
     )!;
 
     for (const match of playerMatches) {
       const mp = match.match_players.find(
-        (mp) => mp.players?.name === playerName
+        (mp) => mp.players?.name === playerName,
       )!;
       if (mp.money_won > bestMp.money_won) {
         bestMatch = match;
@@ -664,19 +725,19 @@ function LaCajitaPoker() {
   // Get player's worst match
   const getPlayerWorstMatch = (playerName: string) => {
     const playerMatches = matches.filter((match) =>
-      match.match_players.some((mp) => mp.players?.name === playerName)
+      match.match_players.some((mp) => mp.players?.name === playerName),
     );
 
     if (playerMatches.length === 0) return null;
 
     let worstMatch = playerMatches[0];
     let worstMp = worstMatch.match_players.find(
-      (mp) => mp.players?.name === playerName
+      (mp) => mp.players?.name === playerName,
     )!;
 
     for (const match of playerMatches) {
       const mp = match.match_players.find(
-        (mp) => mp.players?.name === playerName
+        (mp) => mp.players?.name === playerName,
       )!;
       if (mp.money_won < worstMp.money_won) {
         worstMatch = match;
@@ -808,10 +869,10 @@ function LaCajitaPoker() {
     const labels = Object.keys(roiData);
     const data = Object.values(roiData);
     const backgroundColor = data.map((roi) =>
-      roi >= 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)"
+      roi >= 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)",
     );
     const borderColor = data.map((roi) =>
-      roi >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239, 68, 68, 1)"
+      roi >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239, 68, 68, 1)",
     );
 
     return {
@@ -898,8 +959,10 @@ function LaCajitaPoker() {
       const matchesUpToDate = matches.filter((m) => m.date <= date);
 
       // Calcular stats acumuladas para cada jugador
-      const statsAtDate: { [playerName: string]: { money: number; points: number } } = {};
-      
+      const statsAtDate: {
+        [playerName: string]: { money: number; points: number };
+      } = {};
+
       matchesUpToDate.forEach((match) => {
         match.match_players.forEach((mp) => {
           const playerName = mp.players.name;
@@ -1193,6 +1256,26 @@ function LaCajitaPoker() {
             <h1 className="text-xl md:text-2xl font-bold">♦️</h1>
             <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
           </div>
+          {tournaments.length > 0 && (
+            <div className="flex justify-center mt-3">
+              <Select
+                value={selectedTournamentId || ""}
+                onValueChange={handleTournamentChange}
+              >
+                <SelectTrigger className="w-56 text-sm">
+                  <SelectValue placeholder="Seleccionar torneo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tournaments.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                      {t.closed_at ? " 🔒" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1311,17 +1394,17 @@ function LaCajitaPoker() {
                           ? index === 0
                             ? "bg-yellow-800/40"
                             : index === 1
-                            ? "bg-slate-600/50"
-                            : index === 2
-                            ? "bg-orange-800/40"
-                            : ""
+                              ? "bg-slate-600/50"
+                              : index === 2
+                                ? "bg-orange-800/40"
+                                : ""
                           : index === 0
-                          ? "bg-amber-100"
-                          : index === 1
-                          ? "bg-zinc-200"
-                          : index === 2
-                          ? "bg-orange-100"
-                          : ""
+                            ? "bg-amber-100"
+                            : index === 1
+                              ? "bg-zinc-200"
+                              : index === 2
+                                ? "bg-orange-100"
+                                : ""
                       }`}
                     >
                       <td className="py-2 px-2">
@@ -1332,17 +1415,17 @@ function LaCajitaPoker() {
                                 ? index === 0
                                   ? "text-yellow-400"
                                   : index === 1
-                                  ? "text-slate-300"
-                                  : index === 2
-                                  ? "text-orange-400"
-                                  : ""
+                                    ? "text-slate-300"
+                                    : index === 2
+                                      ? "text-orange-400"
+                                      : ""
                                 : index === 0
-                                ? "text-yellow-600"
-                                : index === 1
-                                ? "text-gray-600"
-                                : index === 2
-                                ? "text-orange-600"
-                                : ""
+                                  ? "text-yellow-600"
+                                  : index === 1
+                                    ? "text-gray-600"
+                                    : index === 2
+                                      ? "text-orange-600"
+                                      : ""
                             }`}
                           >
                             {index + 1}
@@ -1455,32 +1538,36 @@ function LaCajitaPoker() {
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
                       <div className="text-center">
                         <p className="text-muted-foreground text-lg">
-                          ¿Sa-Sa-Sa Sale?
+                          {isTournamentClosed
+                            ? "Torneo finalizado 🔒"
+                            : "¿Sa-Sa-Sa Sale?"}
                         </p>
                       </div>
                     </div>
-                    <Button
-                      onClick={createNewActiveMatch}
-                      disabled={loading}
-                      className="w-full"
-                      variant="default"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Cannabis className="w-4 h-4 mr-2" />
-                      )}
-                      Nueva partida
-                    </Button>
+                    {!isTournamentClosed && (
+                      <Button
+                        onClick={createNewActiveMatch}
+                        disabled={loading}
+                        className="w-full"
+                        variant="default"
+                      >
+                        {loading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <Cannabis className="w-4 h-4 mr-2" />
+                        )}
+                        Nueva partida
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   activeMatches.map((match) => {
                     const playersWithNames = match.players.filter(
-                      (p) => p.name.trim() !== ""
+                      (p) => p.name.trim() !== "",
                     );
                     const totalInvestment = match.players.reduce(
                       (sum, p) => sum + p.cajitas * match.caji_value,
-                      0
+                      0,
                     );
 
                     return (
@@ -1522,10 +1609,10 @@ function LaCajitaPoker() {
                                               index === 0
                                                 ? "border-yellow-600 text-yellow-500"
                                                 : index === 1
-                                                ? "border-slate-500 text-slate-400"
-                                                : index === 2
-                                                ? "border-orange-700 text-orange-500"
-                                                : "border-muted-foreground text-muted-foreground"
+                                                  ? "border-slate-500 text-slate-400"
+                                                  : index === 2
+                                                    ? "border-orange-700 text-orange-500"
+                                                    : "border-muted-foreground text-muted-foreground"
                                             }`}
                                           >
                                             {index + 1}
@@ -1582,6 +1669,21 @@ function LaCajitaPoker() {
                     );
                   })
                 )}
+                {activeMatches.length > 0 && !isTournamentClosed && (
+                  <Button
+                    onClick={createNewActiveMatch}
+                    disabled={loading}
+                    className="w-full mt-2"
+                    variant="outline"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Nueva partida
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1608,7 +1710,7 @@ function LaCajitaPoker() {
                 {matches.map((match) => {
                   const isExpanded = expandedMatches.has(match.id);
                   const winner = match.match_players.find(
-                    (mp) => mp.position === 1
+                    (mp) => mp.position === 1,
                   );
 
                   return (
@@ -1680,10 +1782,10 @@ function LaCajitaPoker() {
                                           mp.position === 1
                                             ? "bg-yellow-500 text-black"
                                             : mp.position === 2
-                                            ? "bg-slate-400 text-black"
-                                            : mp.position === 3
-                                            ? "bg-orange-500 text-black"
-                                            : "bg-muted-foreground text-muted"
+                                              ? "bg-slate-400 text-black"
+                                              : mp.position === 3
+                                                ? "bg-orange-500 text-black"
+                                                : "bg-muted-foreground text-muted"
                                         }`}
                                       >
                                         {mp.position}
@@ -1802,7 +1904,7 @@ function LaCajitaPoker() {
                                   <div className="text-sm text-emerald-600 font-semibold">
                                     $
                                     {formatAmount(
-                                      getPlayerBestMatch(player.name)?.moneyWon
+                                      getPlayerBestMatch(player.name)?.moneyWon,
                                     )}
                                   </div>
                                 </div>
@@ -1810,7 +1912,7 @@ function LaCajitaPoker() {
                                   <div className="text-xs text-emerald-50/50">
                                     {formatDate(
                                       getPlayerBestMatch(player.name)?.date ||
-                                        ""
+                                        "",
                                     )}
                                   </div>
                                 </div>
@@ -1832,7 +1934,8 @@ function LaCajitaPoker() {
                                   <div className="text-sm text-rose-500 font-semibold">
                                     $
                                     {formatAmount(
-                                      getPlayerWorstMatch(player.name)?.moneyWon
+                                      getPlayerWorstMatch(player.name)
+                                        ?.moneyWon,
                                     )}
                                   </div>
                                 </div>
@@ -1840,7 +1943,7 @@ function LaCajitaPoker() {
                                   <div className="text-xs text-rose-50/50">
                                     {formatDate(
                                       getPlayerWorstMatch(player.name)?.date ||
-                                        ""
+                                        "",
                                     )}
                                   </div>
                                 </div>
@@ -1902,10 +2005,10 @@ function LaCajitaPoker() {
                             <div>
                               <h3 className="font-bold text-lg">
                                 {getTopWinners()[0].jugador}
-                              </h3>                              
+                              </h3>
                             </div>
                             <div className="ml-auto text-right">
-                              <div className="text-2xl font-bold text-white">                                
+                              <div className="text-2xl font-bold text-white">
                                 {getTopWinners()[0].victorias}
                               </div>
                               {/*<p className="text-xs text-muted-foreground">
@@ -1928,7 +2031,9 @@ function LaCajitaPoker() {
                               <div className="font-semibold text-white">
                                 {getTopWinners()[0].maxPotCajitas}
                               </div>
-                              <div className="text-muted-foreground">Cajitas</div>
+                              <div className="text-muted-foreground">
+                                Cajitas
+                              </div>
                             </div>
                             <div>
                               <div className="font-semibold text-white">
@@ -1964,13 +2069,14 @@ function LaCajitaPoker() {
                                 <div className="font-semibold text-sm mb-1">
                                   {winner.jugador}
                                 </div>
-                                <div className="text-lg font-bold text-white mb-1">                                  
+                                <div className="text-lg font-bold text-white mb-1">
                                   {winner.victorias}
                                 </div>
                                 <div className="text-xs text-muted-foreground mb-1">
-                                  ${formatAmount(winner.maxPot)} / {winner.maxPotCajitas}
+                                  ${formatAmount(winner.maxPot)} /{" "}
+                                  {winner.maxPotCajitas}
                                 </div>
-                                <div className="text-xs text-white/70">                                  
+                                <div className="text-xs text-white/70">
                                   {formatDate(winner.maxPotDate)}
                                 </div>
                               </CardContent>
@@ -2012,7 +2118,9 @@ function LaCajitaPoker() {
                   />
                   <span
                     className={`text-sm font-medium ${
-                      evolutionSortBy === "points" ? "" : "text-muted-foreground"
+                      evolutionSortBy === "points"
+                        ? ""
+                        : "text-muted-foreground"
                     }`}
                   >
                     Puntos
@@ -2050,7 +2158,7 @@ function LaCajitaPoker() {
                           tension: 0.3,
                           pointRadius: 4,
                           pointHoverRadius: 6,
-                        })
+                        }),
                       );
 
                       return (
@@ -2192,7 +2300,7 @@ function LaCajitaPoker() {
                           <div className="font-semibold text-rose-600">
                             $
                             {formatAmount(
-                              getTopComeback()!.partida_detalle.punto_mas_bajo
+                              getTopComeback()!.partida_detalle.punto_mas_bajo,
                             )}
                           </div>
                           <div className="text-muted-foreground">Invertido</div>
@@ -2201,7 +2309,7 @@ function LaCajitaPoker() {
                           <div className="font-semibold text-emerald-600">
                             +$
                             {formatAmount(
-                              getTopComeback()!.partida_detalle.dinero_final
+                              getTopComeback()!.partida_detalle.dinero_final,
                             )}
                           </div>
                           <div className="text-muted-foreground">Neto</div>
@@ -2242,7 +2350,7 @@ function LaCajitaPoker() {
                             <div className="text-xs text-rose-600">
                               $
                               {formatAmount(
-                                comeback.partida_detalle.monto_invertido
+                                comeback.partida_detalle.monto_invertido,
                               )}{" "}
                               invertido
                             </div>
@@ -2277,19 +2385,19 @@ function LaCajitaPoker() {
                   dinero_ganado: mp.money_won,
                   fecha: match.date,
                   cajitas: mp.cajitas,
-                }))
+                })),
               );
 
               // Top 3 ganadores
               const getTopWins = (
                 partidas: PartidaFlat[],
-                limit: number = 3
+                limit: number = 3,
               ): PartidaFlat[] =>
                 partidas
                   .filter((p: PartidaFlat) => p.dinero_ganado > 0)
                   .sort(
                     (a: PartidaFlat, b: PartidaFlat) =>
-                      b.dinero_ganado - a.dinero_ganado
+                      b.dinero_ganado - a.dinero_ganado,
                   )
                   .slice(0, limit)
                   .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
@@ -2342,13 +2450,17 @@ function LaCajitaPoker() {
                                   <div className="font-semibold text-white">
                                     {topWins[0].cajitas}
                                   </div>
-                                  <div className="text-muted-foreground">Cajitas</div>
+                                  <div className="text-muted-foreground">
+                                    Cajitas
+                                  </div>
                                 </div>
                                 <div>
                                   <div className="font-semibold text-emerald-600">
                                     ${formatAmount(topWins[0].dinero_ganado)}
                                   </div>
-                                  <div className="text-muted-foreground">Ganado</div>
+                                  <div className="text-muted-foreground">
+                                    Ganado
+                                  </div>
                                 </div>
                               </div>
                             </CardContent>
@@ -2370,7 +2482,9 @@ function LaCajitaPoker() {
                                 className={`${borderColors[index]} border-2`}
                               >
                                 <CardContent className="p-3 text-center">
-                                  <div className="text-2xl mb-2">{medals[index]}</div>
+                                  <div className="text-2xl mb-2">
+                                    {medals[index]}
+                                  </div>
                                   <div className="font-semibold text-sm mb-1">
                                     {p.jugador}
                                   </div>
@@ -2411,19 +2525,19 @@ function LaCajitaPoker() {
                   dinero_ganado: mp.money_won,
                   fecha: match.date,
                   cajitas: mp.cajitas,
-                }))
+                })),
               );
 
               // Top 3 perdedores
               const getTopLosses = (
                 partidas: PartidaFlat[],
-                limit: number = 3
+                limit: number = 3,
               ): PartidaFlat[] =>
                 partidas
                   .filter((p: PartidaFlat) => p.dinero_ganado < 0)
                   .sort(
                     (a: PartidaFlat, b: PartidaFlat) =>
-                      a.dinero_ganado - b.dinero_ganado
+                      a.dinero_ganado - b.dinero_ganado,
                   )
                   .slice(0, limit)
                   .map((p: PartidaFlat, i: number) => ({ ...p, rank: i + 1 }));
@@ -2476,13 +2590,17 @@ function LaCajitaPoker() {
                                   <div className="font-semibold text-white">
                                     {topLosses[0].cajitas}
                                   </div>
-                                  <div className="text-muted-foreground">Cajitas</div>
+                                  <div className="text-muted-foreground">
+                                    Cajitas
+                                  </div>
                                 </div>
                                 <div>
                                   <div className="font-semibold text-rose-600">
                                     ${formatAmount(topLosses[0].dinero_ganado)}
                                   </div>
-                                  <div className="text-muted-foreground">Perdido</div>
+                                  <div className="text-muted-foreground">
+                                    Perdido
+                                  </div>
                                 </div>
                               </div>
                             </CardContent>
@@ -2504,7 +2622,9 @@ function LaCajitaPoker() {
                                 className={`${borderColors[index]} border-2`}
                               >
                                 <CardContent className="p-3 text-center">
-                                  <div className="text-2xl mb-2">{emojis[index]}</div>
+                                  <div className="text-2xl mb-2">
+                                    {emojis[index]}
+                                  </div>
                                   <div className="font-semibold text-sm mb-1">
                                     {p.jugador}
                                   </div>
@@ -2695,9 +2815,9 @@ function LaCajitaPoker() {
                                 return `${
                                   dataPoint.jugador
                                 }: ${context.parsed.y.toFixed(
-                                  1
+                                  1,
                                 )}% eficiencia, ${context.parsed.x.toFixed(
-                                  1
+                                  1,
                                 )} cajitas promedio`;
                               },
                             },
@@ -2748,6 +2868,132 @@ function LaCajitaPoker() {
         {/* Reglas Tab */}
         {activeTab === "reglas" && (
           <div className="space-y-6">
+            {/* Torneos */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Torneos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {tournaments.map((t) => (
+                    <div
+                      key={t.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        t.id === selectedTournamentId
+                          ? "border-primary bg-primary/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium text-sm">{t.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {t.closed_at
+                            ? `Cerrado el ${new Date(t.closed_at).toLocaleDateString("es-ES")}`
+                            : "Activo"}
+                        </div>
+                      </div>
+                      <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowCreateTournament(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Crear Torneo
+                  </Button>
+                  {selectedTournament && !selectedTournament.closed_at && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowCloseTournamentDialog(true)}
+                    >
+                      🔒 Cerrar Torneo
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Crear Torneo Dialog */}
+            <Dialog
+              open={showCreateTournament}
+              onOpenChange={setShowCreateTournament}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Torneo</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="tournament-name">Nombre del torneo</Label>
+                    <Input
+                      id="tournament-name"
+                      placeholder="Ej: Temporada Invierno 2026"
+                      value={newTournamentName}
+                      onChange={(e) => setNewTournamentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCreateTournament();
+                      }}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateTournament(false);
+                      setNewTournamentName("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleCreateTournament}
+                    disabled={creatingTournament || !newTournamentName.trim()}
+                  >
+                    {creatingTournament ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    Crear
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Cerrar Torneo Alert Dialog */}
+            <AlertDialog
+              open={showCloseTournamentDialog}
+              onOpenChange={setShowCloseTournamentDialog}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Cerrar el torneo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cerrarás <strong>{selectedTournament?.name}</strong>. No se
+                    podrán agregar nuevas partidas. Esta acción no se puede
+                    deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCloseTournament}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {creatingTournament ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    Cerrar Torneo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">Configuración</CardTitle>
