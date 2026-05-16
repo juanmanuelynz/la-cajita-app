@@ -204,22 +204,21 @@ export function ReglasTab({
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            <li>• Los puntos se asignan según la posición final en cada partida</li>
             <li>
               •{" "}
               <strong>
-                Las posiciones se determinan por dinero ganado neto (de mayor a menor)
+                El ranking anual se ordena por dinero ganado neto acumulado (de mayor a menor)
               </strong>
             </li>
             <li>
-              •{" "}
-              <strong>
-                En caso de empate en dinero ganado, gana quien pidió menos cajitas
-              </strong>
+              • En caso de empate en dinero ganado total, gana quien tenga más puntos
+              acumulados
             </li>
+            <li>• Los puntos son una métrica secundaria que premia las buenas posiciones</li>
+            <li>• Dentro de cada partida, las posiciones se determinan por dinero ganado neto</li>
             <li>
-              • En caso de empate en puntos del ranking anual, gana quien tenga más dinero
-              ganado total
+              • En caso de empate en dinero ganado dentro de una partida, gana quien pidió
+              menos cajitas
             </li>
           </ul>
         </CardContent>

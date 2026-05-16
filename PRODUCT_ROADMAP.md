@@ -4,20 +4,13 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 7 (swipe entre tabs con embla) y 8 (plata como fuente de verdad del ranking).
+
 ---
 
-## 1. Auto-completar el último jugador
+## 1. Auto-completar el último jugador ✅ HECHO
 
-**Problema actual**
-En [app/partidas/[id]/page.tsx](app/partidas/[id]/page.tsx) el formulario obliga a balancear manualmente: si 7 jugadores tienen sus fichas finales cargadas, el 8º se deduce, pero hoy hay que tipearlo. `validateBalance` solo bloquea registrar si no cuadra.
-
-**Cambio propuesto**
-- Botón **"Auto-completar último"** que rellena el `finalChips` del jugador sin valor a partir de la diferencia (`totalInvestment - sum(otrosFinalChips)`).
-- O mejor: indicador en vivo "Faltan/sobran $X fichas" que se actualice mientras tipeás, en vez de validar solo al registrar.
-- Si el cálculo da negativo, warning explícito.
-
-**Archivos**: [app/partidas/[id]/page.tsx](app/partidas/[id]/page.tsx)
-**Esfuerzo**: 1–2h
+Implementado en commit `58774fd`. La card de balance ahora muestra "Faltan $X / Sobran $X" en vivo (ámbar/rosa según signo) y aparece un botón "Auto-completar &lt;jugador&gt;" cuando exactamente 1 jugador tiene fichas en 0 y el diff es positivo.
 
 ---
 
@@ -118,45 +111,33 @@ Si tres personas abren la app en la misma partida activa, todas pueden editar al
 
 ---
 
-## 7. Mobile-first: bottom nav nativo y swipe entre tabs
+## 7. Mobile-first: bottom nav nativo y swipe entre tabs ✅ PARCIAL
 
-**Problema actual**
-La bottom nav actual ([app/page.tsx](app/page.tsx)) es funcional pero podría sentirse más "app". Las tabs no soportan swipe.
+Swipe entre tabs implementado en commit `e61834f` con `embla-carousel-react`. Sincronización bidireccional entre el carousel y la bottom nav (tap → scrollTo, swipe → setActiveTab). `touch-pan-y` permite que el scroll vertical de cada tab siga funcionando.
 
-**Cambio propuesto**
-- Swipe izquierda/derecha para cambiar de tab (con `embla-carousel-react`, ya instalado).
-- `vaul` (también instalado) para los diálogos en mobile (bottom-sheet en vez de dialog centrado).
-- Transición entre tabs con `framer-motion` (nueva dep) si querés animar.
-
-**Archivos**: [app/page.tsx](app/page.tsx)
-**Esfuerzo**: 3h
-**Prioridad**: cosmética, alto retorno percibido
+**Pendiente del item original**:
+- Migración a `vaul` (bottom-sheets en lugar de Dialog centrado en mobile) — toca cada diálogo del proyecto, mejor como item aparte.
+- Transición con `framer-motion` — opcional, embla ya da una animación fluida.
 
 ---
 
-## 8. Default sort del ranking: decidir la "fuente de verdad"
+## 8. Default sort del ranking: decidir la "fuente de verdad" ✅ HECHO
 
-**Problema actual**
-Ranking ordena por `money` por default ([components/tabs/ranking-tab.tsx](components/tabs/ranking-tab.tsx)). Pero el sistema de puntos es la base del torneo según las Reglas. Los usuarios se pueden confundir.
+Decisión tomada: **plata es la fuente de verdad** del ranking anual, puntos pasa a métrica secundaria. El default sort ya era `money`; lo que faltaba era alinear el texto de Reglas, que decía lo opuesto ("en caso de empate en puntos del ranking anual, gana quien tenga más dinero"). Ahora dice: el ranking se ordena por dinero ganado neto acumulado, y los puntos sirven como desempate.
 
-**Cambio propuesto**
-- Decisión de producto: ¿qué métrica define al ganador del torneo? Plata o puntos.
-- Cambiar el default acorde.
-- O hacerlo configurable por torneo (junto con `points_config` del item 2).
-
-**Esfuerzo**: 15min de código + decisión
+Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_config`).
 
 ---
 
 ## Orden recomendado
 
-| # | Item | ROI | Esfuerzo |
-|---|------|-----|----------|
-| 1 | Auto-completar último jugador | Alto | Bajo |
-| 8 | Decidir default sort | Alto | Trivial |
-| 4 | Métricas (rachas, némesis) | Alto | Medio |
-| 3 | Podio final + export | Medio-Alto | Alto |
-| 2 | `points_config` por torneo | Medio | Medio |
-| 5 | Distinguir recompras | Medio | Alto |
-| 7 | Swipe tabs / bottom sheets | Bajo | Medio |
-| 6 | Lock concurrencia | Bajo | Alto |
+| # | Item | ROI | Esfuerzo | Estado |
+|---|------|-----|----------|--------|
+| 1 | Auto-completar último jugador | Alto | Bajo | ✅ |
+| 8 | Decidir default sort | Alto | Trivial | ✅ |
+| 4 | Métricas (rachas, némesis) | Alto | Medio | pendiente |
+| 3 | Podio final + export | Medio-Alto | Alto | pendiente |
+| 2 | `points_config` por torneo | Medio | Medio | pendiente |
+| 5 | Distinguir recompras | Medio | Alto | pendiente |
+| 7 | Swipe tabs / bottom sheets | Bajo | Medio | ✅ parcial (falta vaul) |
+| 6 | Lock concurrencia | Bajo | Alto | pendiente |
