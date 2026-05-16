@@ -22,6 +22,7 @@ export interface MatchPlayer {
   money_won: number
   position: number
   points: number
+  tie_break: number
   created_at: string
   player?: Player
 }

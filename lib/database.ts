@@ -90,6 +90,7 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
             'money_won', mp.money_won,
             'position', mp.position,
             'points', mp.points,
+            'tie_break', mp.tie_break,
             'created_at', mp.created_at,
             'players', json_build_object('id', p.id, 'name', p.name, 'created_at', p.created_at)
           )
@@ -158,7 +159,7 @@ export async function createMatch(matchData: {
 
     const [mp] = await sql`
       INSERT INTO match_players
-        (match_id, player_id, cajitas, final_chips, money_won, position, points)
+        (match_id, player_id, cajitas, final_chips, money_won, position, points, tie_break)
       VALUES (
         ${match.id},
         ${dbPlayer.id},
@@ -166,7 +167,8 @@ export async function createMatch(matchData: {
         ${player.finalChips},
         ${player.moneyWon},
         ${position + 1},
-        ${points}
+        ${points},
+        ${player.tieBreak}
       )
       RETURNING *
     `
@@ -252,78 +254,6 @@ export async function getOverallStats(tournamentId: string) {
     totalCajitas: Number(matchesResult[0].total_cajitas) || 0,
     totalMoney: Number(matchesResult[0].total_money) || 0,
     activePlayers: Number(playersResult[0].count) || 0,
-  }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Legacy fixers (kept for parity with prior DatabaseService)
-// ────────────────────────────────────────────────────────────────────────────
-
-export async function fixMatchRankings(): Promise<void> {
-  const matches = await sql`
-    SELECT m.id, m.caji_value,
-      COALESCE(
-        json_agg(
-          json_build_object(
-            'id', mp.id,
-            'cajitas', mp.cajitas,
-            'final_chips', mp.final_chips,
-            'money_won', mp.money_won
-          )
-        ) FILTER (WHERE mp.id IS NOT NULL),
-        '[]'::json
-      ) AS match_players
-    FROM matches m
-    LEFT JOIN match_players mp ON mp.match_id = m.id
-    GROUP BY m.id
-  `
-
-  for (const match of matches as any[]) {
-    const sortedPlayers = [...(match.match_players ?? [])].sort((a, b) => {
-      if (b.money_won !== a.money_won) return b.money_won - a.money_won
-      if (a.cajitas !== b.cajitas) return a.cajitas - b.cajitas
-      return Math.random() < 0.5 ? -1 : 1
-    })
-
-    for (let i = 0; i < sortedPlayers.length; i++) {
-      const newPosition = i + 1
-      const newPoints = POINTS_DISTRIBUTION[i] || 0
-      await sql`
-        UPDATE match_players
-        SET position = ${newPosition}, points = ${newPoints}
-        WHERE id = ${sortedPlayers[i].id}
-      `
-    }
-  }
-}
-
-export async function updatePointsSystem(): Promise<void> {
-  console.log("🔄 Iniciando actualización del sistema de puntos...")
-  try {
-    const matches = await sql`SELECT id FROM matches ORDER BY date`
-
-    for (const match of matches as any[]) {
-      const players = await sql`
-        SELECT * FROM match_players
-        WHERE match_id = ${match.id}
-        ORDER BY money_won DESC, cajitas ASC
-      `
-
-      for (let i = 0; i < players.length; i++) {
-        const player = players[i] as any
-        const newPosition = i + 1
-        const newPoints = POINTS_DISTRIBUTION[i] || 0
-        await sql`
-          UPDATE match_players
-          SET position = ${newPosition}, points = ${newPoints}
-          WHERE id = ${player.id}
-        `
-      }
-    }
-    console.log("✅ Actualización del sistema de puntos completada!")
-  } catch (error) {
-    console.error("❌ Error actualizando sistema de puntos:", error)
-    throw error
   }
 }
 
