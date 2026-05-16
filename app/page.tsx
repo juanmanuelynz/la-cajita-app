@@ -869,10 +869,10 @@ function LaCajitaPoker() {
     const labels = Object.keys(roiData);
     const data = Object.values(roiData);
     const backgroundColor = data.map((roi) =>
-      roi >= 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)",
+      roi >= 0 ? "rgba(16, 185, 129, 0.8)" : "rgba(244, 63, 94, 0.8)",
     );
     const borderColor = data.map((roi) =>
-      roi >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239, 68, 68, 1)",
+      roi >= 0 ? "rgba(16, 185, 129, 1)" : "rgba(244, 63, 94, 1)",
     );
 
     return {
@@ -1173,8 +1173,8 @@ function LaCajitaPoker() {
             y: p.eficiencia_promedio * 100, // Convertir a porcentaje
             jugador: p.jugador,
           })),
-        backgroundColor: "rgba(34, 197, 94, 0.8)",
-        borderColor: "rgba(34, 197, 94, 1)",
+        backgroundColor: "rgba(6, 182, 212, 0.8)",
+        borderColor: "rgba(6, 182, 212, 1)",
       },
       {
         label: "Apostador",
@@ -1185,8 +1185,8 @@ function LaCajitaPoker() {
             y: p.eficiencia_promedio * 100,
             jugador: p.jugador,
           })),
-        backgroundColor: "rgba(59, 130, 246, 0.8)",
-        borderColor: "rgba(59, 130, 246, 1)",
+        backgroundColor: "rgba(16, 185, 129, 0.8)",
+        borderColor: "rgba(16, 185, 129, 1)",
       },
       {
         label: "Conservador",
@@ -1209,8 +1209,8 @@ function LaCajitaPoker() {
             y: p.eficiencia_promedio * 100,
             jugador: p.jugador,
           })),
-        backgroundColor: "rgba(239, 68, 68, 0.8)",
-        borderColor: "rgba(239, 68, 68, 1)",
+        backgroundColor: "rgba(244, 63, 94, 0.8)",
+        borderColor: "rgba(244, 63, 94, 1)",
       },
     ];
 
