@@ -22,10 +22,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Loader2 } from "lucide-react"
+import { Plus, Loader2, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
 import { POINTS_DISTRIBUTION } from "@/lib/constants"
 import type { Tournament } from "@/lib/types"
+import { logout } from "@/app/login/actions"
 
 interface ReglasTabProps {
   tournaments: Tournament[]
@@ -187,6 +188,13 @@ export function ReglasTab({
             <span className="text-sm">🌙</span>
             <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
           </div>
+
+          <form action={logout}>
+            <Button type="submit" variant="outline" className="w-full">
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar sesión
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

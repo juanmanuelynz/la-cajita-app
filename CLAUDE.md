@@ -57,8 +57,17 @@ To bootstrap a fresh Neon DB, run scripts 01→06 in order via `psql "$DATABASE_
 Create `.env.local` with:
 ```
 DATABASE_URL=postgresql://[user]:[pwd]@[host]-pooler.[region].aws.neon.tech/neondb?sslmode=require
+APP_PIN=######            # 6-digit PIN shared with the group
+APP_SECRET=<32 bytes hex> # HMAC secret for signing the auth cookie
 ```
-Use the **pooled** Neon connection string (host contains `-pooler`) — the HTTP driver is built for serverless and the pooled endpoint scales to zero cleanly. Never expose this var to the client (no `NEXT_PUBLIC_` prefix).
+Use the **pooled** Neon connection string (host contains `-pooler`) — the HTTP driver is built for serverless and the pooled endpoint scales to zero cleanly. Never expose any of these vars to the client (no `NEXT_PUBLIC_` prefix).
+
+Generate `APP_SECRET` with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+
+If `APP_SECRET` is unset the middleware **fails open** (no auth) — make sure it's set in Vercel before deploying. Rotating either env var invalidates every existing session.
+
+### Auth
+PIN-gated, single shared credential. The middleware in [middleware.ts](middleware.ts) redirects any non-`/login` request to `/login` unless the `la_cajita_auth` cookie carries a valid HMAC-signed expiry token. Login flow lives at [app/login/page.tsx](app/login/page.tsx) with the server action in [app/login/actions.ts](app/login/actions.ts); logout is wired into the Reglas tab. Sessions last 30 days. Token logic is in [lib/auth.ts](lib/auth.ts) and uses Web Crypto only (works in both Edge and Node runtimes).
 
 ### Components
 - [components/ui/](components/ui/) — shadcn/ui component library (do not modify these directly; regenerate with shadcn CLI if needed)
