@@ -4,7 +4,7 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
-**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 7 (swipe entre tabs con embla) y 8 (plata como fuente de verdad del ranking).
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 3 (podio visual dual al cerrar torneo, parcial), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
 
 ---
 
