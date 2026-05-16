@@ -1,5 +1,11 @@
 export const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0] as const
 
+export const POINTS_CONFIG_PRESETS: Record<string, number[]> = {
+  Clásico: [10, 7, 5, 3, 2, 1, 0, 0],
+  "Top-pesado": [15, 10, 5, 2, 1, 0, 0, 0],
+  Plano: [8, 6, 5, 4, 3, 2, 1, 0],
+}
+
 export const PLAYER_COLORS = [
   "#ff6b6b",
   "#4ecdc4",

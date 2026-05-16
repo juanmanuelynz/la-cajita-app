@@ -63,4 +63,5 @@ export interface Tournament {
   name: string
   closed_at: string | null
   created_at: string
+  points_config: number[]
 }

@@ -193,11 +193,14 @@ function LaCajitaPoker() {
     await loadAllData(tournamentId)
   }
 
-  const handleCreateTournament = async () => {
+  const handleCreateTournament = async (pointsConfig: number[]) => {
     if (!newTournamentName.trim()) return
     setCreatingTournament(true)
     try {
-      const created = await db.createTournament(newTournamentName.trim())
+      const created = await db.createTournament(
+        newTournamentName.trim(),
+        pointsConfig,
+      )
       const tournamentsData = await db.getTournaments()
       setTournaments(tournamentsData)
       setShowCreateTournament(false)

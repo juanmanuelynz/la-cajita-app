@@ -4,7 +4,7 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
-**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 3 (podio visual dual al cerrar torneo, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 2 (points_config por torneo), 3 (podio visual dual al cerrar torneo, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
 
 ---
 
@@ -14,20 +14,9 @@ Implementado en commit `58774fd`. La card de balance ahora muestra "Faltan $X / 
 
 ---
 
-## 2. `points_config` por torneo
+## 2. `points_config` por torneo ✅ HECHO
 
-**Problema actual**
-`POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]` está hardcoded en [lib/constants.ts](lib/constants.ts) y referenciado desde [lib/database.ts](lib/database.ts) y la tab de Reglas. Si querés un torneo con otra estructura (top 3 más pesado, solo 6 jugadores típicos), hay que tocar código.
-
-**Cambio propuesto**
-- Migration: `ALTER TABLE tournaments ADD COLUMN points_config JSONB NOT NULL DEFAULT '[10,7,5,3,2,1,0,0]'::jsonb`
-- En `createTournament`, permitir pasar la config (con default).
-- En `createMatch`, leer la config del torneo al que pertenece la partida antes de calcular puntos.
-- UI en el diálogo "Crear Torneo" para editar la distribución (8 inputs numéricos, o presets: "Clásico", "Top-pesado", "Plano").
-- Mostrar la config activa en Reglas en lugar del array hardcoded.
-
-**Archivos**: nueva migration `09-points-config.sql`, [lib/database.ts](lib/database.ts), [lib/types.ts](lib/types.ts), [lib/validators.ts](lib/validators.ts), [components/tabs/reglas-tab.tsx](components/tabs/reglas-tab.tsx)
-**Esfuerzo**: 3–4h
+Migration `09-points-config.sql` agrega `tournaments.points_config JSONB NOT NULL DEFAULT '[10,7,5,3,2,1,0,0]'::jsonb` y backfillea torneos preexistentes. `createTournament` ahora acepta una distribución opcional validada con Zod (8 enteros ≥ 0, monótonos no crecientes); `createMatch` lee la config del torneo correspondiente antes de calcular puntos. El dialog "Crear Torneo" en Reglas trae presets ("Clásico", "Top-pesado", "Plano") + 8 inputs editables, y la tabla de Sistema de Puntos refleja la config del torneo seleccionado. La preview de partida activa también usa la config del torneo asociado.
 
 ---
 
@@ -118,7 +107,7 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 | 8 | Decidir default sort | Alto | Trivial | ✅ |
 | 4 | Métricas (rachas, némesis, día favorito, killer move, ROI por partida) | Alto | Medio | ✅ |
 | 3 | Podio final + export | Medio-Alto | Alto | ✅ parcial (falta share/CSV/snapshot) |
-| 2 | `points_config` por torneo | Medio | Medio | pendiente |
+| 2 | `points_config` por torneo | Medio | Medio | ✅ |
 | 5 | Distinguir recompras | Medio | Alto | pendiente |
 | 7 | Swipe tabs / bottom sheets | Bajo | Medio | ✅ parcial (falta vaul) |
 | 6 | Lock concurrencia | Bajo | Alto | pendiente |

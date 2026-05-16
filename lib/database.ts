@@ -13,6 +13,7 @@ import {
   CreateActiveMatchSchema,
   CreateMatchSchema,
   PlayerNameSchema,
+  PointsConfigSchema,
   TournamentNameSchema,
   UpdateActiveMatchSchema,
   UuidSchema,
@@ -27,7 +28,7 @@ types.setTypeParser(1184, (val) => val)
 
 const sql = neon(process.env.DATABASE_URL!)
 
-const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]
+const DEFAULT_POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]
 
 // ────────────────────────────────────────────────────────────────────────────
 // Players
@@ -67,10 +68,24 @@ export async function getTournaments(): Promise<Tournament[]> {
   return rows as Tournament[]
 }
 
-export async function createTournament(name: string): Promise<Tournament> {
-  const parsed = TournamentNameSchema.parse(name)
+export async function getTournamentById(id: string): Promise<Tournament | null> {
+  const parsed = UuidSchema.parse(id)
+  const rows = await sql`SELECT * FROM tournaments WHERE id = ${parsed} LIMIT 1`
+  return (rows[0] as Tournament) ?? null
+}
+
+export async function createTournament(
+  name: string,
+  pointsConfig?: number[],
+): Promise<Tournament> {
+  const parsedName = TournamentNameSchema.parse(name)
+  const parsedConfig = PointsConfigSchema.parse(
+    pointsConfig ?? DEFAULT_POINTS_DISTRIBUTION,
+  )
   const rows = await sql`
-    INSERT INTO tournaments (name) VALUES (${parsed}) RETURNING *
+    INSERT INTO tournaments (name, points_config)
+    VALUES (${parsedName}, ${JSON.stringify(parsedConfig)}::jsonb)
+    RETURNING *
   `
   return rows[0] as Tournament
 }
@@ -137,6 +152,19 @@ export async function createMatch(matchData: {
 }): Promise<MatchWithPlayers> {
   const validated = CreateMatchSchema.parse(matchData)
 
+  // Cada torneo trae su propia distribución de puntos.
+  const [tournamentRow] = (await sql`
+    SELECT points_config FROM tournaments WHERE id = ${validated.tournamentId} LIMIT 1
+  `) as Array<{ points_config: unknown }>
+  if (!tournamentRow) {
+    throw new Error(`Torneo ${validated.tournamentId} no encontrado`)
+  }
+  const pointsConfig = PointsConfigSchema.parse(
+    Array.isArray(tournamentRow.points_config)
+      ? tournamentRow.points_config
+      : DEFAULT_POINTS_DISTRIBUTION,
+  )
+
   // Orden final por dinero ganado → menos cajitas → tieBreak persistido.
   // Asignar tieBreak determinístico a quienes no lo trajeron (jugada nueva).
   const sortedPlayers = [...validated.players]
@@ -186,7 +214,7 @@ export async function createMatch(matchData: {
   `
 
   const mpInserts = resolvedPlayers.map((p, position) => {
-    const points = POINTS_DISTRIBUTION[position] ?? 0
+    const points = pointsConfig[position] ?? 0
     return sql`
       INSERT INTO match_players
         (match_id, player_id, cajitas, final_chips, money_won, position, points, tie_break)

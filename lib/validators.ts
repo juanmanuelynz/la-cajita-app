@@ -14,6 +14,14 @@ export const TournamentNameSchema = z
   .min(1, "El nombre del torneo no puede estar vacío")
   .max(100, "El nombre del torneo no puede superar los 100 caracteres")
 
+export const PointsConfigSchema = z
+  .array(z.number().int().min(0, "Los puntos no pueden ser negativos").max(999))
+  .length(8, "La distribución de puntos debe tener 8 entradas")
+  .refine(
+    (arr) => arr.every((v, i) => i === 0 || v <= arr[i - 1]),
+    "Las posiciones inferiores no pueden tener más puntos que las superiores",
+  )
+
 const FinalMatchPlayerSchema = z.object({
   name: PlayerNameSchema,
   cajitas: z.number().int().positive("Las cajitas deben ser un entero positivo"),

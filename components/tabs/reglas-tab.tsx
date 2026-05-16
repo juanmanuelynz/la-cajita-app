@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch"
 import { Plus, Loader2, LogOut, Trophy } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { POINTS_DISTRIBUTION } from "@/lib/constants"
+import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants"
 import type { MatchWithPlayers, PlayerStats, Tournament } from "@/lib/types"
 import { logout } from "@/app/login/actions"
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium"
@@ -45,9 +45,11 @@ interface ReglasTabProps {
   onShowCreateTournament: (show: boolean) => void
   onShowCloseTournamentDialog: (show: boolean) => void
   onNewTournamentNameChange: (name: string) => void
-  onCreateTournament: () => void
+  onCreateTournament: (pointsConfig: number[]) => void
   onCloseTournament: () => void
 }
+
+const DEFAULT_CONFIG: number[] = [...POINTS_CONFIG_PRESETS["Clásico"]]
 
 export function ReglasTab({
   tournaments,
@@ -71,6 +73,30 @@ export function ReglasTab({
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const isDark = mounted && theme === "dark"
+
+  const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG)
+  const handleOpenChangeCreate = (open: boolean) => {
+    if (!open) {
+      setPointsConfig(DEFAULT_CONFIG)
+      onNewTournamentNameChange("")
+    }
+    onShowCreateTournament(open)
+  }
+  const submitCreate = () => {
+    if (creatingTournament || !newTournamentName.trim()) return
+    onCreateTournament(pointsConfig)
+  }
+  const presetMatch = (cfg: number[]): string | null => {
+    for (const [name, preset] of Object.entries(POINTS_CONFIG_PRESETS)) {
+      if (preset.length === cfg.length && preset.every((v, i) => v === cfg[i])) {
+        return name
+      }
+    }
+    return null
+  }
+  const activePreset = presetMatch(pointsConfig)
+  const activePoints =
+    selectedTournament?.points_config ?? [...POINTS_DISTRIBUTION]
 
   return (
     <div className="space-y-6">
@@ -134,8 +160,8 @@ export function ReglasTab({
         </CardContent>
       </Card>
 
-      <Dialog open={showCreateTournament} onOpenChange={onShowCreateTournament}>
-        <DialogContent>
+      <Dialog open={showCreateTournament} onOpenChange={handleOpenChangeCreate}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Crear Nuevo Torneo</DialogTitle>
           </DialogHeader>
@@ -148,23 +174,65 @@ export function ReglasTab({
                 value={newTournamentName}
                 onChange={(e) => onNewTournamentNameChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") onCreateTournament()
+                  if (e.key === "Enter") submitCreate()
                 }}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Distribución de puntos</Label>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(POINTS_CONFIG_PRESETS).map(([name, preset]) => (
+                  <Button
+                    key={name}
+                    type="button"
+                    variant={activePreset === name ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPointsConfig([...preset])}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-4 gap-2 pt-1">
+                {pointsConfig.map((value, i) => (
+                  <div key={i} className="space-y-1">
+                    <Label
+                      htmlFor={`points-${i}`}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {i + 1}°
+                    </Label>
+                    <Input
+                      id={`points-${i}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={value}
+                      onChange={(e) => {
+                        const next = [...pointsConfig]
+                        next[i] = Math.max(0, Number(e.target.value) || 0)
+                        setPointsConfig(next)
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Los puntos no pueden subir en una posición inferior. Una vez creado
+                el torneo, la distribución queda fija.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                onShowCreateTournament(false)
-                onNewTournamentNameChange("")
-              }}
+              onClick={() => handleOpenChangeCreate(false)}
             >
               Cancelar
             </Button>
             <Button
-              onClick={onCreateTournament}
+              onClick={submitCreate}
               disabled={creatingTournament || !newTournamentName.trim()}
             >
               {creatingTournament ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -252,6 +320,12 @@ export function ReglasTab({
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Sistema de Puntos</CardTitle>
+          {selectedTournament && (
+            <p className="text-xs text-muted-foreground">
+              Configuración del torneo{" "}
+              <span className="font-medium">{selectedTournament.name}</span>
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -267,7 +341,7 @@ export function ReglasTab({
                   <tr key={position} className="border-b">
                     <td className="py-3 px-4 font-semibold">{position}°</td>
                     <td className="py-3 px-4 font-bold text-lg">
-                      {POINTS_DISTRIBUTION[position - 1]}
+                      {activePoints[position - 1] ?? 0}
                     </td>
                   </tr>
                 ))}

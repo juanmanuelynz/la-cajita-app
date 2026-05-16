@@ -87,7 +87,9 @@ export default function EditActiveMatchPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [currentView, setCurrentView] = useState<"edit" | "close">("edit");
 
-  const POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0];
+  const [pointsConfig, setPointsConfig] = useState<number[]>([
+    10, 7, 5, 3, 2, 1, 0, 0,
+  ]);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
@@ -115,6 +117,11 @@ export default function EditActiveMatchPage() {
             tieBreak: (p as any).tieBreak ?? Math.random(),
           })),
         });
+        const tournament = await db.getTournamentById(match.tournament_id);
+        if (!mounted) return;
+        if (tournament?.points_config) {
+          setPointsConfig(tournament.points_config);
+        }
       }
       const allPlayers = await db.getAllPlayers();
       if (!mounted) return;
@@ -771,7 +778,7 @@ export default function EditActiveMatchPage() {
                 })
                 .map((p, idx) => {
                   const pos = idx + 1;
-                  const points = POINTS_DISTRIBUTION[idx] || 0;
+                  const points = pointsConfig[idx] || 0;
                   return (
                     <div
                       key={p.originalIndex}
