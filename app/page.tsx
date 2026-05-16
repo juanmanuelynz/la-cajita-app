@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense, useMemo } from "react"
+import useEmblaCarousel from "embla-carousel-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -81,6 +82,33 @@ function LaCajitaPoker() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabId>("ranking")
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    align: "start",
+    containScroll: "trimSnaps",
+    duration: 20,
+  })
+
+  useEffect(() => {
+    if (!emblaApi) return
+    const onSelect = () => {
+      const idx = emblaApi.selectedScrollSnap()
+      const next = TABS[idx]?.id
+      if (next) setActiveTab(next)
+    }
+    emblaApi.on("select", onSelect)
+    return () => {
+      emblaApi.off("select", onSelect)
+    }
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    const idx = TABS.findIndex((t) => t.id === activeTab)
+    if (idx >= 0 && emblaApi.selectedScrollSnap() !== idx) {
+      emblaApi.scrollTo(idx)
+    }
+  }, [activeTab, emblaApi])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -395,61 +423,62 @@ function LaCajitaPoker() {
           </div>
         )}
 
-        {activeTab === "ranking" && (
-          <RankingTab
-            activeMatches={activeMatches}
-            sortedPlayerStats={sortedPlayerStats}
-            rankingSortBy={rankingSortBy}
-            onRankingSortChange={setRankingSortBy}
-            loading={loading}
-            onContinueActive={editActiveMatch}
-            onDeleteActive={setActiveMatchToDelete}
-          />
-        )}
-
-        {activeTab === "partidas" && (
-          <PartidasTab
-            matches={matches}
-            activeMatches={activeMatches}
-            expandedMatches={expandedMatches}
-            loading={loading}
-            isTournamentClosed={isTournamentClosed}
-            onToggleExpand={toggleMatchExpansion}
-            onCreateActive={createNewActiveMatch}
-            onContinueActive={editActiveMatch}
-            onDeleteActive={setActiveMatchToDelete}
-            onConfirmDeleteMatch={confirmDeleteMatch}
-            onRefresh={refreshData}
-          />
-        )}
-
-        {activeTab === "estadisticas" && (
-          <EstadisticasTab
-            matches={matches}
-            sortedPlayerStats={sortedPlayerStats}
-            expandedPlayerCards={expandedPlayerCards}
-            evolutionSortBy={evolutionSortBy}
-            onTogglePlayerCard={togglePlayerCard}
-            onEvolutionSortChange={setEvolutionSortBy}
-          />
-        )}
-
-        {activeTab === "reglas" && (
-          <ReglasTab
-            tournaments={tournaments}
-            selectedTournamentId={selectedTournamentId}
-            selectedTournament={selectedTournament}
-            showCreateTournament={showCreateTournament}
-            showCloseTournamentDialog={showCloseTournamentDialog}
-            newTournamentName={newTournamentName}
-            creatingTournament={creatingTournament}
-            onShowCreateTournament={setShowCreateTournament}
-            onShowCloseTournamentDialog={setShowCloseTournamentDialog}
-            onNewTournamentNameChange={setNewTournamentName}
-            onCreateTournament={handleCreateTournament}
-            onCloseTournament={handleCloseTournament}
-          />
-        )}
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex touch-pan-y">
+            <div className="flex-[0_0_100%] min-w-0 px-1">
+              <RankingTab
+                activeMatches={activeMatches}
+                sortedPlayerStats={sortedPlayerStats}
+                rankingSortBy={rankingSortBy}
+                onRankingSortChange={setRankingSortBy}
+                loading={loading}
+                onContinueActive={editActiveMatch}
+                onDeleteActive={setActiveMatchToDelete}
+              />
+            </div>
+            <div className="flex-[0_0_100%] min-w-0 px-1">
+              <PartidasTab
+                matches={matches}
+                activeMatches={activeMatches}
+                expandedMatches={expandedMatches}
+                loading={loading}
+                isTournamentClosed={isTournamentClosed}
+                onToggleExpand={toggleMatchExpansion}
+                onCreateActive={createNewActiveMatch}
+                onContinueActive={editActiveMatch}
+                onDeleteActive={setActiveMatchToDelete}
+                onConfirmDeleteMatch={confirmDeleteMatch}
+                onRefresh={refreshData}
+              />
+            </div>
+            <div className="flex-[0_0_100%] min-w-0 px-1">
+              <EstadisticasTab
+                matches={matches}
+                sortedPlayerStats={sortedPlayerStats}
+                expandedPlayerCards={expandedPlayerCards}
+                evolutionSortBy={evolutionSortBy}
+                onTogglePlayerCard={togglePlayerCard}
+                onEvolutionSortChange={setEvolutionSortBy}
+              />
+            </div>
+            <div className="flex-[0_0_100%] min-w-0 px-1">
+              <ReglasTab
+                tournaments={tournaments}
+                selectedTournamentId={selectedTournamentId}
+                selectedTournament={selectedTournament}
+                showCreateTournament={showCreateTournament}
+                showCloseTournamentDialog={showCloseTournamentDialog}
+                newTournamentName={newTournamentName}
+                creatingTournament={creatingTournament}
+                onShowCreateTournament={setShowCreateTournament}
+                onShowCloseTournamentDialog={setShowCloseTournamentDialog}
+                onNewTournamentNameChange={setNewTournamentName}
+                onCreateTournament={handleCreateTournament}
+                onCloseTournament={handleCloseTournament}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="fixed p-0 bottom-0 left-0 right-0 h-20 backdrop-blur-sm border-t z-50">
