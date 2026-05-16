@@ -4,7 +4,7 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
-**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 3 (podio visual dual al cerrar torneo, parcial), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 3 (podio visual dual al cerrar torneo, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
 
 ---
 
@@ -42,32 +42,21 @@ Implementado el podio visual: modal con **dos podios** (uno por plata, otro por 
 
 ---
 
-## 4. Métricas más jugosas
+## 4. Métricas más jugosas ✅ HECHO
 
-**Problema actual**
-La tab Estadísticas ya tiene mucho (ROI, comebacks, top wins/losses, evolución, eficiencia) pero falta lo más interesante para un grupo recurrente: relaciones entre jugadores y momentos.
+**En la card expandida de cada jugador (tab Estadísticas)**:
+- **Racha actual**: ganadas o perdidas consecutivas (Flame/Skull).
+- **Mejor racha**: cadena más larga de wins consecutivos.
+- **Némesis**: oponente con el diferencial cabeza a cabeza más alto contra el jugador (suma de `B.money_won − A.money_won` en partidas compartidas, mínimo 3).
+- **Día favorito**: día de la semana donde el jugador acumula más neto (mínimo 2 partidas en ese día).
+- **Killer move**: partida con mejor ROI relativo (la más eficiente, no la de mayor pozo absoluto).
 
-**Cambios propuestos** (priorizar los que más enganchen):
+**Card global nuevo**:
+- **ROI por partida**: chart de líneas con el ROI de cada partida individual a lo largo del tiempo (una serie por jugador).
 
-### 4a. Racha actual + mejor racha histórica
-- "Pedro lleva **3 partidas ganadas** en fila" (partidas con `money_won > 0`).
-- Card destacada en cada perfil.
-
-### 4b. Némesis / Bestia negra
-- Para cada jugador A, calcular contra qué jugador B perdió más plata acumulada en partidas donde ambos jugaron.
-- "El **némesis** de Pedro es Juan (-$25.000 en 8 partidas juntos)"
-
-### 4c. Día de la semana favorito
-- Agrupar partidas por `EXTRACT(DOW FROM date)` y mostrar qué día gana más cada jugador.
-
-### 4d. ROI por sesión (no acumulado)
-- El ROI actual es lifetime. Sumar uno por partida individual y mostrar la curva.
-
-### 4e. "Killer move" — la partida con la mayor remontada relativa
-- No solo plata absoluta. "Invirtió 4 cajitas, terminó +$48.000 → ROI 600%"
-
-**Archivos**: [lib/stats.ts](lib/stats.ts), [components/tabs/estadisticas-tab.tsx](components/tabs/estadisticas-tab.tsx)
-**Esfuerzo**: 1–2h por métrica
+**Limpieza asociada**:
+- Removidas dos métricas redundantes: "Mayores Recuperaciones" (correlacionaba ~1:1 con "Mejores Partidas") y el bar chart "ROI por Cajita" (era la misma fórmula que el eje Y del scatter "Eficiencia vs Inversión", que ahora queda como la representación única del ROI/eficiencia con cuadrantes Genio/Apostador/Conservador/Temerario).
+- Glosario completo en la tab Reglas.
 
 ---
 
@@ -127,7 +116,7 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 |---|------|-----|----------|--------|
 | 1 | Auto-completar último jugador | Alto | Bajo | ✅ |
 | 8 | Decidir default sort | Alto | Trivial | ✅ |
-| 4 | Métricas (rachas, némesis) | Alto | Medio | pendiente |
+| 4 | Métricas (rachas, némesis, día favorito, killer move, ROI por partida) | Alto | Medio | ✅ |
 | 3 | Podio final + export | Medio-Alto | Alto | ✅ parcial (falta share/CSV/snapshot) |
 | 2 | `points_config` por torneo | Medio | Medio | pendiente |
 | 5 | Distinguir recompras | Medio | Alto | pendiente |

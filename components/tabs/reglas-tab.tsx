@@ -277,6 +277,69 @@ export function ReglasTab({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Glosario de Estadísticas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-3 text-sm">
+            <li>
+              <strong>🔥 Racha actual</strong> — Cantidad de partidas consecutivas con el mismo
+              resultado (ganadas o perdidas, según la última). Se corta cuando cambia el signo
+              del dinero ganado.
+            </li>
+            <li>
+              <strong>Mejor racha</strong> — La cadena más larga de partidas ganadas
+              consecutivas en toda la historia del jugador.
+            </li>
+            <li>
+              <strong>⚔️ Némesis</strong> — El oponente al que más le fue mejor que a vos en
+              partidas compartidas. Por cada partida en común se calcula el diferencial{" "}
+              <em>(dinero ganado del oponente − dinero ganado tuyo)</em> y se acumula. Gana el
+              que tiene el diferencial positivo más alto contra vos (mínimo 3 partidas
+              compartidas).
+            </li>
+            <li>
+              <strong>Mejor / Peor partida</strong> — La partida con mayor ganancia y la de
+              mayor pérdida del jugador, con la posición y el monto.
+            </li>
+            <li>
+              <strong>📅 Día favorito</strong> — El día de la semana donde el jugador acumula
+              más ganancia neta (mínimo 2 partidas en ese día, neto positivo).
+            </li>
+            <li>
+              <strong>🚀 Killer move</strong> — La partida con mejor ROI relativo del jugador:
+              donde menos invirtió en proporción a lo que ganó. Premia la eficiencia, no el
+              monto absoluto.
+            </li>
+            <li>
+              <strong>🎢 ROI por partida</strong> — Curva del retorno (ganancia ÷ inversión)
+              de cada partida individual a lo largo del tiempo. Una línea por jugador.
+            </li>
+            <li>
+              <strong>🏆 Top 3 Ganadores</strong> — Los tres jugadores con más victorias (1°
+              puesto). Se muestra también el pozo más alto que ganaron alguna vez.
+            </li>
+            <li>
+              <strong>📈 Evolución de Posiciones</strong> — La trayectoria del ranking de cada
+              jugador fecha tras fecha, ordenable por dinero o por puntos.
+            </li>
+            <li>
+              <strong>💰 Mejores Partidas / 💸 Peores Partidas</strong> — Las 3 partidas
+              individuales (jugador-fecha) con mayor ganancia y mayor pérdida en toda la
+              historia.
+            </li>
+            <li>
+              <strong>Eficiencia vs Inversión</strong> — Cuadrantes que cruzan el ROI lifetime
+              (dinero ganado ÷ dinero invertido en cajitas) con el promedio de cajitas por
+              partida: <em>Genio</em> (ROI ≥ 0, pocas cajitas), <em>Apostador</em> (ROI ≥ 0,
+              muchas cajitas), <em>Conservador</em> (ROI {"<"} 0, pocas cajitas),{" "}
+              <em>Temerario</em> (ROI {"<"} 0, muchas cajitas).
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
       <TournamentClosingPodium
         open={showPodium}
         onOpenChange={onShowPodium}

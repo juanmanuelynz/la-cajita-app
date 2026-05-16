@@ -64,43 +64,6 @@ export function getPlayerLastMatches(matches: MatchWithPlayers[], playerName: st
     })
 }
 
-export function calculateROIPerPlayer(matches: MatchWithPlayers[]) {
-  const playerData: { [name: string]: { totalInvestment: number; totalMoney: number } } = {}
-  matches.forEach((match) => {
-    match.match_players.forEach((mp) => {
-      const name = mp.players.name
-      if (!playerData[name]) playerData[name] = { totalInvestment: 0, totalMoney: 0 }
-      playerData[name].totalInvestment += mp.cajitas * match.caji_value
-      playerData[name].totalMoney += mp.money_won
-    })
-  })
-
-  const roiData: { [name: string]: number } = {}
-  Object.keys(playerData).forEach((name) => {
-    const { totalInvestment, totalMoney } = playerData[name]
-    roiData[name] = totalInvestment > 0 ? (totalMoney / totalInvestment) * 100 : 0
-  })
-
-  return Object.fromEntries(
-    Object.entries(roiData)
-      .filter(([_, roi]) => !isNaN(roi))
-      .sort(([, a], [, b]) => b - a),
-  )
-}
-
-export function formatROIForBarChart(matches: MatchWithPlayers[]) {
-  const roiData = calculateROIPerPlayer(matches)
-  const labels = Object.keys(roiData)
-  const data = Object.values(roiData)
-  const backgroundColor = data.map((roi) =>
-    roi >= 0 ? "rgba(16, 185, 129, 0.8)" : "rgba(244, 63, 94, 0.8)",
-  )
-  const borderColor = data.map((roi) =>
-    roi >= 0 ? "rgba(16, 185, 129, 1)" : "rgba(244, 63, 94, 1)",
-  )
-  return { labels, data, backgroundColor, borderColor }
-}
-
 export interface TopWinner {
   jugador: string
   victorias: number
@@ -193,42 +156,84 @@ export function getPositionEvolutionData(matches: MatchWithPlayers[], sortBy: So
   return { dates, evolutionData }
 }
 
-export interface Comeback {
-  jugador: string
-  comeback_amount: number
-  fecha: string
-  partida_detalle: {
-    dinero_inicial: number
-    punto_mas_bajo: number
-    dinero_final: number
-    cajitas: number
-    monto_invertido: number
-  }
+export interface PlayerStreak {
+  current: number
+  currentType: "win" | "loss" | null
+  bestWin: number
 }
 
-export function calculateTopComebacks(matches: MatchWithPlayers[]): Comeback[] {
-  const comebacks: Comeback[] = []
-  matches.forEach((match) => {
-    match.match_players.forEach((mp) => {
-      const inversionTotal = mp.cajitas * match.caji_value
-      const dineroNeto = mp.money_won
-      if (dineroNeto > 0) {
-        comebacks.push({
-          jugador: mp.players.name,
-          comeback_amount: inversionTotal + dineroNeto,
-          fecha: match.date,
-          partida_detalle: {
-            dinero_inicial: 0,
-            punto_mas_bajo: -inversionTotal,
-            dinero_final: dineroNeto,
-            cajitas: mp.cajitas,
-            monto_invertido: inversionTotal,
-          },
-        })
-      }
-    })
-  })
-  return comebacks.sort((a, b) => b.comeback_amount - a.comeback_amount).slice(0, 3)
+function longestRun(arr: number[], pred: (n: number) => boolean): number {
+  let max = 0
+  let cur = 0
+  for (const x of arr) {
+    if (pred(x)) {
+      cur++
+      if (cur > max) max = cur
+    } else {
+      cur = 0
+    }
+  }
+  return max
+}
+
+export function getPlayerStreak(
+  matches: MatchWithPlayers[],
+  playerName: string,
+): PlayerStreak {
+  const results = matches
+    .filter((m) => m.match_players.some((mp) => mp.players?.name === playerName))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((m) => m.match_players.find((mp) => mp.players?.name === playerName)!.money_won)
+
+  const bestWin = longestRun(results, (x) => x > 0)
+  if (results.length === 0) return { current: 0, currentType: null, bestWin }
+
+  const last = results[results.length - 1]
+  if (last === 0) return { current: 0, currentType: null, bestWin }
+
+  const type: "win" | "loss" = last > 0 ? "win" : "loss"
+  let current = 0
+  for (let i = results.length - 1; i >= 0; i--) {
+    const r = results[i]
+    if ((type === "win" && r > 0) || (type === "loss" && r < 0)) current++
+    else break
+  }
+  return { current, currentType: type, bestWin }
+}
+
+export interface Nemesis {
+  name: string
+  differential: number
+  sharedMatches: number
+}
+
+export function getPlayerNemesis(
+  matches: MatchWithPlayers[],
+  playerName: string,
+  minSharedMatches = 3,
+): Nemesis | null {
+  const byOpponent: Record<string, { diff: number; matches: number }> = {}
+
+  for (const match of matches) {
+    const me = match.match_players.find((mp) => mp.players?.name === playerName)
+    if (!me) continue
+    for (const mp of match.match_players) {
+      const opp = mp.players?.name
+      if (!opp || opp === playerName) continue
+      if (!byOpponent[opp]) byOpponent[opp] = { diff: 0, matches: 0 }
+      byOpponent[opp].diff += mp.money_won - me.money_won
+      byOpponent[opp].matches += 1
+    }
+  }
+
+  let worst: Nemesis | null = null
+  for (const [name, { diff, matches: m }] of Object.entries(byOpponent)) {
+    if (m < minSharedMatches || diff <= 0) continue
+    if (!worst || diff > worst.differential) {
+      worst = { name, differential: diff, sharedMatches: m }
+    }
+  }
+  return worst
 }
 
 export type Cuadrante = "Genio" | "Apostador" | "Conservador" | "Temerario"
@@ -374,4 +379,110 @@ export function getTopLosses(matches: MatchWithPlayers[], limit = 3): PartidaFla
     .sort((a, b) => a.dinero_ganado - b.dinero_ganado)
     .slice(0, limit)
     .map((p, i) => ({ ...p, rank: i + 1 }))
+}
+
+const DAY_NAMES = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+]
+
+function getDayOfWeek(dateStr: string): number {
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (match) {
+    const [, y, m, d] = match
+    return new Date(Number(y), Number(m) - 1, Number(d)).getDay()
+  }
+  return new Date(dateStr).getDay()
+}
+
+export interface FavoriteDay {
+  dayName: string
+  totalWon: number
+  matchCount: number
+}
+
+export function getPlayerFavoriteDay(
+  matches: MatchWithPlayers[],
+  playerName: string,
+  minMatches = 2,
+): FavoriteDay | null {
+  const byDay: Record<number, { won: number; count: number }> = {}
+  for (const match of matches) {
+    const mp = match.match_players.find((p) => p.players?.name === playerName)
+    if (!mp) continue
+    const dow = getDayOfWeek(match.date)
+    if (!byDay[dow]) byDay[dow] = { won: 0, count: 0 }
+    byDay[dow].won += mp.money_won
+    byDay[dow].count += 1
+  }
+
+  let best: { day: number; won: number; count: number } | null = null
+  for (const [day, v] of Object.entries(byDay)) {
+    if (v.count < minMatches || v.won <= 0) continue
+    if (!best || v.won > best.won) best = { day: Number(day), won: v.won, count: v.count }
+  }
+  if (!best) return null
+  return { dayName: DAY_NAMES[best.day], totalWon: best.won, matchCount: best.count }
+}
+
+export interface KillerMove {
+  date: string
+  cajitas: number
+  moneyWon: number
+  investment: number
+  roi: number
+}
+
+export function getPlayerKillerMove(
+  matches: MatchWithPlayers[],
+  playerName: string,
+): KillerMove | null {
+  let best: KillerMove | null = null
+  for (const match of matches) {
+    const mp = match.match_players.find((p) => p.players?.name === playerName)
+    if (!mp || mp.money_won <= 0) continue
+    const investment = mp.cajitas * match.caji_value
+    if (investment <= 0) continue
+    const roi = (mp.money_won / investment) * 100
+    if (!best || roi > best.roi) {
+      best = {
+        date: match.date,
+        cajitas: mp.cajitas,
+        moneyWon: mp.money_won,
+        investment,
+        roi,
+      }
+    }
+  }
+  return best
+}
+
+export function getROIPerMatchData(matches: MatchWithPlayers[]) {
+  const dates = [...new Set(matches.map((m) => m.date))].sort()
+  const byPlayer: Record<string, { date: string; roi: number }[]> = {}
+
+  for (const match of matches) {
+    for (const mp of match.match_players) {
+      const name = mp.players?.name
+      if (!name) continue
+      const investment = mp.cajitas * match.caji_value
+      if (investment <= 0) continue
+      const roi = (mp.money_won / investment) * 100
+      if (!byPlayer[name]) byPlayer[name] = []
+      byPlayer[name].push({ date: match.date, roi })
+    }
+  }
+
+  for (const name of Object.keys(byPlayer)) {
+    byPlayer[name].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    )
+  }
+
+  return { dates, byPlayer }
 }

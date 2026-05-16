@@ -4,8 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import {
   Award,
+  CalendarDays,
   Cannabis,
   Coins,
+  Flame,
+  Rocket,
+  Skull,
+  Swords,
   TrendingUp,
   TrendingDown,
   Trophy,
@@ -13,7 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
-import { Line, Bar, Scatter } from "react-chartjs-2"
+import { Line, Scatter } from "react-chartjs-2"
 import { AdaptiveTooltip } from "@/components/adaptive-tooltip"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import { EVOLUTION_COLORS } from "@/lib/constants"
@@ -24,10 +29,13 @@ import {
   getPlayerLastMatches,
   getTopWinners,
   getPositionEvolutionData,
-  calculateTopComebacks,
+  getPlayerStreak,
+  getPlayerNemesis,
+  getPlayerFavoriteDay,
+  getPlayerKillerMove,
+  getROIPerMatchData,
   calculateEfficiencyAnalysis,
   formatForQuadrantChart,
-  formatROIForBarChart,
   getTopWins,
   getTopLosses,
   type SortBy,
@@ -51,10 +59,7 @@ export function EstadisticasTab({
   onEvolutionSortChange,
 }: EstadisticasTabProps) {
   const topWinners = getTopWinners(matches)
-  const topComebacks = calculateTopComebacks(matches)
-  const topComeback = topComebacks.length > 0 ? topComebacks[0] : null
   const efficiency = calculateEfficiencyAnalysis(matches)
-  const roiChart = formatROIForBarChart(matches)
   const topWins = getTopWins(matches)
   const topLosses = getTopLosses(matches)
 
@@ -67,6 +72,10 @@ export function EstadisticasTab({
           const best = getPlayerBestMatch(matches, player.name)
           const worst = getPlayerWorstMatch(matches, player.name)
           const lastFive = getPlayerLastMatches(matches, player.name)
+          const streak = getPlayerStreak(matches, player.name)
+          const nemesis = getPlayerNemesis(matches, player.name)
+          const favoriteDay = getPlayerFavoriteDay(matches, player.name)
+          const killerMove = getPlayerKillerMove(matches, player.name)
 
           return (
             <Card key={player.id}>
@@ -152,6 +161,87 @@ export function EstadisticasTab({
                         </div>
                       )}
                     </div>
+
+                    {(streak.currentType ||
+                      streak.bestWin > 1 ||
+                      nemesis ||
+                      favoriteDay) && (
+                      <div className="flex flex-col gap-2 mb-3">
+                        {(streak.currentType || streak.bestWin > 1) && (
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              {streak.currentType === "win" ? (
+                                <Flame className="w-4 h-4 text-amber-500" />
+                              ) : streak.currentType === "loss" ? (
+                                <Skull className="w-4 h-4 text-rose-500" />
+                              ) : (
+                                <Flame className="w-4 h-4 text-muted-foreground" />
+                              )}
+                              <span>
+                                {streak.currentType === "win"
+                                  ? `${streak.current} ganadas seguidas`
+                                  : streak.currentType === "loss"
+                                    ? `${streak.current} perdidas seguidas`
+                                    : "Sin racha actual"}
+                              </span>
+                            </div>
+                            {streak.bestWin > 1 && (
+                              <span className="text-xs text-muted-foreground">
+                                Mejor: {streak.bestWin}W
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {nemesis && (
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <Swords className="w-4 h-4 text-rose-500" />
+                              <span>
+                                Némesis: <strong>{nemesis.name}</strong>
+                              </span>
+                            </div>
+                            <span className="text-xs text-rose-500">
+                              -${formatAmount(nemesis.differential)} en{" "}
+                              {nemesis.sharedMatches}
+                            </span>
+                          </div>
+                        )}
+                        {favoriteDay && (
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="w-4 h-4 text-cyan-500" />
+                              <span>
+                                Día favorito: <strong>{favoriteDay.dayName}</strong>
+                              </span>
+                            </div>
+                            <span className="text-xs text-emerald-500">
+                              +${formatAmount(favoriteDay.totalWon)} en{" "}
+                              {favoriteDay.matchCount}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {killerMove && (
+                      <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <Rocket className="w-4 h-4 text-amber-500" />
+                            <span className="text-sm font-semibold text-amber-500">
+                              Killer move
+                            </span>
+                          </div>
+                          <span className="text-lg font-bold text-amber-500">
+                            {killerMove.roi.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {killerMove.cajitas} cajitas (${formatAmount(killerMove.investment)})
+                          → +${formatAmount(killerMove.moneyWon)} · {formatDate(killerMove.date)}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Últimas 5 partidas</span>
@@ -358,114 +448,75 @@ export function EstadisticasTab({
 
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-xl">Mayores Recuperaciones</CardTitle>
-            <AdaptiveTooltip
-              title="¿Qué es una Recuperación?"
-              content={
-                <div className="space-y-2">
-                  <p>
-                    Una <strong>recuperación</strong> mide cuánto dinero logró ganar un jugador
-                    después de haber invertido en cajitas.
-                  </p>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <strong>Inversión:</strong> Dinero gastado en cajitas al inicio
-                    </p>
-                    <p>
-                      <strong>Recuperación:</strong> Inversión total + ganancia neta final
-                    </p>
-                    <p>
-                      <strong>Solo se cuentan:</strong> Partidas donde se gana dinero
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Fórmula: Cajitas invertidas + Ganancia final
-                  </p>
-                </div>
-              }
-            >
-              <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-            </AdaptiveTooltip>
-          </div>
+          <CardTitle className="text-xl flex items-center gap-2">
+            🎢 ROI por partida
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Las remontadas más épicas en una sola partida
+            Retorno de cada partida individual: ganancia neta ÷ inversión en cajitas
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {topComeback && (
-            <Card className="border-2 border-yellow-500/50 ">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="text-3xl">🥇</div>
-                  <div>
-                    <h3 className="font-bold text-lg">{topComeback.jugador}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(topComeback.fecha)}
-                    </p>
-                  </div>
-                  <div className="ml-auto text-right">
-                    <div className="text-2xl font-bold text-emerald-600">
-                      +${formatAmount(topComeback.comeback_amount)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Recuperación</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                  <div>
-                    <div className="font-semibold text-white">
-                      {topComeback.partida_detalle.cajitas}
-                    </div>
-                    <div className="text-muted-foreground">Cajitas</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-rose-600">
-                      ${formatAmount(topComeback.partida_detalle.punto_mas_bajo)}
-                    </div>
-                    <div className="text-muted-foreground">Invertido</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-emerald-600">
-                      +${formatAmount(topComeback.partida_detalle.dinero_final)}
-                    </div>
-                    <div className="text-muted-foreground">Neto</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            {topComebacks.slice(1, 3).map((comeback, index) => {
-              const medals = ["🥈", "🥉"]
-              const borderColors = ["border-gray-400/50", "border-orange-600/50"]
-              return (
-                <Card
-                  key={`${comeback.jugador}-${comeback.fecha}`}
-                  className={`${borderColors[index]} border-2`}
-                >
-                  <CardContent className="p-3 text-center">
-                    <div className="text-2xl mb-2">{medals[index]}</div>
-                    <div className="font-semibold text-sm mb-1">{comeback.jugador}</div>
-                    <div className="text-lg font-bold text-emerald-600 mb-1">
-                      +${formatAmount(comeback.comeback_amount)}
-                    </div>
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {formatDate(comeback.fecha)}
-                    </div>
-                    <div className="text-xs text-rose-600">
-                      ${formatAmount(comeback.partida_detalle.monto_invertido)} invertido
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-
-          {topComebacks.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No hay datos de recuperaciones disponibles</p>
+        <CardContent>
+          {matches.length === 0 ? (
+            <div className="text-center text-muted-foreground py-6">
+              No hay datos de partidas
+            </div>
+          ) : (
+            <div className="h-96">
+              {(() => {
+                const { byPlayer } = getROIPerMatchData(matches)
+                const datasets = Object.entries(byPlayer).map(
+                  ([playerName, series], index) => ({
+                    label: playerName,
+                    data: series.map((s) => ({ x: s.date, y: s.roi })),
+                    borderColor: EVOLUTION_COLORS[index % EVOLUTION_COLORS.length],
+                    backgroundColor: EVOLUTION_COLORS[index % EVOLUTION_COLORS.length],
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                  }),
+                )
+                return (
+                  <Line
+                    data={{ datasets }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      parsing: false as unknown as undefined,
+                      plugins: {
+                        legend: {
+                          position: "bottom" as const,
+                          labels: { usePointStyle: true, padding: 15 },
+                        },
+                        tooltip: {
+                          callbacks: {
+                            title: (items) => formatDate(String(items[0].parsed.x)),
+                            label: (ctx) =>
+                              `${ctx.dataset.label}: ${(ctx.parsed.y as number).toFixed(0)}%`,
+                          },
+                        },
+                      },
+                      scales: {
+                        y: {
+                          title: { display: true, text: "ROI (%)" },
+                          ticks: { callback: (v) => `${v}%` },
+                        },
+                        x: {
+                          type: "category",
+                          title: { display: true, text: "Fecha" },
+                          ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            callback: function (value) {
+                              const label = this.getLabelForValue(value as number)
+                              return formatDate(label)
+                            },
+                          },
+                        },
+                      },
+                    }}
+                  />
+                )
+              })()}
             </div>
           )}
         </CardContent>
@@ -624,87 +675,6 @@ export function EstadisticasTab({
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-xl">ROI por Cajita (%)</CardTitle>
-            <AdaptiveTooltip
-              title="¿Qué es el ROI?"
-              content={
-                <div className="space-y-2">
-                  <p>
-                    El <strong>ROI (Return on Investment)</strong> mide cuánto dinero ganas o
-                    pierdes por cada peso que inviertes en cajitas.
-                  </p>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <strong>ROI positivo:</strong> Ganas más de lo que inviertes
-                    </p>
-                    <p>
-                      <strong>ROI negativo:</strong> Pierdes dinero
-                    </p>
-                    <p>
-                      <strong>ROI = 0%:</strong> Recuperas exactamente tu inversión
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Fórmula: (Dinero ganado / Dinero invertido) × 100
-                  </p>
-                </div>
-              }
-            >
-              <HelpCircle className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-            </AdaptiveTooltip>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Retorno de inversión promedio por cajita comprada
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <Bar
-              data={{
-                labels: roiChart.labels,
-                datasets: [
-                  {
-                    label: "ROI (%)",
-                    data: roiChart.data,
-                    backgroundColor: roiChart.backgroundColor,
-                    borderColor: roiChart.borderColor,
-                    borderWidth: 1,
-                  },
-                ],
-              }}
-              options={{
-                indexAxis: "y" as const,
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => `ROI: ${context.parsed.x.toFixed(1)}%`,
-                    },
-                  },
-                },
-                scales: {
-                  x: {
-                    beginAtZero: true,
-                    title: { display: true, text: "ROI (%)" },
-                    ticks: {
-                      callback: function (value) {
-                        return value + "%"
-                      },
-                    },
-                  },
-                  y: { title: { display: true, text: "Jugadores" } },
-                },
-              }}
-            />
-          </div>
         </CardContent>
       </Card>
 
