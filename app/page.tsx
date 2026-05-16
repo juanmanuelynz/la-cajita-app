@@ -71,14 +71,14 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { DatabaseService } from "../lib/database";
+import * as db from "../lib/database";
 import type {
   Player,
   MatchWithPlayers,
   PlayerStats,
   ActiveMatch,
   Tournament,
-} from "../lib/supabase";
+} from "../lib/types";
 import { PWAInstall } from "@/components/pwa-install";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { Switch } from "@/components/ui/switch";
@@ -296,11 +296,11 @@ function LaCajitaPoker() {
   }, [playerStats]);
 
   const testConnectionAndLoadData = async () => {
-    const isConnected = await DatabaseService.testConnection();
+    const isConnected = await db.testConnection();
     setConnectionStatus(isConnected);
 
     if (isConnected) {
-      const tournamentsData = await DatabaseService.getTournaments();
+      const tournamentsData = await db.getTournaments();
       setTournaments(tournamentsData);
 
       const mostRecentId = tournamentsData[0]?.id || null;
@@ -325,11 +325,11 @@ function LaCajitaPoker() {
         overallData,
         activeMatchesData,
       ] = await Promise.all([
-        DatabaseService.getAllPlayers(),
-        DatabaseService.getAllMatches(tournamentId),
-        DatabaseService.getPlayerStats(tournamentId),
-        DatabaseService.getOverallStats(tournamentId),
-        DatabaseService.getAllActiveMatches(tournamentId),
+        db.getAllPlayers(),
+        db.getAllMatches(tournamentId),
+        db.getPlayerStats(tournamentId),
+        db.getOverallStats(tournamentId),
+        db.getAllActiveMatches(tournamentId),
       ]);
 
       setPlayers(playersData);
@@ -365,10 +365,10 @@ function LaCajitaPoker() {
     if (!newTournamentName.trim()) return;
     setCreatingTournament(true);
     try {
-      const created = await DatabaseService.createTournament(
+      const created = await db.createTournament(
         newTournamentName.trim(),
       );
-      const tournamentsData = await DatabaseService.getTournaments();
+      const tournamentsData = await db.getTournaments();
       setTournaments(tournamentsData);
       setShowCreateTournament(false);
       setNewTournamentName("");
@@ -388,8 +388,8 @@ function LaCajitaPoker() {
     if (!selectedTournamentId) return;
     setCreatingTournament(true);
     try {
-      await DatabaseService.closeTournament(selectedTournamentId);
-      const tournamentsData = await DatabaseService.getTournaments();
+      await db.closeTournament(selectedTournamentId);
+      const tournamentsData = await db.getTournaments();
       setTournaments(tournamentsData);
       setShowCloseTournamentDialog(false);
     } catch (err) {
@@ -410,7 +410,7 @@ function LaCajitaPoker() {
     setLoading(true);
     setError(null);
     try {
-      const newMatch = await DatabaseService.createActiveMatch({
+      const newMatch = await db.createActiveMatch({
         date: getTodayLocalDate(),
         cajiValue: 2000,
         playerCount: 4,
@@ -446,12 +446,12 @@ function LaCajitaPoker() {
     setLoading(true);
     setError(null);
     try {
-      await DatabaseService.deleteActiveMatch(matchId);
+      await db.deleteActiveMatch(matchId);
 
       // Reload active matches filtered by current tournament
       if (selectedTournamentId) {
         const activeMatchesData =
-          await DatabaseService.getAllActiveMatches(selectedTournamentId);
+          await db.getAllActiveMatches(selectedTournamentId);
         setActiveMatches(activeMatchesData);
       }
 
@@ -489,7 +489,7 @@ function LaCajitaPoker() {
     if (!editingMatchId) return;
 
     try {
-      await DatabaseService.updateActiveMatch(editingMatchId, {
+      await db.updateActiveMatch(editingMatchId, {
         date: formData.date,
         cajiValue: formData.cajiValue,
         playerCount: formData.playerCount,
@@ -499,7 +499,7 @@ function LaCajitaPoker() {
       // Reload active matches to get updated data
       if (selectedTournamentId) {
         const activeMatchesData =
-          await DatabaseService.getAllActiveMatches(selectedTournamentId);
+          await db.getAllActiveMatches(selectedTournamentId);
         setActiveMatches(activeMatchesData);
       }
     } catch (err) {
@@ -567,7 +567,7 @@ function LaCajitaPoker() {
     setLoading(true);
     setError(null);
     try {
-      await DatabaseService.registerActiveMatch(editingMatchId);
+      await db.registerActiveMatch(editingMatchId);
 
       // Close form and reload all data
       setShowRegisterForm(false);
@@ -586,8 +586,8 @@ function LaCajitaPoker() {
 
     setLoading(true);
     try {
-      await DatabaseService.createPlayer(newPlayerName.trim());
-      await DatabaseService.getAllPlayers().then(setPlayers);
+      await db.createPlayer(newPlayerName.trim());
+      await db.getAllPlayers().then(setPlayers);
 
       // Update form with new player
       updatePlayerMoney(index, "name", newPlayerName.trim());
@@ -610,7 +610,7 @@ function LaCajitaPoker() {
 
     setLoading(true);
     try {
-      await DatabaseService.deleteMatch(matchToDelete);
+      await db.deleteMatch(matchToDelete);
       await loadAllData(selectedTournamentId);
       setMatchToDelete(null);
     } catch (err) {
@@ -3022,7 +3022,7 @@ function LaCajitaPoker() {
                       if (confirm("¿Estás seguro de que quieres actualizar el sistema de puntos? Esto recalculará todos los puntos de las partidas pasadas.")) {
                         setLoading(true);
                         try {
-                          await DatabaseService.updatePointsSystem();
+                          await db.updatePointsSystem();
                           await loadAllData(); // Recargar datos
                           alert("¡Sistema de puntos actualizado correctamente!");
                         } catch (error) {

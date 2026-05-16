@@ -1,10 +1,3 @@
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gtefxclgtmgbkkdfbnwi.supabase.co"
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0ZWZ4Y2xndG1nYmtrZGZibndpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MjQ4OTEsImV4cCI6MjA2NjIwMDg5MX0.MdTx0_pJdrkhhuSLtg7phuvJMazhxaa8j501-OrgO5A"
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 export interface Player {
   id: string
   name: string

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { DatabaseService } from "@/lib/database";
-import type { ActiveMatch } from "@/lib/database";
+import * as db from "@/lib/database";
+import type { ActiveMatch } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +99,7 @@ export default function EditActiveMatchPage() {
     let mounted = true;
     const load = async () => {
       setLoading(true);
-      const match = await DatabaseService.getActiveMatchById(matchId);
+      const match = await db.getActiveMatchById(matchId);
       if (!mounted) return;
       if (match) {
         setFormData({
@@ -116,7 +116,7 @@ export default function EditActiveMatchPage() {
           })),
         });
       }
-      const allPlayers = await DatabaseService.getAllPlayers();
+      const allPlayers = await db.getAllPlayers();
       if (!mounted) return;
       setPlayersList(allPlayers.map((p) => p.name));
       setLoading(false);
@@ -164,7 +164,7 @@ export default function EditActiveMatchPage() {
     autoSaveTimerRef.current = setTimeout(async () => {
       setSaveState("saving");
       try {
-        await DatabaseService.updateActiveMatch(matchId, {
+        await db.updateActiveMatch(matchId, {
           date: formData.date,
           cajiValue: formData.cajiValue,
           playerCount: formData.playerCount,
@@ -223,7 +223,7 @@ export default function EditActiveMatchPage() {
   const confirmRegister = async () => {
     setRegistering(true);
     try {
-      await DatabaseService.registerActiveMatch(matchId);
+      await db.registerActiveMatch(matchId);
       router.push("/?tab=partidas");
     } finally {
       setRegistering(false);
@@ -234,8 +234,8 @@ export default function EditActiveMatchPage() {
     if (!newPlayerName.trim() || creatingPlayer) return;
     setCreatingPlayer(true);
     try {
-      await DatabaseService.createPlayer(newPlayerName.trim());
-      const refreshed = await DatabaseService.getAllPlayers();
+      await db.createPlayer(newPlayerName.trim());
+      const refreshed = await db.getAllPlayers();
       setPlayersList(refreshed.map((p) => p.name));
       updatePlayerMoney(index, "name", newPlayerName.trim());
       setNewPlayerName("");
@@ -249,7 +249,7 @@ export default function EditActiveMatchPage() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (formData) {
       try {
-        await DatabaseService.updateActiveMatch(matchId, {
+        await db.updateActiveMatch(matchId, {
           date: formData.date,
           cajiValue: formData.cajiValue,
           playerCount: formData.playerCount,
