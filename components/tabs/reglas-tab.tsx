@@ -24,6 +24,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Plus, Loader2, LogOut, Trophy } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 import { POINTS_DISTRIBUTION } from "@/lib/constants"
 import type { MatchWithPlayers, PlayerStats, Tournament } from "@/lib/types"
 import { logout } from "@/app/login/actions"
@@ -67,6 +68,9 @@ export function ReglasTab({
   onCloseTournament,
 }: ReglasTabProps) {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isDark = mounted && theme === "dark"
 
   return (
     <div className="space-y-6">
@@ -197,15 +201,17 @@ export function ReglasTab({
           <CardTitle className="text-xl">Configuración</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" suppressHydrationWarning>
             <span className="text-sm">☀️</span>
             <Switch
-              checked={theme === "dark"}
+              checked={isDark}
               onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
               aria-label="Cambiar tema"
             />
             <span className="text-sm">🌙</span>
-            <span className="ml-2 text-sm">Tema {theme === "dark" ? "oscuro" : "claro"}</span>
+            <span className="ml-2 text-sm" suppressHydrationWarning>
+              Tema {mounted ? (isDark ? "oscuro" : "claro") : ""}
+            </span>
           </div>
 
           <form action={logout}>
