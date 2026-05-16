@@ -19,15 +19,17 @@ There are no automated tests in this project.
 
 ### Stack
 - **Next.js 15** with App Router, React 19, TypeScript
-- **Supabase** (PostgreSQL) as the database/backend — all DB access goes through `lib/supabase.ts` (client) and `lib/database.ts` (service layer)
+- **Neon** (serverless PostgreSQL) via `@neondatabase/serverless` HTTP driver — all DB access goes through Server Actions in `lib/database.ts`
 - **Tailwind CSS v4** with shadcn/ui components (Radix UI primitives)
 - **Chart.js / Recharts** for statistics visualization
 - **PWA**: service worker at `/public/sw.js`, manifest at `/public/manifest.json`
 
 ### Data Flow
-All database operations are static methods on `DatabaseService` in [lib/database.ts](lib/database.ts). Components import this service directly — there is no API route layer.
+All database operations are top-level async functions in [lib/database.ts](lib/database.ts), declared as Server Actions via the file-level `"use server"` directive. Client components import them with `import * as db from "@/lib/database"` and call them like local async functions — Next.js transparently serializes args, runs the function server-side against Neon, and returns the result. There is no REST/API route layer.
 
-The Supabase client in [lib/supabase.ts](lib/supabase.ts) also exports all TypeScript interfaces (`Player`, `Match`, `MatchPlayer`, `MatchWithPlayers`, `PlayerStats`, `ActiveMatch`).
+TypeScript interfaces (`Player`, `Match`, `MatchPlayer`, `MatchWithPlayers`, `PlayerStats`, `ActiveMatch`, `Tournament`) live in [lib/types.ts](lib/types.ts) — a plain types-only module that can be imported by both client and server code.
+
+The Neon `DATABASE_URL` is read server-side only; it must not be prefixed with `NEXT_PUBLIC_`. There is no anon-key/RLS layer — the entire DB trust boundary is at the Server Action.
 
 ### Key Concepts
 
@@ -42,20 +44,21 @@ The Supabase client in [lib/supabase.ts](lib/supabase.ts) also exports all TypeS
 - `/partidas/[id]` — Edit an active match in progress.
 
 ### Database Schema
-Tables in Supabase (scripts in [scripts/](scripts/)):
+Tables in Neon (DDL reference in [scripts/](scripts/), originally written for Supabase but pure standard Postgres):
+- `tournaments` — id, name, closed_at, created_at (a `closed_at IS NULL` row is the active tournament)
 - `players` — id, name, created_at
-- `matches` — id, date, caji_value, total_money, player_count, created_at
+- `matches` — id, date, caji_value, total_money, player_count, tournament_id (→ tournaments), created_at
 - `match_players` — id, match_id (→ matches), player_id (→ players), cajitas, final_chips, money_won, position, points, created_at
-- `active_matches` — id, date, caji_value, player_count, players (JSONB array), created_at, updated_at
+- `active_matches` — id, date, caji_value, player_count, tournament_id (→ tournaments), players (JSONB array), created_at, updated_at
 
-Run SQL scripts in order (01→05) against your Supabase project to initialize or migrate the schema.
+To bootstrap a fresh Neon DB, run scripts 01→06 in order via `psql "$DATABASE_URL" -f scripts/0X-...sql`. The current production schema was migrated wholesale from Supabase via `pg_dump`.
 
 ### Environment Variables
 Create `.env.local` with:
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL=postgresql://[user]:[pwd]@[host]-pooler.[region].aws.neon.tech/neondb?sslmode=require
 ```
+Use the **pooled** Neon connection string (host contains `-pooler`) — the HTTP driver is built for serverless and the pooled endpoint scales to zero cleanly. Never expose this var to the client (no `NEXT_PUBLIC_` prefix).
 
 ### Components
 - [components/ui/](components/ui/) — shadcn/ui component library (do not modify these directly; regenerate with shadcn CLI if needed)
