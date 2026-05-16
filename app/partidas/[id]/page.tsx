@@ -144,8 +144,15 @@ export default function EditActiveMatchPage() {
     setFormData((prev) => (prev ? { ...prev, players: newPlayers } : prev));
   };
 
-  const validateBalance = useMemo(() => {
-    if (!formData) return false;
+  const balance = useMemo(() => {
+    if (!formData) {
+      return {
+        totalInvestment: 0,
+        totalFinalChips: 0,
+        diff: 0,
+        isBalanced: true,
+      };
+    }
     const totalInvestment = formData.players.reduce(
       (sum, p) => sum + p.cajitas * formData.cajiValue,
       0
@@ -154,8 +161,31 @@ export default function EditActiveMatchPage() {
       (sum, p) => sum + p.finalChips,
       0
     );
-    return Math.abs(totalInvestment - totalFinalChips) < 0.01;
+    const diff = totalInvestment - totalFinalChips;
+    return {
+      totalInvestment,
+      totalFinalChips,
+      diff,
+      isBalanced: Math.abs(diff) < 0.01,
+    };
   }, [formData]);
+
+  const validateBalance = balance.isBalanced;
+
+  const emptyPlayerIndices = useMemo(() => {
+    if (!formData) return [] as number[];
+    return formData.players
+      .map((p, i) => (p.finalChips === 0 ? i : -1))
+      .filter((i) => i >= 0);
+  }, [formData]);
+
+  const canAutoComplete =
+    emptyPlayerIndices.length === 1 && balance.diff > 0;
+
+  const autoCompleteLastPlayer = () => {
+    if (!canAutoComplete) return;
+    updatePlayerMoney(emptyPlayerIndices[0], "finalChips", balance.diff);
+  };
 
   // Auto-guardado con debounce
   useEffect(() => {
@@ -643,36 +673,53 @@ export default function EditActiveMatchPage() {
 
             <Card
               className={`border-2 ${
-                validateBalance ? "border-emerald-500" : "border-rose-500"
+                balance.isBalanced
+                  ? "border-emerald-500"
+                  : balance.diff > 0
+                  ? "border-amber-500"
+                  : "border-rose-500"
               }`}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-4 space-y-3">
                 <div className="text-center">
                   <div
                     className={`text-lg font-semibold ${
-                      validateBalance ? "text-emerald-600" : "text-rose-600"
+                      balance.isBalanced
+                        ? "text-emerald-600"
+                        : balance.diff > 0
+                        ? "text-amber-600"
+                        : "text-rose-600"
                     }`}
                   >
-                    {validateBalance
+                    {balance.isBalanced
                       ? "✅ Balance Correcto"
-                      : "❌ Balance Incorrecto"}
+                      : balance.diff > 0
+                      ? `Faltan $${balance.diff.toLocaleString()} en fichas`
+                      : `Sobran $${Math.abs(
+                          balance.diff
+                        ).toLocaleString()} en fichas`}
                   </div>
                   <div className="text-sm text-muted-foreground mt-2">
                     Total Invertido: $
-                    {formData.players
-                      .reduce(
-                        (sum, p) => sum + p.cajitas * formData.cajiValue,
-                        0
-                      )
-                      .toLocaleString()}
+                    {balance.totalInvestment.toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Total Fichas Finales: $
-                    {formData.players
-                      .reduce((sum, p) => sum + p.finalChips, 0)
-                      .toLocaleString()}
+                    {balance.totalFinalChips.toLocaleString()}
                   </div>
                 </div>
+                {canAutoComplete && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={autoCompleteLastPlayer}
+                  >
+                    Auto-completar {formData.players[emptyPlayerIndices[0]].name ||
+                      `Jugador ${emptyPlayerIndices[0] + 1}`}{" "}
+                    con ${balance.diff.toLocaleString()}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
