@@ -1,6 +1,7 @@
 "use server"
 
 import { neon, types } from "@neondatabase/serverless"
+import { randomUUID } from "node:crypto"
 import type {
   Player,
   MatchWithPlayers,
@@ -8,6 +9,14 @@ import type {
   ActiveMatch,
   Tournament,
 } from "./types"
+import {
+  CreateActiveMatchSchema,
+  CreateMatchSchema,
+  PlayerNameSchema,
+  TournamentNameSchema,
+  UpdateActiveMatchSchema,
+  UuidSchema,
+} from "./validators"
 
 // Devolver fechas/timestamps como string ISO (igual que Supabase via PostgREST),
 // en lugar de objetos Date nativos — React no puede renderizar Date como child.
@@ -30,16 +39,19 @@ export async function getAllPlayers(): Promise<Player[]> {
 }
 
 export async function createPlayer(name: string): Promise<Player> {
+  const parsed = PlayerNameSchema.parse(name)
   const rows = await sql`
-    INSERT INTO players (name) VALUES (${name})
+    INSERT INTO players (name) VALUES (${parsed})
+    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
     RETURNING id, name, created_at
   `
   return rows[0] as Player
 }
 
 export async function getPlayerByName(name: string): Promise<Player | null> {
+  const parsed = PlayerNameSchema.parse(name)
   const rows = await sql`
-    SELECT id, name, created_at FROM players WHERE name = ${name} LIMIT 1
+    SELECT id, name, created_at FROM players WHERE name = ${parsed} LIMIT 1
   `
   return (rows[0] as Player) ?? null
 }
@@ -56,14 +68,16 @@ export async function getTournaments(): Promise<Tournament[]> {
 }
 
 export async function createTournament(name: string): Promise<Tournament> {
+  const parsed = TournamentNameSchema.parse(name)
   const rows = await sql`
-    INSERT INTO tournaments (name) VALUES (${name}) RETURNING *
+    INSERT INTO tournaments (name) VALUES (${parsed}) RETURNING *
   `
   return rows[0] as Tournament
 }
 
 export async function closeTournament(id: string): Promise<void> {
-  await sql`UPDATE tournaments SET closed_at = NOW() WHERE id = ${id}`
+  const parsed = UuidSchema.parse(id)
+  await sql`UPDATE tournaments SET closed_at = NOW() WHERE id = ${parsed}`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -71,6 +85,7 @@ export async function closeTournament(id: string): Promise<void> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getAllMatches(tournamentId: string): Promise<MatchWithPlayers[]> {
+  const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT
       m.id,
@@ -101,7 +116,7 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
     FROM matches m
     LEFT JOIN match_players mp ON mp.match_id = m.id
     LEFT JOIN players p ON p.id = mp.player_id
-    WHERE m.tournament_id = ${tournamentId}
+    WHERE m.tournament_id = ${parsed}
     GROUP BY m.id
     ORDER BY m.date DESC
   `
@@ -120,10 +135,13 @@ export async function createMatch(matchData: {
     tieBreak?: number
   }>
 }): Promise<MatchWithPlayers> {
-  const sortedPlayers = [...matchData.players]
-    .map((player, index) => ({
+  const validated = CreateMatchSchema.parse(matchData)
+
+  // Orden final por dinero ganado → menos cajitas → tieBreak persistido.
+  // Asignar tieBreak determinístico a quienes no lo trajeron (jugada nueva).
+  const sortedPlayers = [...validated.players]
+    .map((player) => ({
       ...player,
-      originalIndex: index,
       tieBreak: player.tieBreak ?? Math.random(),
     }))
     .sort((a, b) => {
@@ -132,54 +150,74 @@ export async function createMatch(matchData: {
       return a.tieBreak - b.tieBreak
     })
 
-  const totalMoney = matchData.players.reduce(
-    (sum, p) => sum + p.cajitas * matchData.cajiValue,
+  // Resolver player_id para cada nombre — upsert idempotente gracias al
+  // UNIQUE en players.name. Estos INSERTs son seguros aún si la transacción
+  // posterior falla: simplemente quedan jugadores creados sin partida.
+  const resolvedPlayers = await Promise.all(
+    sortedPlayers.map(async (p) => {
+      const [row] = await sql`
+        INSERT INTO players (name) VALUES (${p.name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id, name, created_at
+      `
+      return { ...p, dbPlayer: row as Player }
+    }),
+  )
+
+  const totalMoney = validated.players.reduce(
+    (sum, p) => sum + p.cajitas * validated.cajiValue,
     0,
   )
 
-  const [match] = await sql`
-    INSERT INTO matches (date, caji_value, total_money, player_count, tournament_id)
+  // UUID generado en cliente para poder referenciarlo dentro de la transacción.
+  const matchId = randomUUID()
+
+  const matchInsert = sql`
+    INSERT INTO matches (id, date, caji_value, total_money, player_count, tournament_id)
     VALUES (
-      ${matchData.date},
-      ${matchData.cajiValue},
+      ${matchId},
+      ${validated.date},
+      ${validated.cajiValue},
       ${totalMoney},
-      ${matchData.players.length},
-      ${matchData.tournamentId}
+      ${validated.players.length},
+      ${validated.tournamentId}
     )
     RETURNING *
   `
 
-  const matchPlayers = []
-  for (let position = 0; position < sortedPlayers.length; position++) {
-    const player = sortedPlayers[position]
-    let dbPlayer = await getPlayerByName(player.name)
-    if (!dbPlayer) dbPlayer = await createPlayer(player.name)
-
-    const points = POINTS_DISTRIBUTION[position] || 0
-
-    const [mp] = await sql`
+  const mpInserts = resolvedPlayers.map((p, position) => {
+    const points = POINTS_DISTRIBUTION[position] ?? 0
+    return sql`
       INSERT INTO match_players
         (match_id, player_id, cajitas, final_chips, money_won, position, points, tie_break)
       VALUES (
-        ${match.id},
-        ${dbPlayer.id},
-        ${player.cajitas},
-        ${player.finalChips},
-        ${player.moneyWon},
+        ${matchId},
+        ${p.dbPlayer.id},
+        ${p.cajitas},
+        ${p.finalChips},
+        ${p.moneyWon},
         ${position + 1},
         ${points},
-        ${player.tieBreak}
+        ${p.tieBreak}
       )
       RETURNING *
     `
-    matchPlayers.push({ ...mp, players: dbPlayer })
-  }
+  })
+
+  // Una sola request HTTP, BEGIN/COMMIT en Neon: o entran todas las filas, o ninguna.
+  const results = (await sql.transaction([matchInsert, ...mpInserts])) as any[]
+  const match = results[0][0]
+  const matchPlayers = results.slice(1).map((rows, i) => ({
+    ...rows[0],
+    players: resolvedPlayers[i].dbPlayer,
+  }))
 
   return { ...match, match_players: matchPlayers } as MatchWithPlayers
 }
 
 export async function deleteMatch(matchId: string): Promise<void> {
-  await sql`DELETE FROM matches WHERE id = ${matchId}`
+  const parsed = UuidSchema.parse(matchId)
+  await sql`DELETE FROM matches WHERE id = ${parsed}`
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -187,6 +225,7 @@ export async function deleteMatch(matchId: string): Promise<void> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[]> {
+  const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT
       p.id,
@@ -198,7 +237,7 @@ export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[
     FROM match_players mp
     JOIN players p ON p.id = mp.player_id
     JOIN matches m ON m.id = mp.match_id
-    WHERE m.tournament_id = ${tournamentId}
+    WHERE m.tournament_id = ${parsed}
     GROUP BY p.id, p.name
     ORDER BY points DESC
   `
@@ -219,12 +258,14 @@ export async function getPlayerLastMatches(
   tournamentId: string,
   limit = 5,
 ): Promise<Array<{ position: number; moneyWon: number; date: string }>> {
+  const parsedName = PlayerNameSchema.parse(playerName)
+  const parsedTournament = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT mp.position, mp.money_won, m.date
     FROM match_players mp
     JOIN matches m ON m.id = mp.match_id
     JOIN players p ON p.id = mp.player_id
-    WHERE p.name = ${playerName} AND m.tournament_id = ${tournamentId}
+    WHERE p.name = ${parsedName} AND m.tournament_id = ${parsedTournament}
     ORDER BY mp.created_at DESC
     LIMIT ${limit}
   `
@@ -236,6 +277,7 @@ export async function getPlayerLastMatches(
 }
 
 export async function getOverallStats(tournamentId: string) {
+  const parsed = UuidSchema.parse(tournamentId)
   const [matchesResult, playersResult] = await Promise.all([
     sql`
       SELECT
@@ -244,7 +286,7 @@ export async function getOverallStats(tournamentId: string) {
         COALESCE(SUM(mp.cajitas), 0)::int       AS total_cajitas
       FROM matches m
       LEFT JOIN match_players mp ON mp.match_id = m.id
-      WHERE m.tournament_id = ${tournamentId}
+      WHERE m.tournament_id = ${parsed}
     `,
     sql`SELECT COUNT(*)::int AS count FROM players`,
   ])
@@ -262,17 +304,19 @@ export async function getOverallStats(tournamentId: string) {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getAllActiveMatches(tournamentId: string): Promise<ActiveMatch[]> {
+  const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT * FROM active_matches
-    WHERE tournament_id = ${tournamentId}
+    WHERE tournament_id = ${parsed}
     ORDER BY created_at DESC
   `
   return rows as ActiveMatch[]
 }
 
 export async function getActiveMatchById(matchId: string): Promise<ActiveMatch | null> {
+  const parsed = UuidSchema.parse(matchId)
   const rows = await sql`
-    SELECT * FROM active_matches WHERE id = ${matchId} LIMIT 1
+    SELECT * FROM active_matches WHERE id = ${parsed} LIMIT 1
   `
   return (rows[0] as ActiveMatch) ?? null
 }
@@ -290,7 +334,8 @@ export async function createActiveMatch(matchData: {
     tieBreak?: number
   }>
 }): Promise<ActiveMatch> {
-  const playersWithTieBreak = matchData.players.map((p) => ({
+  const validated = CreateActiveMatchSchema.parse(matchData)
+  const playersWithTieBreak = validated.players.map((p) => ({
     ...p,
     tieBreak: p.tieBreak ?? Math.random(),
   }))
@@ -299,10 +344,10 @@ export async function createActiveMatch(matchData: {
     INSERT INTO active_matches
       (date, caji_value, player_count, tournament_id, players)
     VALUES (
-      ${matchData.date},
-      ${matchData.cajiValue},
-      ${matchData.playerCount},
-      ${matchData.tournamentId},
+      ${validated.date},
+      ${validated.cajiValue},
+      ${validated.playerCount},
+      ${validated.tournamentId},
       ${JSON.stringify(playersWithTieBreak)}::jsonb
     )
     RETURNING *
@@ -325,32 +370,36 @@ export async function updateActiveMatch(
     }>
   },
 ): Promise<ActiveMatch> {
-  const playersWithTieBreak = matchData.players.map((p) => ({
+  const parsedId = UuidSchema.parse(matchId)
+  const validated = UpdateActiveMatchSchema.parse(matchData)
+  const playersWithTieBreak = validated.players.map((p) => ({
     ...p,
     tieBreak: p.tieBreak ?? Math.random(),
   }))
 
   const rows = await sql`
     UPDATE active_matches
-    SET date = ${matchData.date},
-        caji_value = ${matchData.cajiValue},
-        player_count = ${matchData.playerCount},
+    SET date = ${validated.date},
+        caji_value = ${validated.cajiValue},
+        player_count = ${validated.playerCount},
         players = ${JSON.stringify(playersWithTieBreak)}::jsonb,
         updated_at = NOW()
-    WHERE id = ${matchId}
+    WHERE id = ${parsedId}
     RETURNING *
   `
   return rows[0] as ActiveMatch
 }
 
 export async function deleteActiveMatch(matchId: string): Promise<void> {
-  await sql`DELETE FROM active_matches WHERE id = ${matchId}`
+  const parsed = UuidSchema.parse(matchId)
+  await sql`DELETE FROM active_matches WHERE id = ${parsed}`
 }
 
 export async function registerActiveMatch(matchId: string): Promise<MatchWithPlayers> {
-  const rows = await sql`SELECT * FROM active_matches WHERE id = ${matchId} LIMIT 1`
+  const parsed = UuidSchema.parse(matchId)
+  const rows = await sql`SELECT * FROM active_matches WHERE id = ${parsed} LIMIT 1`
   const activeMatch = rows[0] as ActiveMatch | undefined
-  if (!activeMatch) throw new Error(`Active match ${matchId} not found`)
+  if (!activeMatch) throw new Error(`Active match ${parsed} not found`)
 
   const realMatch = await createMatch({
     date: activeMatch.date,
@@ -359,7 +408,7 @@ export async function registerActiveMatch(matchId: string): Promise<MatchWithPla
     players: activeMatch.players,
   })
 
-  await deleteActiveMatch(matchId)
+  await deleteActiveMatch(parsed)
   return realMatch
 }
 
