@@ -22,11 +22,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Loader2, LogOut } from "lucide-react"
+import { Plus, Loader2, LogOut, Trophy } from "lucide-react"
 import { useTheme } from "next-themes"
 import { POINTS_DISTRIBUTION } from "@/lib/constants"
-import type { Tournament } from "@/lib/types"
+import type { MatchWithPlayers, PlayerStats, Tournament } from "@/lib/types"
 import { logout } from "@/app/login/actions"
+import { TournamentClosingPodium } from "@/components/tournament-closing-podium"
 
 interface ReglasTabProps {
   tournaments: Tournament[]
@@ -36,6 +37,10 @@ interface ReglasTabProps {
   showCloseTournamentDialog: boolean
   newTournamentName: string
   creatingTournament: boolean
+  playerStats: PlayerStats[]
+  matches: MatchWithPlayers[]
+  showPodium: boolean
+  onShowPodium: (show: boolean) => void
   onShowCreateTournament: (show: boolean) => void
   onShowCloseTournamentDialog: (show: boolean) => void
   onNewTournamentNameChange: (name: string) => void
@@ -51,6 +56,10 @@ export function ReglasTab({
   showCloseTournamentDialog,
   newTournamentName,
   creatingTournament,
+  playerStats,
+  matches,
+  showPodium,
+  onShowPodium,
   onShowCreateTournament,
   onShowCloseTournamentDialog,
   onNewTournamentNameChange,
@@ -105,6 +114,16 @@ export function ReglasTab({
                 onClick={() => onShowCloseTournamentDialog(true)}
               >
                 🔒 Cerrar Torneo
+              </Button>
+            )}
+            {selectedTournament?.closed_at && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onShowPodium(true)}
+              >
+                <Trophy className="w-4 h-4 mr-2" />
+                Ver Podio
               </Button>
             )}
           </div>
@@ -251,6 +270,14 @@ export function ReglasTab({
           </div>
         </CardContent>
       </Card>
+
+      <TournamentClosingPodium
+        open={showPodium}
+        onOpenChange={onShowPodium}
+        tournament={selectedTournament}
+        playerStats={playerStats}
+        matches={matches}
+      />
     </div>
   )
 }

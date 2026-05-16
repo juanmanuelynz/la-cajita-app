@@ -127,6 +127,7 @@ function LaCajitaPoker() {
   const [newTournamentName, setNewTournamentName] = useState("")
   const [creatingTournament, setCreatingTournament] = useState(false)
   const [showCloseTournamentDialog, setShowCloseTournamentDialog] = useState(false)
+  const [showPodium, setShowPodium] = useState(false)
 
   // Data
   const [_players, setPlayers] = useState<Player[]>([])
@@ -218,6 +219,7 @@ function LaCajitaPoker() {
       const tournamentsData = await db.getTournaments()
       setTournaments(tournamentsData)
       setShowCloseTournamentDialog(false)
+      setShowPodium(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error cerrando torneo")
     } finally {
@@ -470,6 +472,10 @@ function LaCajitaPoker() {
                 showCloseTournamentDialog={showCloseTournamentDialog}
                 newTournamentName={newTournamentName}
                 creatingTournament={creatingTournament}
+                playerStats={playerStats}
+                matches={matches}
+                showPodium={showPodium}
+                onShowPodium={setShowPodium}
                 onShowCreateTournament={setShowCreateTournament}
                 onShowCloseTournamentDialog={setShowCloseTournamentDialog}
                 onNewTournamentNameChange={setNewTournamentName}

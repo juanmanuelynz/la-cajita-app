@@ -31,22 +31,14 @@ Implementado en commit `58774fd`. La card de balance ahora muestra "Faltan $X / 
 
 ---
 
-## 3. Ceremonia de cierre de torneo (Podio Final)
+## 3. Ceremonia de cierre de torneo (Podio Final) ✅ PARCIAL
 
-**Problema actual**
-`closeTournament()` solo setea `closed_at`. No hay vista de cierre, ni snapshot, ni export. Cuando cerrás un torneo se apaga sin más.
+Implementado el podio visual: modal con **dos podios** (uno por plata, otro por puntos) + resumen del torneo (partidas, plata movida, jugador más activo, mejor partida individual). Se abre automáticamente al cerrar un torneo, y los torneos cerrados muestran un botón "Ver Podio" en Reglas.
 
-**Cambio propuesto**
-Modal de cierre que muestre:
-- **Podio**: 1°, 2°, 3° con puntos + plata + emoji/foto
-- **Stats del torneo**: total de partidas, plata total movida, jugador más activo, mejor partida individual
-- **Botón "Compartir"**: genera una imagen PNG (`html-to-image`) lista para WhatsApp, o un texto formateado con los resultados.
-- **Botón "Export CSV"**: descarga toda la data del torneo (matches + match_players) para Excel.
-
-Persistir un `closed_snapshot JSONB` en `tournaments` con el resumen para no recalcular si se abre años después.
-
-**Archivos**: nuevo `components/tournament-closing-podium.tsx`, [components/tabs/reglas-tab.tsx](components/tabs/reglas-tab.tsx), [lib/database.ts](lib/database.ts), nueva dep `html-to-image`
-**Esfuerzo**: 4–6h
+**Pendiente del item original** (excluido por scope; pedir si lo necesitamos):
+- Botón "Compartir" como texto/PNG (con `html-to-image`).
+- Botón "Export CSV" para Excel.
+- Persistencia del snapshot en `closed_snapshot JSONB` (hoy se recalcula desde `playerStats` + `matches` cada vez).
 
 ---
 
@@ -136,7 +128,7 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 | 1 | Auto-completar último jugador | Alto | Bajo | ✅ |
 | 8 | Decidir default sort | Alto | Trivial | ✅ |
 | 4 | Métricas (rachas, némesis) | Alto | Medio | pendiente |
-| 3 | Podio final + export | Medio-Alto | Alto | pendiente |
+| 3 | Podio final + export | Medio-Alto | Alto | ✅ parcial (falta share/CSV/snapshot) |
 | 2 | `points_config` por torneo | Medio | Medio | pendiente |
 | 5 | Distinguir recompras | Medio | Alto | pendiente |
 | 7 | Swipe tabs / bottom sheets | Bajo | Medio | ✅ parcial (falta vaul) |
