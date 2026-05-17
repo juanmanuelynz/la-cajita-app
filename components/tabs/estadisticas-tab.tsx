@@ -569,10 +569,14 @@ export function EstadisticasTab({
                     matches,
                     evolutionSortBy,
                   )
+                  const labels = dates.map((d) => formatDate(d))
                   const datasets = Object.entries(evolutionData).map(
                     ([playerName, positions], index) => ({
                       label: playerName,
-                      data: positions.map((p) => p.position),
+                      data: positions.map((p) => ({
+                        x: formatDate(p.date),
+                        y: p.position,
+                      })),
                       borderColor: EVOLUTION_COLORS[index % EVOLUTION_COLORS.length],
                       backgroundColor: EVOLUTION_COLORS[index % EVOLUTION_COLORS.length],
                       tension: 0.3,
@@ -583,7 +587,7 @@ export function EstadisticasTab({
 
                   return (
                     <Line
-                      data={{ labels: dates.map((d) => formatDate(d)), datasets }}
+                      data={{ labels, datasets }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
