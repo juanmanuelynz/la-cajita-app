@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import * as db from "@/lib/database";
-import type { ActiveMatch } from "@/lib/types";
+import type { ActiveMatch, Player } from "@/lib/types";
+import { POINTS_DISTRIBUTION } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,34 +36,14 @@ import { Loader2, ArrowLeft, Plus, Trophy, Medal, Award } from "lucide-react";
 // Nota: evitamos CSS.Transform.toString para prevenir errores en algunos entornos
 
 interface FormPlayer {
+  // playerId es null hasta que el usuario elige un jugador. name queda
+  // sincronizado por conveniencia visual (y para drafts legacy que no tienen id).
+  playerId: string | null;
   name: string;
   cajitas: number;
   finalChips: number;
   moneyWon: number;
-  tieBreak?: number;
 }
-
-// Utility functions for date handling
-const convertDateToLocal = (dateStr: string): string => {
-  try {
-    // Para fechas en formato YYYY-MM-DD, simplemente las devolvemos tal como están
-    // ya que los inputs de tipo date esperan este formato
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return dateStr;
-    }
-    return dateStr; // Return original if not in expected format
-  } catch (error) {
-    return dateStr; // Return original if error
-  }
-};
-
-const getTodayLocalDate = (): string => {
-  const today = new Date();
-  const localDate = new Date(
-    today.getTime() - today.getTimezoneOffset() * 60000
-  );
-  return localDate.toISOString().split("T")[0];
-};
 
 export default function EditActiveMatchPage() {
   const params = useParams();
@@ -72,7 +53,7 @@ export default function EditActiveMatchPage() {
 
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
-  const [playersList, setPlayersList] = useState<string[]>([]);
+  const [playersList, setPlayersList] = useState<Player[]>([]);
   const [formData, setFormData] = useState<{
     date: string;
     cajiValue: number;
@@ -88,34 +69,99 @@ export default function EditActiveMatchPage() {
   const [currentView, setCurrentView] = useState<"edit" | "close">("edit");
 
   const [pointsConfig, setPointsConfig] = useState<number[]>([
-    10, 7, 5, 3, 2, 1, 0, 0,
+    ...POINTS_DISTRIBUTION,
   ]);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Serializa los guardados: nunca hay más de un updateActiveMatch en vuelo, así
+  // las respuestas llegan a la DB en el orden de envío. Si se piden más saves
+  // mientras uno corre, pendingRef dispara otro al final con el formData más nuevo.
+  const hasUserEditedRef = useRef(false);
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(false);
+  const latestFormDataRef = useRef<{
+    date: string;
+    cajiValue: number;
+    playerCount: number;
+    players: FormPlayer[];
+  } | null>(null);
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
 
+  const markDirty = () => {
+    hasUserEditedRef.current = true;
+  };
+
+  const saveNow = async (): Promise<void> => {
+    const snap = latestFormDataRef.current;
+    if (!snap) return;
+    if (inFlightRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    inFlightRef.current = true;
+    setSaveState("saving");
+    try {
+      await db.updateActiveMatch(matchId, {
+        date: snap.date,
+        cajiValue: snap.cajiValue,
+        playerCount: snap.playerCount,
+        // El server espera playerId opcional (no null). Convertimos los slots
+        // vacíos (playerId: null) a ausencia del campo.
+        players: snap.players.map((p) => ({
+          ...(p.playerId ? { playerId: p.playerId } : {}),
+          name: p.name,
+          cajitas: p.cajitas,
+          finalChips: p.finalChips,
+          moneyWon: p.moneyWon,
+        })),
+      });
+      setSaveState("saved");
+      setLastSavedAt(new Date());
+    } catch {
+      setSaveState("error");
+    } finally {
+      inFlightRef.current = false;
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        await saveNow();
+      }
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       setLoading(true);
-      const match = await db.getActiveMatchById(matchId);
+      const [match, allPlayers] = await Promise.all([
+        db.getActiveMatchById(matchId),
+        db.getAllPlayers(),
+      ]);
       if (!mounted) return;
+      setPlayersList(allPlayers);
       if (match) {
+        // El JSONB legacy puede no traer playerId — lo hidratamos por nombre
+        // contra la tabla de jugadores. tieBreak viejo se descarta.
+        const byId = new Map(allPlayers.map((p) => [p.id, p]));
+        const byName = new Map(allPlayers.map((p) => [p.name, p]));
+        type RawPlayer = Partial<FormPlayer> & { player_id?: string };
         setFormData({
-          date: convertDateToLocal(match.date),
+          date: match.date,
           cajiValue: match.caji_value,
           playerCount: match.player_count,
-          players: (
-            match.players as Array<
-              FormPlayer | (FormPlayer & { tieBreak?: number })
-            >
-          ).map((p) => ({
-            ...p,
-            tieBreak: (p as any).tieBreak ?? Math.random(),
-          })),
+          players: (match.players as RawPlayer[]).map((p) => {
+            const id = p.playerId ?? p.player_id ?? null;
+            const known = id ? byId.get(id) : p.name ? byName.get(p.name) : null;
+            return {
+              playerId: known?.id ?? null,
+              name: known?.name ?? p.name ?? "",
+              cajitas: p.cajitas ?? 1,
+              finalChips: p.finalChips ?? 0,
+              moneyWon: p.moneyWon ?? 0,
+            };
+          }),
         });
         const tournament = await db.getTournamentById(match.tournament_id);
         if (!mounted) return;
@@ -123,9 +169,6 @@ export default function EditActiveMatchPage() {
           setPointsConfig(tournament.points_config);
         }
       }
-      const allPlayers = await db.getAllPlayers();
-      if (!mounted) return;
-      setPlayersList(allPlayers.map((p) => p.name));
       setLoading(false);
     };
     if (matchId) load();
@@ -140,6 +183,7 @@ export default function EditActiveMatchPage() {
     value: any
   ) => {
     if (!formData) return;
+    markDirty();
     const newPlayers = [...formData.players];
     newPlayers[index] = { ...newPlayers[index], [field]: value };
     if (field === "cajitas" || field === "finalChips") {
@@ -194,28 +238,25 @@ export default function EditActiveMatchPage() {
     updatePlayerMoney(emptyPlayerIndices[0], "finalChips", balance.diff);
   };
 
-  // Auto-guardado con debounce
+  // Mantener latestFormDataRef siempre con el snapshot más reciente para que
+  // saveNow() lo lea cuando le toca correr (evita stale closures).
+  useEffect(() => {
+    latestFormDataRef.current = formData;
+  }, [formData]);
+
+  // Auto-guardado con debounce. Solo dispara después de la primera edición
+  // del usuario — así el setFormData del load inicial no escribe en la DB.
   useEffect(() => {
     if (!formData) return;
+    if (!hasUserEditedRef.current) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(async () => {
-      setSaveState("saving");
-      try {
-        await db.updateActiveMatch(matchId, {
-          date: formData.date,
-          cajiValue: formData.cajiValue,
-          playerCount: formData.playerCount,
-          players: formData.players,
-        });
-        setSaveState("saved");
-        setLastSavedAt(new Date());
-      } catch {
-        setSaveState("error");
-      }
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveNow();
     }, 500);
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, matchId]);
 
   // Estado online/offline
@@ -247,7 +288,7 @@ export default function EditActiveMatchPage() {
 
   const goToCloseView = () => {
     // Validar que todos los jugadores tengan nombre antes de ir al cierre
-    if (!formData || formData.players.some((p) => !p.name.trim())) {
+    if (!formData || formData.players.some((p) => !p.playerId)) {
       return;
     }
     setCurrentView("close");
@@ -267,14 +308,28 @@ export default function EditActiveMatchPage() {
     }
   };
 
+  const selectPlayer = (index: number, playerId: string) => {
+    if (!formData) return;
+    const picked = playersList.find((p) => p.id === playerId);
+    if (!picked) return;
+    markDirty();
+    const newPlayers = [...formData.players];
+    newPlayers[index] = {
+      ...newPlayers[index],
+      playerId: picked.id,
+      name: picked.name,
+    };
+    setFormData((prev) => (prev ? { ...prev, players: newPlayers } : prev));
+  };
+
   const createNewPlayer = async (index: number) => {
     if (!newPlayerName.trim() || creatingPlayer) return;
     setCreatingPlayer(true);
     try {
-      await db.createPlayer(newPlayerName.trim());
+      const created = await db.createPlayer(newPlayerName.trim());
       const refreshed = await db.getAllPlayers();
-      setPlayersList(refreshed.map((p) => p.name));
-      updatePlayerMoney(index, "name", newPlayerName.trim());
+      setPlayersList(refreshed);
+      selectPlayer(index, created.id);
       setNewPlayerName("");
       setNewPlayerInputIndex(null);
     } finally {
@@ -284,14 +339,9 @@ export default function EditActiveMatchPage() {
 
   const handleBack = async () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    if (formData) {
+    if (hasUserEditedRef.current) {
       try {
-        await db.updateActiveMatch(matchId, {
-          date: formData.date,
-          cajiValue: formData.cajiValue,
-          playerCount: formData.playerCount,
-          players: formData.players,
-        });
+        await saveNow();
       } catch {
         // ignore
       }
@@ -370,9 +420,10 @@ export default function EditActiveMatchPage() {
                     id="date"
                     type="date"
                     value={formData.date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, date: e.target.value })
-                    }
+                    onChange={(e) => {
+                      markDirty();
+                      setFormData({ ...formData, date: e.target.value });
+                    }}
                   />
                 </div>
                 <div>
@@ -383,12 +434,13 @@ export default function EditActiveMatchPage() {
                     id="cajiValue"
                     type="number"
                     value={formData.cajiValue}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      markDirty();
                       setFormData({
                         ...formData,
                         cajiValue: Number(e.target.value),
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -400,7 +452,8 @@ export default function EditActiveMatchPage() {
                   </Label>
                   <Select
                     value={String(formData.playerCount)}
-                    onValueChange={(v) =>
+                    onValueChange={(v) => {
+                      markDirty();
                       setFormData({
                         ...formData,
                         playerCount: Number(v),
@@ -409,15 +462,15 @@ export default function EditActiveMatchPage() {
                           .map(
                             (_, i) =>
                               formData.players[i] || {
+                                playerId: null,
                                 name: "",
                                 cajitas: 1,
                                 finalChips: 0,
                                 moneyWon: -formData.cajiValue,
-                                tieBreak: Math.random(),
                               }
                           ),
-                      })
-                    }
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -490,12 +543,12 @@ export default function EditActiveMatchPage() {
                             ) : (
                               <div className="flex gap-2">
                                 <Select
-                                  value={player.name}
+                                  value={player.playerId ?? ""}
                                   onValueChange={(value) => {
                                     if (value === "new") {
                                       setNewPlayerInputIndex(index);
                                     } else {
-                                      updatePlayerMoney(index, "name", value);
+                                      selectPlayer(index, value);
                                     }
                                   }}
                                 >
@@ -508,16 +561,17 @@ export default function EditActiveMatchPage() {
                                         (p) =>
                                           !formData.players.some(
                                             (fp, fpIndex) =>
-                                              fpIndex !== index && fp.name === p
+                                              fpIndex !== index &&
+                                              fp.playerId === p.id
                                           )
                                       )
-                                      .map((name) => (
+                                      .map((p) => (
                                         <SelectItem
-                                          key={name}
-                                          value={name}
+                                          key={p.id}
+                                          value={p.id}
                                           className="text-base py-3"
                                         >
-                                          {name}
+                                          {p.name}
                                         </SelectItem>
                                       ))}
                                     <SelectItem
@@ -594,7 +648,7 @@ export default function EditActiveMatchPage() {
               </Button>
               <Button
                 onClick={goToCloseView}
-                disabled={formData.players.some((p) => !p.name.trim())}
+                disabled={formData.players.some((p) => !p.playerId)}
                 className="flex-1"
               >
                 Cerrar Partida
@@ -741,7 +795,7 @@ export default function EditActiveMatchPage() {
               <Button
                 onClick={openPreview}
                 disabled={
-                  !validateBalance || formData.players.some((p) => !p.name)
+                  !validateBalance || formData.players.some((p) => !p.playerId)
                 }
                 className="flex-1"
               >
@@ -774,7 +828,9 @@ export default function EditActiveMatchPage() {
                 .sort((a, b) => {
                   if (b.moneyWon !== a.moneyWon) return b.moneyWon - a.moneyWon;
                   if (a.cajitas !== b.cajitas) return a.cajitas - b.cajitas;
-                  return (a.tieBreak ?? 0) - (b.tieBreak ?? 0);
+                  // Mismo criterio que createMatch en el servidor: el índice
+                  // de carga rompe el empate (gana el que aparece antes).
+                  return a.originalIndex - b.originalIndex;
                 })
                 .map((p, idx) => {
                   const pos = idx + 1;

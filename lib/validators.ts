@@ -23,6 +23,10 @@ export const PointsConfigSchema = z
   )
 
 const FinalMatchPlayerSchema = z.object({
+  // playerId es la fuente de verdad para resolver el jugador.
+  // name queda como dato denormalizado por compatibilidad con flujos legacy
+  // (active_matches viejos que solo tenían el nombre).
+  playerId: z.string().uuid().optional(),
   name: PlayerNameSchema,
   cajitas: z.number().int().positive("Las cajitas deben ser un entero positivo"),
   finalChips: z.number().int().min(0, "Las fichas finales no pueden ser negativas"),
@@ -32,6 +36,7 @@ const FinalMatchPlayerSchema = z.object({
 
 const ActiveMatchPlayerSchema = z.object({
   // Permitido vacío en draft: el usuario aún no eligió el jugador
+  playerId: z.string().uuid().optional(),
   name: z.string().trim().max(50),
   cajitas: z.number().int().positive(),
   finalChips: z.number().int().min(0),
@@ -66,8 +71,11 @@ export const CreateMatchSchema = z
   )
   .refine(
     (data) => {
-      const names = data.players.map((p) => p.name.toLowerCase().trim())
-      return new Set(names).size === names.length
+      // Dedup por playerId si existe (la identidad real), si no por nombre.
+      const keys = data.players.map((p) =>
+        p.playerId ?? p.name.toLowerCase().trim(),
+      )
+      return new Set(keys).size === keys.length
     },
     {
       message: "No puede haber jugadores duplicados en la misma partida",

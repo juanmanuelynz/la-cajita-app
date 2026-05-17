@@ -18,6 +18,7 @@ import {
   UpdateActiveMatchSchema,
   UuidSchema,
 } from "./validators"
+import { POINTS_DISTRIBUTION } from "./constants"
 
 // Devolver fechas/timestamps como string ISO (igual que Supabase via PostgREST),
 // en lugar de objetos Date nativos — React no puede renderizar Date como child.
@@ -27,8 +28,6 @@ types.setTypeParser(1114, (val) => val)
 types.setTypeParser(1184, (val) => val)
 
 const sql = neon(process.env.DATABASE_URL!)
-
-const DEFAULT_POINTS_DISTRIBUTION = [10, 7, 5, 3, 2, 1, 0, 0]
 
 // ────────────────────────────────────────────────────────────────────────────
 // Players
@@ -80,7 +79,7 @@ export async function createTournament(
 ): Promise<Tournament> {
   const parsedName = TournamentNameSchema.parse(name)
   const parsedConfig = PointsConfigSchema.parse(
-    pointsConfig ?? DEFAULT_POINTS_DISTRIBUTION,
+    pointsConfig ?? POINTS_DISTRIBUTION,
   )
   const rows = await sql`
     INSERT INTO tournaments (name, points_config)
@@ -143,6 +142,7 @@ export async function createMatch(matchData: {
   cajiValue: number
   tournamentId: string
   players: Array<{
+    playerId?: string
     name: string
     cajitas: number
     finalChips: number
@@ -162,27 +162,34 @@ export async function createMatch(matchData: {
   const pointsConfig = PointsConfigSchema.parse(
     Array.isArray(tournamentRow.points_config)
       ? tournamentRow.points_config
-      : DEFAULT_POINTS_DISTRIBUTION,
+      : POINTS_DISTRIBUTION,
   )
 
-  // Orden final por dinero ganado → menos cajitas → tieBreak persistido.
-  // Asignar tieBreak determinístico a quienes no lo trajeron (jugada nueva).
-  const sortedPlayers = [...validated.players]
-    .map((player) => ({
-      ...player,
-      tieBreak: player.tieBreak ?? Math.random(),
-    }))
+  // Orden final por dinero ganado → menos cajitas → orden de carga.
+  // El tieBreak se deriva del índice de entrada: el jugador que aparece
+  // antes en el formulario gana el desempate. Es determinístico y el usuario
+  // controla el criterio reordenando la lista visualmente.
+  const sortedPlayers = validated.players
+    .map((player, idx) => ({ ...player, tieBreak: idx }))
     .sort((a, b) => {
       if (b.moneyWon !== a.moneyWon) return b.moneyWon - a.moneyWon
       if (a.cajitas !== b.cajitas) return a.cajitas - b.cajitas
       return a.tieBreak - b.tieBreak
     })
 
-  // Resolver player_id para cada nombre — upsert idempotente gracias al
-  // UNIQUE en players.name. Estos INSERTs son seguros aún si la transacción
-  // posterior falla: simplemente quedan jugadores creados sin partida.
+  // Resolver el jugador: si llega playerId, hacemos lookup por id (camino feliz
+  // del form). Sin id, caemos al upsert por nombre (compatibilidad con drafts
+  // legacy que solo tenían name). El INSERT es seguro aún si la transacción
+  // posterior falla: queda un jugador sin partida.
   const resolvedPlayers = await Promise.all(
     sortedPlayers.map(async (p) => {
+      if (p.playerId) {
+        const [row] = await sql`
+          SELECT id, name, created_at FROM players WHERE id = ${p.playerId} LIMIT 1
+        `
+        if (!row) throw new Error(`Jugador ${p.playerId} no encontrado`)
+        return { ...p, dbPlayer: row as Player }
+      }
       const [row] = await sql`
         INSERT INTO players (name) VALUES (${p.name})
         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
@@ -355,6 +362,7 @@ export async function createActiveMatch(matchData: {
   playerCount: number
   tournamentId: string
   players: Array<{
+    playerId?: string
     name: string
     cajitas: number
     finalChips: number
@@ -363,10 +371,9 @@ export async function createActiveMatch(matchData: {
   }>
 }): Promise<ActiveMatch> {
   const validated = CreateActiveMatchSchema.parse(matchData)
-  const playersWithTieBreak = validated.players.map((p) => ({
-    ...p,
-    tieBreak: p.tieBreak ?? Math.random(),
-  }))
+  // No persistimos tieBreak en active_matches: el orden de carga se infiere
+  // del orden del array y se materializa como tie_break entero en createMatch.
+  const playersClean = validated.players.map(({ tieBreak: _omit, ...rest }) => rest)
 
   const rows = await sql`
     INSERT INTO active_matches
@@ -376,7 +383,7 @@ export async function createActiveMatch(matchData: {
       ${validated.cajiValue},
       ${validated.playerCount},
       ${validated.tournamentId},
-      ${JSON.stringify(playersWithTieBreak)}::jsonb
+      ${JSON.stringify(playersClean)}::jsonb
     )
     RETURNING *
   `
@@ -390,6 +397,7 @@ export async function updateActiveMatch(
     cajiValue: number
     playerCount: number
     players: Array<{
+      playerId?: string
       name: string
       cajitas: number
       finalChips: number
@@ -400,17 +408,16 @@ export async function updateActiveMatch(
 ): Promise<ActiveMatch> {
   const parsedId = UuidSchema.parse(matchId)
   const validated = UpdateActiveMatchSchema.parse(matchData)
-  const playersWithTieBreak = validated.players.map((p) => ({
-    ...p,
-    tieBreak: p.tieBreak ?? Math.random(),
-  }))
+  // Mismo razonamiento que en createActiveMatch: el orden del array es la
+  // única fuente de verdad para desempates; tieBreak no se persiste acá.
+  const playersClean = validated.players.map(({ tieBreak: _omit, ...rest }) => rest)
 
   const rows = await sql`
     UPDATE active_matches
     SET date = ${validated.date},
         caji_value = ${validated.cajiValue},
         player_count = ${validated.playerCount},
-        players = ${JSON.stringify(playersWithTieBreak)}::jsonb,
+        players = ${JSON.stringify(playersClean)}::jsonb,
         updated_at = NOW()
     WHERE id = ${parsedId}
     RETURNING *
