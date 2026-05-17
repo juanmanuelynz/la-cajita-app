@@ -385,8 +385,8 @@ function LaCajitaPoker() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <div className="backdrop-blur-sm border-b sticky top-0 z-50">
+    <div className="h-[100dvh] flex flex-col">
+      <div className="backdrop-blur-sm border-b flex-shrink-0">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-around items-center">
             <h1 className="text-xl md:text-2xl font-bold">♠️</h1>
@@ -418,7 +418,7 @@ function LaCajitaPoker() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 flex-1 min-h-0 flex flex-col">
         {error && (
           <Card className="mb-6">
             <CardContent className="p-4">
@@ -471,9 +471,9 @@ function LaCajitaPoker() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex touch-pan-y">
-            <div className="flex-[0_0_100%] min-w-0 px-1">
+        <div className="overflow-hidden flex-1 min-h-0" ref={emblaRef}>
+          <div className="flex h-full touch-pan-y">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
               <RankingTab
                 activeMatches={activeMatches}
                 sortedPlayerStats={sortedPlayerStats}
@@ -484,7 +484,7 @@ function LaCajitaPoker() {
                 onDeleteActive={setActiveMatchToDelete}
               />
             </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
               <PartidasTab
                 matches={matches}
                 activeMatches={activeMatches}
@@ -499,7 +499,7 @@ function LaCajitaPoker() {
                 onRefresh={refreshData}
               />
             </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
               <EstadisticasTab
                 matches={matches}
                 sortedPlayerStats={sortedPlayerStats}
@@ -509,7 +509,7 @@ function LaCajitaPoker() {
                 onEvolutionSortChange={setEvolutionSortBy}
               />
             </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
               <ReglasTab
                 tournaments={tournaments}
                 selectedTournamentId={selectedTournamentId}
@@ -538,7 +538,7 @@ function LaCajitaPoker() {
         </div>
       </div>
 
-      <div className="fixed p-0 bottom-0 left-0 right-0 h-20 backdrop-blur-sm border-t z-50">
+      <div className="p-0 h-20 backdrop-blur-sm border-t flex-shrink-0">
         <div className="flex justify-around items-center h-full p-0">
           {TABS.map((tab) => (
             <button
