@@ -704,7 +704,7 @@ export function EstadisticasTab({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-2xl">Análisis de Eficiencia vs Inversión</CardTitle>
+              <CardTitle className="text-2xl">🎯 Eficiencia vs Inversión</CardTitle>
               <AdaptiveTooltip
                 title="Análisis de Eficiencia"
                 content={

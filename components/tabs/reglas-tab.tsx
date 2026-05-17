@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,51 +20,51 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Loader2, LogOut, Trophy } from "lucide-react"
-import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
-import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants"
+} from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Loader2, LogOut, Trophy } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants";
 import type {
   MatchWithPlayers,
   Player,
   PlayerStats,
   Tournament,
-} from "@/lib/types"
-import { X } from "lucide-react"
-import { logout } from "@/app/login/actions"
-import { TournamentClosingPodium } from "@/components/tournament-closing-podium"
+} from "@/lib/types";
+import { X } from "lucide-react";
+import { logout } from "@/app/login/actions";
+import { TournamentClosingPodium } from "@/components/tournament-closing-podium";
 
-type ReglasSubtab = "torneo" | "reglas" | "ajustes"
+type ReglasSubtab = "torneo" | "reglas" | "ajustes";
 
 interface ReglasTabProps {
-  tournaments: Tournament[]
-  selectedTournamentId: string | null
-  selectedTournament: Tournament | undefined
-  showCreateTournament: boolean
-  showCloseTournamentDialog: boolean
-  newTournamentName: string
-  creatingTournament: boolean
-  playerStats: PlayerStats[]
-  matches: MatchWithPlayers[]
-  showPodium: boolean
-  allPlayers: Player[]
-  roster: Player[]
-  onShowPodium: (show: boolean) => void
-  onShowCreateTournament: (show: boolean) => void
-  onShowCloseTournamentDialog: (show: boolean) => void
-  onNewTournamentNameChange: (name: string) => void
-  onCreateTournament: (pointsConfig: number[], rosterIds: string[]) => void
-  onCloseTournament: () => void
-  onAddPlayerToRoster: (playerId: string) => Promise<void>
-  onRemovePlayerFromRoster: (playerId: string) => Promise<void>
-  onCreateAndAddPlayer: (name: string) => Promise<void>
-  onSelectTournament: (tournamentId: string) => void
+  tournaments: Tournament[];
+  selectedTournamentId: string | null;
+  selectedTournament: Tournament | undefined;
+  showCreateTournament: boolean;
+  showCloseTournamentDialog: boolean;
+  newTournamentName: string;
+  creatingTournament: boolean;
+  playerStats: PlayerStats[];
+  matches: MatchWithPlayers[];
+  showPodium: boolean;
+  allPlayers: Player[];
+  roster: Player[];
+  onShowPodium: (show: boolean) => void;
+  onShowCreateTournament: (show: boolean) => void;
+  onShowCloseTournamentDialog: (show: boolean) => void;
+  onNewTournamentNameChange: (name: string) => void;
+  onCreateTournament: (pointsConfig: number[], rosterIds: string[]) => void;
+  onCloseTournament: () => void;
+  onAddPlayerToRoster: (playerId: string) => Promise<void>;
+  onRemovePlayerFromRoster: (playerId: string) => Promise<void>;
+  onCreateAndAddPlayer: (name: string) => Promise<void>;
+  onSelectTournament: (tournamentId: string) => void;
 }
 
-const DEFAULT_CONFIG: number[] = [...POINTS_CONFIG_PRESETS["Clásico"]]
+const DEFAULT_CONFIG: number[] = [...POINTS_CONFIG_PRESETS["Clásico"]];
 
 export function ReglasTab({
   tournaments,
@@ -90,83 +90,87 @@ export function ReglasTab({
   onCreateAndAddPlayer,
   onSelectTournament,
 }: ReglasTabProps) {
-  const [subtab, setSubtab] = useState<ReglasSubtab>("torneo")
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  const isDark = mounted && theme === "dark"
+  const [subtab, setSubtab] = useState<ReglasSubtab>("torneo");
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && theme === "dark";
 
-  const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG)
-  const [createRoster, setCreateRoster] = useState<Set<string>>(new Set())
+  const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG);
+  const [createRoster, setCreateRoster] = useState<Set<string>>(new Set());
   const handleOpenChangeCreate = (open: boolean) => {
     if (!open) {
-      setPointsConfig(DEFAULT_CONFIG)
-      setCreateRoster(new Set())
-      onNewTournamentNameChange("")
+      setPointsConfig(DEFAULT_CONFIG);
+      setCreateRoster(new Set());
+      onNewTournamentNameChange("");
     }
-    onShowCreateTournament(open)
-  }
+    onShowCreateTournament(open);
+  };
   const submitCreate = () => {
-    if (creatingTournament || !newTournamentName.trim()) return
-    onCreateTournament(pointsConfig, Array.from(createRoster))
-  }
+    if (creatingTournament || !newTournamentName.trim()) return;
+    onCreateTournament(pointsConfig, Array.from(createRoster));
+  };
   const toggleCreateRoster = (playerId: string) => {
     setCreateRoster((prev) => {
-      const next = new Set(prev)
-      if (next.has(playerId)) next.delete(playerId)
-      else next.add(playerId)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
+    });
+  };
 
   // Gestión del roster del torneo seleccionado.
-  const isTournamentClosed = !!selectedTournament?.closed_at
-  const rosterIds = new Set(roster.map((p) => p.id))
-  const availableToAdd = allPlayers.filter((p) => !rosterIds.has(p.id))
-  const [showAddPlayer, setShowAddPlayer] = useState(false)
-  const [newPlayerName, setNewPlayerName] = useState("")
-  const [busyPlayerId, setBusyPlayerId] = useState<string | null>(null)
-  const [creatingNewPlayer, setCreatingNewPlayer] = useState(false)
+  const isTournamentClosed = !!selectedTournament?.closed_at;
+  const rosterIds = new Set(roster.map((p) => p.id));
+  const availableToAdd = allPlayers.filter((p) => !rosterIds.has(p.id));
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [busyPlayerId, setBusyPlayerId] = useState<string | null>(null);
+  const [creatingNewPlayer, setCreatingNewPlayer] = useState(false);
 
   const addExisting = async (id: string) => {
-    setBusyPlayerId(id)
+    setBusyPlayerId(id);
     try {
-      await onAddPlayerToRoster(id)
+      await onAddPlayerToRoster(id);
     } finally {
-      setBusyPlayerId(null)
+      setBusyPlayerId(null);
     }
-  }
+  };
   const removeFromRoster = async (id: string) => {
-    setBusyPlayerId(id)
+    setBusyPlayerId(id);
     try {
-      await onRemovePlayerFromRoster(id)
+      await onRemovePlayerFromRoster(id);
     } finally {
-      setBusyPlayerId(null)
+      setBusyPlayerId(null);
     }
-  }
+  };
   const createAndAdd = async () => {
-    const name = newPlayerName.trim()
-    if (!name || creatingNewPlayer) return
-    setCreatingNewPlayer(true)
+    const name = newPlayerName.trim();
+    if (!name || creatingNewPlayer) return;
+    setCreatingNewPlayer(true);
     try {
-      await onCreateAndAddPlayer(name)
-      setNewPlayerName("")
-      setShowAddPlayer(false)
+      await onCreateAndAddPlayer(name);
+      setNewPlayerName("");
+      setShowAddPlayer(false);
     } finally {
-      setCreatingNewPlayer(false)
+      setCreatingNewPlayer(false);
     }
-  }
+  };
   const presetMatch = (cfg: number[]): string | null => {
     for (const [name, preset] of Object.entries(POINTS_CONFIG_PRESETS)) {
-      if (preset.length === cfg.length && preset.every((v, i) => v === cfg[i])) {
-        return name
+      if (
+        preset.length === cfg.length &&
+        preset.every((v, i) => v === cfg[i])
+      ) {
+        return name;
       }
     }
-    return null
-  }
-  const activePreset = presetMatch(pointsConfig)
-  const activePoints =
-    selectedTournament?.points_config ?? [...POINTS_DISTRIBUTION]
+    return null;
+  };
+  const activePreset = presetMatch(pointsConfig);
+  const activePoints = selectedTournament?.points_config ?? [
+    ...POINTS_DISTRIBUTION,
+  ];
 
   return (
     <>
@@ -191,13 +195,13 @@ export function ReglasTab({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 {tournaments.map((t) => {
-                  const isSelected = t.id === selectedTournamentId
+                  const isSelected = t.id === selectedTournamentId;
                   return (
                     <button
                       type="button"
                       key={t.id}
                       onClick={() => {
-                        if (!isSelected) onSelectTournament(t.id)
+                        if (!isSelected) onSelectTournament(t.id);
                       }}
                       className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
                         isSelected
@@ -215,7 +219,7 @@ export function ReglasTab({
                       </div>
                       <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
                     </button>
-                  )
+                  );
                 })}
               </div>
 
@@ -256,8 +260,9 @@ export function ReglasTab({
               <CardHeader>
                 <CardTitle className="text-xl">Jugadores del torneo</CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Roster de <span className="font-medium">{selectedTournament.name}</span>.
-                  Solo estos jugadores aparecen al cargar partidas.
+                  Roster de{" "}
+                  <span className="font-medium">{selectedTournament.name}</span>
+                  . Solo estos jugadores aparecen al cargar partidas.
                 </p>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -331,16 +336,18 @@ export function ReglasTab({
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") createAndAdd()
+                              if (e.key === "Enter") createAndAdd();
                               if (e.key === "Escape") {
-                                setShowAddPlayer(false)
-                                setNewPlayerName("")
+                                setShowAddPlayer(false);
+                                setNewPlayerName("");
                               }
                             }}
                           />
                           <Button
                             onClick={createAndAdd}
-                            disabled={!newPlayerName.trim() || creatingNewPlayer}
+                            disabled={
+                              !newPlayerName.trim() || creatingNewPlayer
+                            }
                           >
                             {creatingNewPlayer ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -351,8 +358,8 @@ export function ReglasTab({
                           <Button
                             variant="outline"
                             onClick={() => {
-                              setShowAddPlayer(false)
-                              setNewPlayerName("")
+                              setShowAddPlayer(false);
+                              setNewPlayerName("");
                             }}
                           >
                             ✕
@@ -384,20 +391,33 @@ export function ReglasTab({
             <CardContent>
               <ul className="space-y-2">
                 <li>
+                  • <strong>La Cajita no se hace responsable</strong> si sos un
+                  fumón colgado y no llevás bien las cuentas de la partida. Al
+                  final de la noche, toda diferencia de dinero es
+                  responsabilidad del cajero
+                </li>
+                <li>
                   •{" "}
                   <strong>
-                    El ranking anual se ordena por dinero ganado neto acumulado (de mayor a menor)
+                    El ranking anual se ordena por dinero ganado neto acumulado
+                    (de mayor a menor)
                   </strong>
                 </li>
                 <li>
-                  • En caso de empate en dinero ganado total, gana quien tenga más puntos
-                  acumulados
+                  • En caso de empate en dinero ganado total, gana quien tenga
+                  más puntos acumulados
                 </li>
-                <li>• Los puntos son una métrica secundaria que premia las buenas posiciones</li>
-                <li>• Dentro de cada partida, las posiciones se determinan por dinero ganado neto</li>
                 <li>
-                  • En caso de empate en dinero ganado dentro de una partida, gana quien pidió
-                  menos cajitas
+                  • Los puntos son una métrica secundaria que premia las buenas
+                  posiciones
+                </li>
+                <li>
+                  • Dentro de cada partida, las posiciones se determinan por
+                  dinero ganado neto
+                </li>
+                <li>
+                  • En caso de empate en dinero ganado dentro de una partida,
+                  gana quien pidió menos cajitas
                 </li>
               </ul>
             </CardContent>
@@ -439,75 +459,91 @@ export function ReglasTab({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Glosario de Estadísticas</CardTitle>
+              <CardTitle className="text-xl">
+                Glosario de Estadísticas
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="divide-y divide-border">
                 <div className="py-3 first:pt-0">
-                  <dt className="text-sm font-semibold mb-1">🔥 Racha actual</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    🔥 Racha actual
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    Cantidad de partidas consecutivas con el mismo resultado (ganadas o
-                    perdidas, según la última). Se corta cuando cambia el signo del dinero
-                    ganado.
+                    Cantidad de partidas consecutivas con el mismo resultado
+                    (ganadas o perdidas, según la última). Se corta cuando
+                    cambia el signo del dinero ganado.
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">Mejor racha</dt>
+                  <dt className="text-sm font-semibold mb-1">🏅 Mejor racha</dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    La cadena más larga de partidas ganadas consecutivas en toda la historia
-                    del jugador.
+                    La cadena más larga de partidas ganadas consecutivas en toda
+                    la historia del jugador.
                   </dd>
                 </div>
                 <div className="py-3">
                   <dt className="text-sm font-semibold mb-1">⚔️ Némesis</dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    El oponente al que más le fue mejor que a vos en partidas compartidas.
-                    Por cada partida en común se calcula el diferencial{" "}
-                    <em>(dinero ganado del oponente − dinero ganado tuyo)</em> y se acumula.
-                    Gana el que tiene el diferencial positivo más alto contra vos (mínimo 3
-                    partidas compartidas).
+                    El oponente al que más le fue mejor que a vos en partidas
+                    compartidas. Por cada partida en común se calcula el
+                    diferencial{" "}
+                    <em>(dinero ganado del oponente − dinero ganado tuyo)</em> y
+                    se acumula. Gana el que tiene el diferencial positivo más
+                    alto contra vos (mínimo 3 partidas compartidas).
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">Mejor / Peor partida</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    📊 Mejor / Peor partida
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    La partida con mayor ganancia y la de mayor pérdida del jugador, con la
-                    posición y el monto.
+                    La partida con mayor ganancia y la de mayor pérdida del
+                    jugador, con la posición y el monto.
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">📅 Día favorito</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    📅 Día favorito
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    El día de la semana donde el jugador acumula más ganancia neta (mínimo
-                    2 partidas en ese día, neto positivo).
+                    El día de la semana donde el jugador acumula más ganancia
+                    neta (mínimo 2 partidas en ese día, neto positivo).
                   </dd>
                 </div>
                 <div className="py-3">
                   <dt className="text-sm font-semibold mb-1">🚀 Killer move</dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    La partida con mejor ROI relativo del jugador: donde menos invirtió en
-                    proporción a lo que ganó. Premia la eficiencia, no el monto absoluto.
+                    La partida con mejor ROI relativo del jugador: donde menos
+                    invirtió en proporción a lo que ganó. Premia la eficiencia,
+                    no el monto absoluto.
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">🎢 ROI por partida</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    🎢 ROI por partida
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    Curva del retorno (ganancia ÷ inversión) de cada partida individual a lo
-                    largo del tiempo. Una línea por jugador.
+                    Curva del retorno (ganancia ÷ inversión) de cada partida
+                    individual a lo largo del tiempo. Una línea por jugador.
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">🏆 Top 3 Ganadores</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    🏆 Top 3 Ganadores
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    Los tres jugadores con más victorias (1° puesto). Se muestra también el
-                    pozo más alto que ganaron alguna vez.
+                    Los tres jugadores con más victorias (1° puesto). Se muestra
+                    también el pozo más alto que ganaron alguna vez.
                   </dd>
                 </div>
                 <div className="py-3">
-                  <dt className="text-sm font-semibold mb-1">📈 Evolución de Posiciones</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    📈 Evolución de Posiciones
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    La trayectoria del ranking de cada jugador fecha tras fecha, ordenable
-                    por dinero o por puntos.
+                    La trayectoria del ranking de cada jugador fecha tras fecha,
+                    ordenable por dinero o por puntos.
                   </dd>
                 </div>
                 <div className="py-3">
@@ -515,33 +551,44 @@ export function ReglasTab({
                     💰 Mejores Partidas / 💸 Peores Partidas
                   </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed">
-                    Las 3 partidas individuales (jugador-fecha) con mayor ganancia y mayor
-                    pérdida en toda la historia.
+                    Las 3 partidas individuales (jugador-fecha) con mayor
+                    ganancia y mayor pérdida en toda la historia.
                   </dd>
                 </div>
                 <div className="py-3 last:pb-0">
-                  <dt className="text-sm font-semibold mb-1">Eficiencia vs Inversión</dt>
+                  <dt className="text-sm font-semibold mb-1">
+                    🎯 Eficiencia vs Inversión
+                  </dt>
                   <dd className="text-sm text-muted-foreground leading-relaxed space-y-2">
                     <p>
-                      Cuadrantes que cruzan el ROI lifetime (dinero ganado ÷ dinero invertido
-                      en cajitas) con el promedio de cajitas por partida.
+                      Cuadrantes que cruzan el ROI lifetime (dinero ganado ÷
+                      dinero invertido en cajitas) con el promedio de cajitas
+                      por partida.
                     </p>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pl-0">
                       <li>
-                        <span className="font-medium text-foreground">Genio</span> — ROI ≥ 0,
-                        pocas cajitas
+                        <span className="font-medium text-foreground">
+                          Genio
+                        </span>{" "}
+                        — ROI ≥ 0, pocas cajitas
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Apostador</span> — ROI
-                        ≥ 0, muchas cajitas
+                        <span className="font-medium text-foreground">
+                          Apostador
+                        </span>{" "}
+                        — ROI ≥ 0, muchas cajitas
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Conservador</span> —
-                        ROI {"<"} 0, pocas cajitas
+                        <span className="font-medium text-foreground">
+                          Conservador
+                        </span>{" "}
+                        — ROI {"<"} 0, pocas cajitas
                       </li>
                       <li>
-                        <span className="font-medium text-foreground">Temerario</span> — ROI{" "}
-                        {"<"} 0, muchas cajitas
+                        <span className="font-medium text-foreground">
+                          Temerario
+                        </span>{" "}
+                        — ROI {"<"} 0, muchas cajitas
                       </li>
                     </ul>
                   </dd>
@@ -561,7 +608,9 @@ export function ReglasTab({
                 <span className="text-sm">☀️</span>
                 <Switch
                   checked={isDark}
-                  onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                  onCheckedChange={(checked) =>
+                    setTheme(checked ? "dark" : "light")
+                  }
                   aria-label="Cambiar tema"
                 />
                 <span className="text-sm">🌙</span>
@@ -595,7 +644,7 @@ export function ReglasTab({
                 value={newTournamentName}
                 onChange={(e) => onNewTournamentNameChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") submitCreate()
+                  if (e.key === "Enter") submitCreate();
                 }}
               />
             </div>
@@ -631,17 +680,17 @@ export function ReglasTab({
                       min={0}
                       value={value}
                       onChange={(e) => {
-                        const next = [...pointsConfig]
-                        next[i] = Math.max(0, Number(e.target.value) || 0)
-                        setPointsConfig(next)
+                        const next = [...pointsConfig];
+                        next[i] = Math.max(0, Number(e.target.value) || 0);
+                        setPointsConfig(next);
                       }}
                     />
                   </div>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Los puntos no pueden subir en una posición inferior. Una vez creado
-                el torneo, la distribución queda fija.
+                Los puntos no pueden subir en una posición inferior. Una vez
+                creado el torneo, la distribución queda fija.
               </p>
             </div>
 
@@ -649,13 +698,13 @@ export function ReglasTab({
               <Label>Jugadores del torneo</Label>
               {allPlayers.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Todavía no hay jugadores creados. Podés agregarlos después desde la
-                  gestión del roster.
+                  Todavía no hay jugadores creados. Podés agregarlos después
+                  desde la gestión del roster.
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {allPlayers.map((p) => {
-                    const selected = createRoster.has(p.id)
+                    const selected = createRoster.has(p.id);
                     return (
                       <Button
                         key={p.id}
@@ -666,7 +715,7 @@ export function ReglasTab({
                       >
                         {p.name}
                       </Button>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -688,20 +737,25 @@ export function ReglasTab({
               onClick={submitCreate}
               disabled={creatingTournament || !newTournamentName.trim()}
             >
-              {creatingTournament ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {creatingTournament ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
               Crear
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showCloseTournamentDialog} onOpenChange={onShowCloseTournamentDialog}>
+      <AlertDialog
+        open={showCloseTournamentDialog}
+        onOpenChange={onShowCloseTournamentDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cerrar el torneo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cerrarás <strong>{selectedTournament?.name}</strong>. No se podrán agregar nuevas
-              partidas. Esta acción no se puede deshacer.
+              Cerrarás <strong>{selectedTournament?.name}</strong>. No se podrán
+              agregar nuevas partidas. Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -710,7 +764,9 @@ export function ReglasTab({
               onClick={onCloseTournament}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {creatingTournament ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {creatingTournament ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
               Cerrar Torneo
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -725,5 +781,5 @@ export function ReglasTab({
         matches={matches}
       />
     </>
-  )
+  );
 }
