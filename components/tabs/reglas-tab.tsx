@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Loader2, LogOut, Trophy } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -35,6 +36,8 @@ import type {
 import { X } from "lucide-react"
 import { logout } from "@/app/login/actions"
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium"
+
+type ReglasSubtab = "torneo" | "reglas" | "ajustes"
 
 interface ReglasTabProps {
   tournaments: Tournament[]
@@ -85,6 +88,7 @@ export function ReglasTab({
   onRemovePlayerFromRoster,
   onCreateAndAddPlayer,
 }: ReglasTabProps) {
+  const [subtab, setSubtab] = useState<ReglasSubtab>("torneo")
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -163,190 +167,410 @@ export function ReglasTab({
     selectedTournament?.points_config ?? [...POINTS_DISTRIBUTION]
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Torneos</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            {tournaments.map((t) => (
-              <div
-                key={t.id}
-                className={`flex items-center justify-between p-3 rounded-lg border ${
-                  t.id === selectedTournamentId
-                    ? "border-primary bg-primary/5"
-                    : "border-border"
-                }`}
-              >
-                <div>
-                  <div className="font-medium text-sm">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {t.closed_at
-                      ? `Cerrado el ${new Date(t.closed_at).toLocaleDateString("es-ES")}`
-                      : "Activo"}
-                  </div>
-                </div>
-                <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
-              </div>
-            ))}
-          </div>
+    <>
+      <Tabs
+        value={subtab}
+        onValueChange={(v) => setSubtab(v as ReglasSubtab)}
+        className="w-full"
+      >
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1 border-b">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="torneo">Torneo</TabsTrigger>
+            <TabsTrigger value="reglas">Reglas</TabsTrigger>
+            <TabsTrigger value="ajustes">Ajustes</TabsTrigger>
+          </TabsList>
+        </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onShowCreateTournament(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Crear Torneo
-            </Button>
-            {selectedTournament && !selectedTournament.closed_at && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => onShowCloseTournamentDialog(true)}
-              >
-                🔒 Cerrar Torneo
-              </Button>
-            )}
-            {selectedTournament?.closed_at && (
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => onShowPodium(true)}
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                Ver Podio
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {selectedTournament && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Jugadores del torneo</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Roster de <span className="font-medium">{selectedTournament.name}</span>.
-              Solo estos jugadores aparecen al cargar partidas.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {roster.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                El torneo no tiene jugadores todavía.
-              </p>
-            ) : (
+        <TabsContent value="torneo" className="pt-4 pb-8 space-y-6 mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Torneos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                {roster.map((p) => (
+                {tournaments.map((t) => (
                   <div
-                    key={p.id}
-                    className="flex items-center justify-between pl-4 pr-2 py-2 rounded-lg border"
+                    key={t.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      t.id === selectedTournamentId
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
                   >
-                    <span className="text-base font-medium">{p.name}</span>
-                    {!isTournamentClosed && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFromRoster(p.id)}
-                        disabled={busyPlayerId === p.id}
-                        aria-label={`Quitar ${p.name}`}
-                      >
-                        {busyPlayerId === p.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <X className="w-4 h-4" />
-                        )}
-                      </Button>
-                    )}
+                    <div>
+                      <div className="font-medium text-sm">{t.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.closed_at
+                          ? `Cerrado el ${new Date(t.closed_at).toLocaleDateString("es-ES")}`
+                          : "Activo"}
+                      </div>
+                    </div>
+                    <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
                   </div>
                 ))}
               </div>
-            )}
 
-            {!isTournamentClosed && (
-              <>
-                {availableToAdd.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <Label className="text-xs text-muted-foreground">
-                      Agregar jugador existente
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {availableToAdd.map((p) => (
-                        <Button
-                          key={p.id}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addExisting(p.id)}
-                          disabled={busyPlayerId === p.id}
-                        >
-                          {busyPlayerId === p.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                          ) : (
-                            <Plus className="w-3 h-3 mr-1" />
-                          )}
-                          {p.name}
-                        </Button>
-                      ))}
-                    </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => onShowCreateTournament(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear Torneo
+                </Button>
+                {selectedTournament && !selectedTournament.closed_at && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onShowCloseTournamentDialog(true)}
+                  >
+                    🔒 Cerrar Torneo
+                  </Button>
+                )}
+                {selectedTournament?.closed_at && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onShowPodium(true)}
+                  >
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Ver Podio
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {selectedTournament && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Jugadores del torneo</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Roster de <span className="font-medium">{selectedTournament.name}</span>.
+                  Solo estos jugadores aparecen al cargar partidas.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {roster.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    El torneo no tiene jugadores todavía.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {roster.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between pl-4 pr-2 py-2 rounded-lg border"
+                      >
+                        <span className="text-base font-medium">{p.name}</span>
+                        {!isTournamentClosed && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFromRoster(p.id)}
+                            disabled={busyPlayerId === p.id}
+                            aria-label={`Quitar ${p.name}`}
+                          >
+                            {busyPlayerId === p.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <div className="pt-2">
-                  {showAddPlayer ? (
-                    <div className="flex gap-2">
-                      <Input
-                        autoFocus
-                        placeholder="Nombre del nuevo jugador"
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") createAndAdd()
-                          if (e.key === "Escape") {
-                            setShowAddPlayer(false)
-                            setNewPlayerName("")
-                          }
-                        }}
-                      />
-                      <Button
-                        onClick={createAndAdd}
-                        disabled={!newPlayerName.trim() || creatingNewPlayer}
-                      >
-                        {creatingNewPlayer ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Crear"
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowAddPlayer(false)
-                          setNewPlayerName("")
-                        }}
-                      >
-                        ✕
-                      </Button>
+                {!isTournamentClosed && (
+                  <>
+                    {availableToAdd.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Agregar jugador existente
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                          {availableToAdd.map((p) => (
+                            <Button
+                              key={p.id}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addExisting(p.id)}
+                              disabled={busyPlayerId === p.id}
+                            >
+                              {busyPlayerId === p.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              ) : (
+                                <Plus className="w-3 h-3 mr-1" />
+                              )}
+                              {p.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      {showAddPlayer ? (
+                        <div className="flex gap-2">
+                          <Input
+                            autoFocus
+                            placeholder="Nombre del nuevo jugador"
+                            value={newPlayerName}
+                            onChange={(e) => setNewPlayerName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") createAndAdd()
+                              if (e.key === "Escape") {
+                                setShowAddPlayer(false)
+                                setNewPlayerName("")
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={createAndAdd}
+                            disabled={!newPlayerName.trim() || creatingNewPlayer}
+                          >
+                            {creatingNewPlayer ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "Crear"
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setShowAddPlayer(false)
+                              setNewPlayerName("")
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setShowAddPlayer(true)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Crear nuevo jugador
+                        </Button>
+                      )}
                     </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setShowAddPlayer(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Crear nuevo jugador
-                    </Button>
-                  )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reglas" className="pt-4 pb-8 space-y-6 mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Reglas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                <li>
+                  •{" "}
+                  <strong>
+                    El ranking anual se ordena por dinero ganado neto acumulado (de mayor a menor)
+                  </strong>
+                </li>
+                <li>
+                  • En caso de empate en dinero ganado total, gana quien tenga más puntos
+                  acumulados
+                </li>
+                <li>• Los puntos son una métrica secundaria que premia las buenas posiciones</li>
+                <li>• Dentro de cada partida, las posiciones se determinan por dinero ganado neto</li>
+                <li>
+                  • En caso de empate en dinero ganado dentro de una partida, gana quien pidió
+                  menos cajitas
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Sistema de Puntos</CardTitle>
+              {selectedTournament && (
+                <p className="text-xs text-muted-foreground">
+                  Configuración del torneo{" "}
+                  <span className="font-medium">{selectedTournament.name}</span>
+                </p>
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-center">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="py-3 px-4">Posición</th>
+                      <th className="py-3 px-4">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
+                      <tr key={position} className="border-b">
+                        <td className="py-3 px-4 font-semibold">{position}°</td>
+                        <td className="py-3 px-4 font-bold text-lg">
+                          {activePoints[position - 1] ?? 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Glosario de Estadísticas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="divide-y divide-border">
+                <div className="py-3 first:pt-0">
+                  <dt className="text-sm font-semibold mb-1">🔥 Racha actual</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    Cantidad de partidas consecutivas con el mismo resultado (ganadas o
+                    perdidas, según la última). Se corta cuando cambia el signo del dinero
+                    ganado.
+                  </dd>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">Mejor racha</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    La cadena más larga de partidas ganadas consecutivas en toda la historia
+                    del jugador.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">⚔️ Némesis</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    El oponente al que más le fue mejor que a vos en partidas compartidas.
+                    Por cada partida en común se calcula el diferencial{" "}
+                    <em>(dinero ganado del oponente − dinero ganado tuyo)</em> y se acumula.
+                    Gana el que tiene el diferencial positivo más alto contra vos (mínimo 3
+                    partidas compartidas).
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">Mejor / Peor partida</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    La partida con mayor ganancia y la de mayor pérdida del jugador, con la
+                    posición y el monto.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">📅 Día favorito</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    El día de la semana donde el jugador acumula más ganancia neta (mínimo
+                    2 partidas en ese día, neto positivo).
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">🚀 Killer move</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    La partida con mejor ROI relativo del jugador: donde menos invirtió en
+                    proporción a lo que ganó. Premia la eficiencia, no el monto absoluto.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">🎢 ROI por partida</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    Curva del retorno (ganancia ÷ inversión) de cada partida individual a lo
+                    largo del tiempo. Una línea por jugador.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">🏆 Top 3 Ganadores</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    Los tres jugadores con más victorias (1° puesto). Se muestra también el
+                    pozo más alto que ganaron alguna vez.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">📈 Evolución de Posiciones</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    La trayectoria del ranking de cada jugador fecha tras fecha, ordenable
+                    por dinero o por puntos.
+                  </dd>
+                </div>
+                <div className="py-3">
+                  <dt className="text-sm font-semibold mb-1">
+                    💰 Mejores Partidas / 💸 Peores Partidas
+                  </dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed">
+                    Las 3 partidas individuales (jugador-fecha) con mayor ganancia y mayor
+                    pérdida en toda la historia.
+                  </dd>
+                </div>
+                <div className="py-3 last:pb-0">
+                  <dt className="text-sm font-semibold mb-1">Eficiencia vs Inversión</dt>
+                  <dd className="text-sm text-muted-foreground leading-relaxed space-y-2">
+                    <p>
+                      Cuadrantes que cruzan el ROI lifetime (dinero ganado ÷ dinero invertido
+                      en cajitas) con el promedio de cajitas por partida.
+                    </p>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pl-0">
+                      <li>
+                        <span className="font-medium text-foreground">Genio</span> — ROI ≥ 0,
+                        pocas cajitas
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Apostador</span> — ROI
+                        ≥ 0, muchas cajitas
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Conservador</span> —
+                        ROI {"<"} 0, pocas cajitas
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Temerario</span> — ROI{" "}
+                        {"<"} 0, muchas cajitas
+                      </li>
+                    </ul>
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ajustes" className="pt-4 pb-8 space-y-6 mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Configuración</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2" suppressHydrationWarning>
+                <span className="text-sm">☀️</span>
+                <Switch
+                  checked={isDark}
+                  onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                  aria-label="Cambiar tema"
+                />
+                <span className="text-sm">🌙</span>
+                <span className="ml-2 text-sm" suppressHydrationWarning>
+                  Tema {mounted ? (isDark ? "oscuro" : "claro") : ""}
+                </span>
+              </div>
+
+              <form action={logout}>
+                <Button type="submit" variant="outline" className="w-full">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Cerrar sesión
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={showCreateTournament} onOpenChange={handleOpenChangeCreate}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
@@ -484,206 +708,6 @@ export function ReglasTab({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Configuración</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2" suppressHydrationWarning>
-            <span className="text-sm">☀️</span>
-            <Switch
-              checked={isDark}
-              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-              aria-label="Cambiar tema"
-            />
-            <span className="text-sm">🌙</span>
-            <span className="ml-2 text-sm" suppressHydrationWarning>
-              Tema {mounted ? (isDark ? "oscuro" : "claro") : ""}
-            </span>
-          </div>
-
-          <form action={logout}>
-            <Button type="submit" variant="outline" className="w-full">
-              <LogOut className="w-4 h-4 mr-2" />
-              Cerrar sesión
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Reglas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            <li>
-              •{" "}
-              <strong>
-                El ranking anual se ordena por dinero ganado neto acumulado (de mayor a menor)
-              </strong>
-            </li>
-            <li>
-              • En caso de empate en dinero ganado total, gana quien tenga más puntos
-              acumulados
-            </li>
-            <li>• Los puntos son una métrica secundaria que premia las buenas posiciones</li>
-            <li>• Dentro de cada partida, las posiciones se determinan por dinero ganado neto</li>
-            <li>
-              • En caso de empate en dinero ganado dentro de una partida, gana quien pidió
-              menos cajitas
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Sistema de Puntos</CardTitle>
-          {selectedTournament && (
-            <p className="text-xs text-muted-foreground">
-              Configuración del torneo{" "}
-              <span className="font-medium">{selectedTournament.name}</span>
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-center">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-3 px-4">Posición</th>
-                  <th className="py-3 px-4">Puntos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((position) => (
-                  <tr key={position} className="border-b">
-                    <td className="py-3 px-4 font-semibold">{position}°</td>
-                    <td className="py-3 px-4 font-bold text-lg">
-                      {activePoints[position - 1] ?? 0}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Glosario de Estadísticas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="divide-y divide-border">
-            <div className="py-3 first:pt-0">
-              <dt className="text-sm font-semibold mb-1">🔥 Racha actual</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                Cantidad de partidas consecutivas con el mismo resultado (ganadas o
-                perdidas, según la última). Se corta cuando cambia el signo del dinero
-                ganado.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">Mejor racha</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                La cadena más larga de partidas ganadas consecutivas en toda la historia
-                del jugador.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">⚔️ Némesis</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                El oponente al que más le fue mejor que a vos en partidas compartidas.
-                Por cada partida en común se calcula el diferencial{" "}
-                <em>(dinero ganado del oponente − dinero ganado tuyo)</em> y se acumula.
-                Gana el que tiene el diferencial positivo más alto contra vos (mínimo 3
-                partidas compartidas).
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">Mejor / Peor partida</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                La partida con mayor ganancia y la de mayor pérdida del jugador, con la
-                posición y el monto.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">📅 Día favorito</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                El día de la semana donde el jugador acumula más ganancia neta (mínimo
-                2 partidas en ese día, neto positivo).
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">🚀 Killer move</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                La partida con mejor ROI relativo del jugador: donde menos invirtió en
-                proporción a lo que ganó. Premia la eficiencia, no el monto absoluto.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">🎢 ROI por partida</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                Curva del retorno (ganancia ÷ inversión) de cada partida individual a lo
-                largo del tiempo. Una línea por jugador.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">🏆 Top 3 Ganadores</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                Los tres jugadores con más victorias (1° puesto). Se muestra también el
-                pozo más alto que ganaron alguna vez.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">📈 Evolución de Posiciones</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                La trayectoria del ranking de cada jugador fecha tras fecha, ordenable
-                por dinero o por puntos.
-              </dd>
-            </div>
-            <div className="py-3">
-              <dt className="text-sm font-semibold mb-1">
-                💰 Mejores Partidas / 💸 Peores Partidas
-              </dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed">
-                Las 3 partidas individuales (jugador-fecha) con mayor ganancia y mayor
-                pérdida en toda la historia.
-              </dd>
-            </div>
-            <div className="py-3 last:pb-0">
-              <dt className="text-sm font-semibold mb-1">Eficiencia vs Inversión</dt>
-              <dd className="text-sm text-muted-foreground leading-relaxed space-y-2">
-                <p>
-                  Cuadrantes que cruzan el ROI lifetime (dinero ganado ÷ dinero invertido
-                  en cajitas) con el promedio de cajitas por partida.
-                </p>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pl-0">
-                  <li>
-                    <span className="font-medium text-foreground">Genio</span> — ROI ≥ 0,
-                    pocas cajitas
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Apostador</span> — ROI
-                    ≥ 0, muchas cajitas
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Conservador</span> —
-                    ROI {"<"} 0, pocas cajitas
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Temerario</span> — ROI{" "}
-                    {"<"} 0, muchas cajitas
-                  </li>
-                </ul>
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
       <TournamentClosingPodium
         open={showPodium}
         onOpenChange={onShowPodium}
@@ -691,6 +715,6 @@ export function ReglasTab({
         playerStats={playerStats}
         matches={matches}
       />
-    </div>
+    </>
   )
 }
