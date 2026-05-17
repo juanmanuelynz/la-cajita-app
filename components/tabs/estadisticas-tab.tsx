@@ -74,7 +74,7 @@ export function EstadisticasTab({
       onValueChange={(v) => setSubtab(v as StatsSubtab)}
       className="w-full"
     >
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1 border-b">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="jugadores">Jugadores</TabsTrigger>
           <TabsTrigger value="rankings">Rankings</TabsTrigger>

@@ -61,6 +61,7 @@ interface ReglasTabProps {
   onAddPlayerToRoster: (playerId: string) => Promise<void>
   onRemovePlayerFromRoster: (playerId: string) => Promise<void>
   onCreateAndAddPlayer: (name: string) => Promise<void>
+  onSelectTournament: (tournamentId: string) => void
 }
 
 const DEFAULT_CONFIG: number[] = [...POINTS_CONFIG_PRESETS["Clásico"]]
@@ -87,6 +88,7 @@ export function ReglasTab({
   onAddPlayerToRoster,
   onRemovePlayerFromRoster,
   onCreateAndAddPlayer,
+  onSelectTournament,
 }: ReglasTabProps) {
   const [subtab, setSubtab] = useState<ReglasSubtab>("torneo")
   const { theme, setTheme } = useTheme()
@@ -173,7 +175,7 @@ export function ReglasTab({
         onValueChange={(v) => setSubtab(v as ReglasSubtab)}
         className="w-full"
       >
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1 border-b">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="torneo">Torneo</TabsTrigger>
             <TabsTrigger value="reglas">Reglas</TabsTrigger>
@@ -188,26 +190,33 @@ export function ReglasTab({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                {tournaments.map((t) => (
-                  <div
-                    key={t.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      t.id === selectedTournamentId
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-medium text-sm">{t.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {t.closed_at
-                          ? `Cerrado el ${new Date(t.closed_at).toLocaleDateString("es-ES")}`
-                          : "Activo"}
+                {tournaments.map((t) => {
+                  const isSelected = t.id === selectedTournamentId
+                  return (
+                    <button
+                      type="button"
+                      key={t.id}
+                      onClick={() => {
+                        if (!isSelected) onSelectTournament(t.id)
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium text-sm">{t.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {t.closed_at
+                            ? `Cerrado el ${new Date(t.closed_at).toLocaleDateString("es-ES")}`
+                            : "Activo"}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
-                  </div>
-                ))}
+                      <div className="text-lg">{t.closed_at ? "🔒" : "🟢"}</div>
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="flex gap-2 pt-2">

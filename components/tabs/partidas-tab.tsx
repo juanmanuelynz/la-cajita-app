@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Trash2,
   Loader2,
@@ -14,6 +16,8 @@ import {
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
+
+type PartidasSubtab = "partida" | "historial"
 
 interface PartidasTabProps {
   matches: MatchWithPlayers[]
@@ -42,13 +46,22 @@ export function PartidasTab({
   onConfirmDeleteMatch,
   onRefresh,
 }: PartidasTabProps) {
-  return (
-    <div className="space-y-12">
-      <div>
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold">Partidas</h2>
-        </div>
+  const [subtab, setSubtab] = useState<PartidasSubtab>("partida")
 
+  return (
+    <Tabs
+      value={subtab}
+      onValueChange={(v) => setSubtab(v as PartidasSubtab)}
+      className="w-full"
+    >
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="partida">Partida</TabsTrigger>
+          <TabsTrigger value="historial">Historial</TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value="partida" className="pt-4 pb-8 mt-0">
         <div className="space-y-4">
           {activeMatches.length === 0 ? (
             <div className="space-y-2">
@@ -102,121 +115,121 @@ export function PartidasTab({
             </Button>
           )}
         </div>
-      </div>
+      </TabsContent>
 
-      <div className="space-y-1">
-        <div className="flex flex-row align-center justify-between">
-          <div className="text-center mb-6">
+      <TabsContent value="historial" className="pt-4 pb-8 mt-0">
+        <div className="space-y-1">
+          <div className="flex flex-row align-center justify-between mb-4">
             <h2 className="text-xl font-normal">Historial de Partidas</h2>
+            <Button onClick={onRefresh} disabled={loading} variant="outline" size="sm">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+            </Button>
           </div>
-          <Button onClick={onRefresh} disabled={loading} variant="outline" size="sm">
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-        <div className="max-h-200 overflow-y-auto space-y-2 custom-scrollbar">
-          {matches.map((match) => {
-            const isExpanded = expandedMatches.has(match.id)
-            const winner = match.match_players.find((mp) => mp.position === 1)
+          <div className="space-y-2">
+            {matches.map((match) => {
+              const isExpanded = expandedMatches.has(match.id)
+              const winner = match.match_players.find((mp) => mp.position === 1)
 
-            return (
-              <Card key={match.id}>
-                <CardContent className="p-4">
-                  <div
-                    className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
-                    onClick={() => onToggleExpand(match.id)}
-                  >
-                    <div className="flex-1">
-                      <div className="text-lg font-semibold">{formatDate(match.date)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {match.player_count} jugadores - ${formatAmount(match.total_money)}
-                      </div>
-                      {winner && (
-                        <div className="text-sm mt-1">🏆 Ganador: {winner.players?.name}</div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="mt-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm">
-                          Dinero total jugado:{" "}
-                          <span className="font-semibold">
-                            ${formatAmount(match.total_money)}
-                          </span>
+              return (
+                <Card key={match.id}>
+                  <CardContent className="p-4">
+                    <div
+                      className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
+                      onClick={() => onToggleExpand(match.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="text-lg font-semibold">{formatDate(match.date)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {match.player_count} jugadores - ${formatAmount(match.total_money)}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onConfirmDeleteMatch(match.id)
-                          }}
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
+                        {winner && (
+                          <div className="text-sm mt-1">🏆 Ganador: {winner.players?.name}</div>
+                        )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                        {match.match_players
-                          .sort((a, b) => a.position - b.position)
-                          .map((mp) => (
-                            <div
-                              key={mp.id}
-                              className="flex items-center justify-between p-2 bg-muted rounded"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                    mp.position === 1
-                                      ? "bg-yellow-500 text-black"
-                                      : mp.position === 2
-                                        ? "bg-slate-400 text-black"
-                                        : mp.position === 3
-                                          ? "bg-orange-500 text-black"
-                                          : "bg-muted-foreground text-muted"
+                      <div className="flex items-center gap-2">
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5" />
+                        )}
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm">
+                            Dinero total jugado:{" "}
+                            <span className="font-semibold">
+                              ${formatAmount(match.total_money)}
+                            </span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onConfirmDeleteMatch(match.id)
+                            }}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                          {match.match_players
+                            .sort((a, b) => a.position - b.position)
+                            .map((mp) => (
+                              <div
+                                key={mp.id}
+                                className="flex items-center justify-between p-2 bg-muted rounded"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                      mp.position === 1
+                                        ? "bg-yellow-500 text-black"
+                                        : mp.position === 2
+                                          ? "bg-slate-400 text-black"
+                                          : mp.position === 3
+                                            ? "bg-orange-500 text-black"
+                                            : "bg-muted-foreground text-muted"
+                                    }`}
+                                  >
+                                    {mp.position}
+                                  </div>
+                                  <span className="text-sm">{mp.players?.name}</span>
+                                </div>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
                                   }`}
                                 >
-                                  {mp.position}
-                                </div>
-                                <span className="text-sm">{mp.players?.name}</span>
-                              </div>
-                              <span
-                                className={`text-sm font-semibold ${
-                                  mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
-                                }`}
-                              >
-                                ${formatAmount(mp.money_won)}{" "}
-                                <span className="text-xs text-muted-foreground font-normal">
-                                  ({mp.cajitas} cjt{mp.cajitas !== 1 ? "s" : ""})
+                                  ${formatAmount(mp.money_won)}{" "}
+                                  <span className="text-xs text-muted-foreground font-normal">
+                                    ({mp.cajitas} cjt{mp.cajitas !== 1 ? "s" : ""})
+                                  </span>
                                 </span>
-                              </span>
-                            </div>
-                          ))}
+                              </div>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
         </div>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   )
 }

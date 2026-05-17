@@ -5,13 +5,6 @@ import useEmblaCarousel from "embla-carousel-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -395,24 +388,12 @@ function LaCajitaPoker() {
             <h1 className="text-xl md:text-2xl font-bold">♦️</h1>
             <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
           </div>
-          {tournaments.length > 0 && (
-            <div className="flex justify-center mt-3">
-              <Select
-                value={selectedTournamentId || ""}
-                onValueChange={handleTournamentChange}
-              >
-                <SelectTrigger className="w-56 text-sm">
-                  <SelectValue placeholder="Seleccionar torneo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tournaments.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                      {t.closed_at ? " 🔒" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {selectedTournament && (
+            <div className="flex justify-center mt-2">
+              <p className="text-sm text-muted-foreground">
+                {selectedTournament.name}
+                {selectedTournament.closed_at ? " 🔒" : ""}
+              </p>
             </div>
           )}
         </div>
@@ -484,7 +465,7 @@ function LaCajitaPoker() {
                 onDeleteActive={setActiveMatchToDelete}
               />
             </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
               <PartidasTab
                 matches={matches}
                 activeMatches={activeMatches}
@@ -532,6 +513,7 @@ function LaCajitaPoker() {
                 onAddPlayerToRoster={handleAddPlayerToRoster}
                 onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
                 onCreateAndAddPlayer={handleCreateAndAddPlayer}
+                onSelectTournament={handleTournamentChange}
               />
             </div>
           </div>
