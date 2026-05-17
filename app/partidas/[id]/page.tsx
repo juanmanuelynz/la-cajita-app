@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as db from "@/lib/database";
 import type { ActiveMatch, Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
+import { formatAmount } from "@/lib/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ export default function EditActiveMatchPage() {
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [playersList, setPlayersList] = useState<Player[]>([]);
+  const [tournamentId, setTournamentId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     date: string;
     cajiValue: number;
@@ -135,25 +137,29 @@ export default function EditActiveMatchPage() {
     let mounted = true;
     const load = async () => {
       setLoading(true);
-      const [match, allPlayers] = await Promise.all([
-        db.getActiveMatchById(matchId),
-        db.getAllPlayers(),
-      ]);
+      const match = await db.getActiveMatchById(matchId);
       if (!mounted) return;
-      setPlayersList(allPlayers);
-      if (match) {
-        // El JSONB legacy puede no traer playerId — lo hidratamos por nombre
-        // contra la tabla de jugadores. tieBreak viejo se descarta.
-        const byId = new Map(allPlayers.map((p) => [p.id, p]));
-        const byName = new Map(allPlayers.map((p) => [p.name, p]));
-        type RawPlayer = Partial<FormPlayer> & { player_id?: string };
+      if (!match) {
+        setLoading(false);
+        return;
+      }
+      // El roster se filtra por torneo: solo los jugadores que participan
+      // en este torneo deben aparecer en el dropdown.
+      setTournamentId(match.tournament_id);
+      const roster = await db.getTournamentRoster(match.tournament_id);
+      if (!mounted) return;
+      setPlayersList(roster);
+      {
+        // Todos los drafts modernos traen playerId en el JSONB; resolvemos
+        // por id contra la tabla de jugadores. tieBreak viejo se descarta.
+        const byId = new Map(roster.map((p) => [p.id, p]));
+        type RawPlayer = Partial<FormPlayer>;
         setFormData({
           date: match.date,
           cajiValue: match.caji_value,
           playerCount: match.player_count,
           players: (match.players as RawPlayer[]).map((p) => {
-            const id = p.playerId ?? p.player_id ?? null;
-            const known = id ? byId.get(id) : p.name ? byName.get(p.name) : null;
+            const known = p.playerId ? byId.get(p.playerId) : null;
             return {
               playerId: known?.id ?? null,
               name: known?.name ?? p.name ?? "",
@@ -323,11 +329,13 @@ export default function EditActiveMatchPage() {
   };
 
   const createNewPlayer = async (index: number) => {
-    if (!newPlayerName.trim() || creatingPlayer) return;
+    if (!newPlayerName.trim() || creatingPlayer || !tournamentId) return;
     setCreatingPlayer(true);
     try {
-      const created = await db.createPlayer(newPlayerName.trim());
-      const refreshed = await db.getAllPlayers();
+      // createPlayer con tournamentId hace upsert del jugador y lo agrega
+      // al roster del torneo en una sola request.
+      const created = await db.createPlayer(newPlayerName.trim(), tournamentId);
+      const refreshed = await db.getTournamentRoster(tournamentId);
       setPlayersList(refreshed);
       selectPlayer(index, created.id);
       setNewPlayerName("");
@@ -722,7 +730,7 @@ export default function EditActiveMatchPage() {
                                 : "text-rose-600"
                             }`}
                           >
-                            ${player.moneyWon.toLocaleString()}
+                            ${formatAmount(player.moneyWon)}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -755,18 +763,14 @@ export default function EditActiveMatchPage() {
                     {balance.isBalanced
                       ? "✅ Balance Correcto"
                       : balance.diff > 0
-                      ? `Faltan $${balance.diff.toLocaleString()} en fichas`
-                      : `Sobran $${Math.abs(
-                          balance.diff
-                        ).toLocaleString()} en fichas`}
+                      ? `Faltan $${formatAmount(balance.diff)} en fichas`
+                      : `Sobran $${formatAmount(Math.abs(balance.diff))} en fichas`}
                   </div>
                   <div className="text-sm text-muted-foreground mt-2">
-                    Total Invertido: $
-                    {balance.totalInvestment.toLocaleString()}
+                    Total Invertido: ${formatAmount(balance.totalInvestment)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Total Fichas Finales: $
-                    {balance.totalFinalChips.toLocaleString()}
+                    Total Fichas Finales: ${formatAmount(balance.totalFinalChips)}
                   </div>
                 </div>
                 {canAutoComplete && (
@@ -778,7 +782,7 @@ export default function EditActiveMatchPage() {
                   >
                     Auto-completar {formData.players[emptyPlayerIndices[0]].name ||
                       `Jugador ${emptyPlayerIndices[0] + 1}`}{" "}
-                    con ${balance.diff.toLocaleString()}
+                    con ${formatAmount(balance.diff)}
                   </Button>
                 )}
               </CardContent>
@@ -819,7 +823,7 @@ export default function EditActiveMatchPage() {
               <DialogTitle>Vista previa del registro</DialogTitle>
               <DialogDescription>
                 {formData.date} · {formData.playerCount} jugadores · ${" "}
-                {formData.cajiValue.toLocaleString()} por cajita
+                {formatAmount(formData.cajiValue)} por cajita
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -869,7 +873,7 @@ export default function EditActiveMatchPage() {
                               : "text-rose-600"
                           }`}
                         >
-                          ${p.moneyWon.toLocaleString()}
+                          ${formatAmount(p.moneyWon)}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {points} pts

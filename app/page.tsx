@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, Suspense, useMemo } from "react"
+import { useState, useEffect, Suspense, useMemo, useCallback } from "react"
 import useEmblaCarousel from "embla-carousel-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -42,8 +42,8 @@ import {
 } from "chart.js"
 import * as db from "@/lib/database"
 import type {
-  Player,
   MatchWithPlayers,
+  Player,
   PlayerStats,
   ActiveMatch,
   Tournament,
@@ -130,51 +130,29 @@ function LaCajitaPoker() {
   const [showPodium, setShowPodium] = useState(false)
 
   // Data
-  const [_players, setPlayers] = useState<Player[]>([])
   const [matches, setMatches] = useState<MatchWithPlayers[]>([])
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([])
   const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([])
+  const [allPlayers, setAllPlayers] = useState<Player[]>([])
+  const [roster, setRoster] = useState<Player[]>([])
 
-  useEffect(() => {
-    testConnectionAndLoadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    const tabParam = searchParams?.get("tab") as TabId | null
-    if (tabParam && TABS.some((t) => t.id === tabParam)) {
-      setActiveTab(tabParam)
-    }
-  }, [searchParams])
-
-  const testConnectionAndLoadData = async () => {
-    const isConnected = await db.testConnection()
-    setConnectionStatus(isConnected)
-    if (isConnected) {
-      const tournamentsData = await db.getTournaments()
-      setTournaments(tournamentsData)
-      const mostRecentId = tournamentsData[0]?.id || null
-      setSelectedTournamentId(mostRecentId)
-      if (mostRecentId) await loadAllData(mostRecentId)
-    } else {
-      setError("No se pudo conectar a la base de datos. Verifica tu conexión.")
-    }
-  }
-
-  const loadAllData = async (tournamentId: string) => {
+  const loadAllData = useCallback(async (tournamentId: string) => {
     setLoading(true)
     setError(null)
     try {
-      const [playersData, matchesData, statsData, activeMatchesData] = await Promise.all([
-        db.getAllPlayers(),
-        db.getAllMatches(tournamentId),
-        db.getPlayerStats(tournamentId),
-        db.getAllActiveMatches(tournamentId),
-      ])
-      setPlayers(playersData)
+      const [matchesData, statsData, activeMatchesData, rosterData, allPlayersData] =
+        await Promise.all([
+          db.getAllMatches(tournamentId),
+          db.getPlayerStats(tournamentId),
+          db.getAllActiveMatches(tournamentId),
+          db.getTournamentRoster(tournamentId),
+          db.getAllPlayers(),
+        ])
       setMatches(matchesData)
       setPlayerStats(statsData)
       setActiveMatches(activeMatchesData)
+      setRoster(rosterData)
+      setAllPlayers(allPlayersData)
       setConnectionStatus(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data")
@@ -182,7 +160,67 @@ function LaCajitaPoker() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const refreshRoster = async () => {
+    if (!selectedTournamentId) return
+    const [rosterData, allPlayersData] = await Promise.all([
+      db.getTournamentRoster(selectedTournamentId),
+      db.getAllPlayers(),
+    ])
+    setRoster(rosterData)
+    setAllPlayers(allPlayersData)
   }
+
+  const handleAddPlayerToRoster = async (playerId: string) => {
+    if (!selectedTournamentId) return
+    await db.addPlayerToTournament(selectedTournamentId, playerId)
+    await refreshRoster()
+  }
+
+  const handleRemovePlayerFromRoster = async (playerId: string) => {
+    if (!selectedTournamentId) return
+    await db.removePlayerFromTournament(selectedTournamentId, playerId)
+    await refreshRoster()
+  }
+
+  const handleCreateAndAddPlayer = async (name: string) => {
+    if (!selectedTournamentId) return
+    await db.createPlayer(name, selectedTournamentId)
+    await refreshRoster()
+  }
+
+  const initializeApp = useCallback(async () => {
+    try {
+      const tournamentsData = await db.getTournaments()
+      setTournaments(tournamentsData)
+      const mostRecentId = tournamentsData[0]?.id || null
+      setSelectedTournamentId(mostRecentId)
+      if (mostRecentId) {
+        await loadAllData(mostRecentId)
+      } else {
+        setConnectionStatus(true)
+      }
+    } catch (err) {
+      setConnectionStatus(false)
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo conectar a la base de datos. Verifica tu conexión.",
+      )
+    }
+  }, [loadAllData])
+
+  useEffect(() => {
+    void initializeApp()
+  }, [initializeApp])
+
+  useEffect(() => {
+    const tabParam = searchParams?.get("tab") as TabId | null
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
 
   const refreshData = async () => {
     if (selectedTournamentId) await loadAllData(selectedTournamentId)
@@ -193,13 +231,17 @@ function LaCajitaPoker() {
     await loadAllData(tournamentId)
   }
 
-  const handleCreateTournament = async (pointsConfig: number[]) => {
+  const handleCreateTournament = async (
+    pointsConfig: number[],
+    rosterIds: string[],
+  ) => {
     if (!newTournamentName.trim()) return
     setCreatingTournament(true)
     try {
       const created = await db.createTournament(
         newTournamentName.trim(),
         pointsConfig,
+        rosterIds,
       )
       const tournamentsData = await db.getTournaments()
       setTournaments(tournamentsData)
@@ -332,7 +374,7 @@ function LaCajitaPoker() {
             <div className="mt-4 p-4 border rounded-lg">
               <AlertCircle className="w-6 h-6 mx-auto mb-2" />
               <p>Problema de conexión detectado</p>
-              <Button onClick={testConnectionAndLoadData} className="mt-2">
+              <Button onClick={initializeApp} className="mt-2">
                 Reintentar
               </Button>
             </div>
@@ -397,36 +439,37 @@ function LaCajitaPoker() {
           </Card>
         )}
 
-        {matchToDelete && (
-          <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-md w-full">
-              <CardHeader>
-                <CardTitle className="text-xl">Confirmar Eliminación</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p>
-                  ¿Estás seguro de que quieres eliminar esta partida? Esta acción no se puede
-                  deshacer.
-                </p>
-                <div className="flex gap-3 justify-end">
-                  <Button variant="outline" onClick={() => setMatchToDelete(null)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={deleteMatch} disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Eliminando...
-                      </>
-                    ) : (
-                      "Eliminar"
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <AlertDialog
+          open={!!matchToDelete}
+          onOpenChange={() => setMatchToDelete(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar partida?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. Se eliminará permanentemente la partida y
+                todos sus datos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={deleteMatch}
+                disabled={loading}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Eliminando...
+                  </>
+                ) : (
+                  "Eliminar"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex touch-pan-y">
@@ -478,12 +521,17 @@ function LaCajitaPoker() {
                 playerStats={playerStats}
                 matches={matches}
                 showPodium={showPodium}
+                allPlayers={allPlayers}
+                roster={roster}
                 onShowPodium={setShowPodium}
                 onShowCreateTournament={setShowCreateTournament}
                 onShowCloseTournamentDialog={setShowCloseTournamentDialog}
                 onNewTournamentNameChange={setNewTournamentName}
                 onCreateTournament={handleCreateTournament}
                 onCloseTournament={handleCloseTournament}
+                onAddPlayerToRoster={handleAddPlayerToRoster}
+                onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
+                onCreateAndAddPlayer={handleCreateAndAddPlayer}
               />
             </div>
           </div>

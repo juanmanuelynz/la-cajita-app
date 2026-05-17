@@ -1,12 +1,10 @@
+const amountFormatter = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 })
+
 export function formatAmount(amount: number | string | undefined | null): string {
   if (amount === null || amount === undefined || amount === "") return "0"
   const numValue = typeof amount === "string" ? parseFloat(amount) : amount
   if (isNaN(numValue)) return "0"
-
-  const absValue = Math.abs(numValue)
-  const sign = numValue < 0 ? "-" : ""
-  const formatted = absValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-  return sign + formatted
+  return amountFormatter.format(numValue)
 }
 
 export function formatDate(dateStr: string): string {
