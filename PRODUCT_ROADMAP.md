@@ -16,7 +16,9 @@ Implementado en commit `58774fd`. La card de balance ahora muestra "Faltan $X / 
 
 ## 2. `points_config` por torneo ✅ HECHO
 
-Migration `09-points-config.sql` agrega `tournaments.points_config JSONB NOT NULL DEFAULT '[10,7,5,3,2,1,0,0]'::jsonb` y backfillea torneos preexistentes. `createTournament` ahora acepta una distribución opcional validada con Zod (8 enteros ≥ 0, monótonos no crecientes); `createMatch` lee la config del torneo correspondiente antes de calcular puntos. El dialog "Crear Torneo" en Reglas trae presets ("Clásico", "Top-pesado", "Plano") + 8 inputs editables, y la tabla de Sistema de Puntos refleja la config del torneo seleccionado. La preview de partida activa también usa la config del torneo asociado.
+Implementado en commit `2633610`. Migration `09-points-config.sql` agrega `tournaments.points_config JSONB NOT NULL DEFAULT '[10,7,5,3,2,1,0,0]'::jsonb` y backfillea torneos preexistentes. `createTournament` acepta una distribución opcional validada con Zod (8 enteros ≥ 0, monótonos no crecientes); `createMatch` lee la config del torneo correspondiente antes de calcular puntos. El dialog "Crear Torneo" en Reglas trae presets ("Clásico", "Top-pesado", "Plano") + 8 inputs editables, y la tabla de Sistema de Puntos refleja la config del torneo seleccionado. La preview de cierre de la partida activa también usa la config del torneo asociado.
+
+**No incluido** (pedir si lo necesitamos): editar la config de un torneo ya creado, o variar el largo del array (hoy siempre son 8 posiciones).
 
 ---
 
@@ -101,13 +103,20 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 
 ## Orden recomendado
 
+### Pendientes
+
 | # | Item | ROI | Esfuerzo | Estado |
 |---|------|-----|----------|--------|
-| 1 | Auto-completar último jugador | Alto | Bajo | ✅ |
-| 8 | Decidir default sort | Alto | Trivial | ✅ |
-| 4 | Métricas (rachas, némesis, día favorito, killer move, ROI por partida) | Alto | Medio | ✅ |
-| 3 | Podio final + export | Medio-Alto | Alto | ✅ parcial (falta share/CSV/snapshot) |
-| 2 | `points_config` por torneo | Medio | Medio | ✅ |
+| 3 | Podio final: share/CSV/snapshot | Medio | Medio | ✅ parcial |
 | 5 | Distinguir recompras | Medio | Alto | pendiente |
-| 7 | Swipe tabs / bottom sheets | Bajo | Medio | ✅ parcial (falta vaul) |
+| 7 | Bottom sheets con vaul | Bajo | Medio | ✅ parcial |
 | 6 | Lock concurrencia | Bajo | Alto | pendiente |
+
+### Hechos
+
+| # | Item | Estado |
+|---|------|--------|
+| 1 | Auto-completar último jugador | ✅ |
+| 2 | `points_config` por torneo | ✅ |
+| 4 | Métricas (rachas, némesis, día favorito, killer move, ROI por partida) | ✅ |
+| 8 | Decidir default sort | ✅ |
