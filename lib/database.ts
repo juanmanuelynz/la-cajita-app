@@ -19,6 +19,7 @@ import {
   UuidSchema,
 } from "./validators"
 import { POINTS_DISTRIBUTION } from "./constants"
+import { rankMatchPlayers } from "./ranking"
 
 // Devolver fechas/timestamps como string ISO (igual que Supabase via PostgREST),
 // en lugar de objetos Date nativos — React no puede renderizar Date como child.
@@ -165,17 +166,11 @@ export async function createMatch(matchData: {
       : POINTS_DISTRIBUTION,
   )
 
-  // Orden final por dinero ganado → menos cajitas → orden de carga.
-  // El tieBreak se deriva del índice de entrada: el jugador que aparece
-  // antes en el formulario gana el desempate. Es determinístico y el usuario
-  // controla el criterio reordenando la lista visualmente.
-  const sortedPlayers = validated.players
-    .map((player, idx) => ({ ...player, tieBreak: idx }))
-    .sort((a, b) => {
-      if (b.moneyWon !== a.moneyWon) return b.moneyWon - a.moneyWon
-      if (a.cajitas !== b.cajitas) return a.cajitas - b.cajitas
-      return a.tieBreak - b.tieBreak
-    })
+  // Ranking determinístico delegado a lib/ranking (testeable sin DB).
+  const sortedPlayers = rankMatchPlayers(validated.players).map((r) => ({
+    ...r.player,
+    tieBreak: r.tieBreak,
+  }))
 
   // Resolver el jugador: si llega playerId, hacemos lookup por id (camino feliz
   // del form). Sin id, caemos al upsert por nombre (compatibilidad con drafts
