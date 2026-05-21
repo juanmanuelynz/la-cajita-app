@@ -21,6 +21,7 @@ import {
   AlertCircle,
   BarChart3,
   BookOpen,
+  RefreshCw,
 } from "lucide-react"
 import {
   Chart as ChartJS,
@@ -389,11 +390,23 @@ function LaCajitaPoker() {
             <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
           </div>
           {selectedTournament && (
-            <div className="flex justify-center mt-2">
+            <div className="flex justify-center items-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">
                 {selectedTournament.name}
                 {selectedTournament.closed_at ? " 🔒" : ""}
               </p>
+              <button
+                onClick={refreshData}
+                disabled={loading}
+                aria-label="Refrescar"
+                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </button>
             </div>
           )}
         </div>
@@ -477,7 +490,6 @@ function LaCajitaPoker() {
                 onContinueActive={editActiveMatch}
                 onDeleteActive={setActiveMatchToDelete}
                 onConfirmDeleteMatch={confirmDeleteMatch}
-                onRefresh={refreshData}
               />
             </div>
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">

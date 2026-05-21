@@ -9,7 +9,6 @@ import {
   Loader2,
   Plus,
   Cannabis,
-  RefreshCw,
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
@@ -30,7 +29,6 @@ interface PartidasTabProps {
   onContinueActive: (id: string) => void
   onDeleteActive: (id: string) => void
   onConfirmDeleteMatch: (id: string) => void
-  onRefresh: () => void
 }
 
 export function PartidasTab({
@@ -44,7 +42,6 @@ export function PartidasTab({
   onContinueActive,
   onDeleteActive,
   onConfirmDeleteMatch,
-  onRefresh,
 }: PartidasTabProps) {
   const [subtab, setSubtab] = useState<PartidasSubtab>("partida")
 
@@ -119,16 +116,7 @@ export function PartidasTab({
 
       <TabsContent value="historial" className="pt-4 pb-8 mt-0">
         <div className="space-y-1">
-          <div className="flex flex-row align-center justify-between mb-4">
-            <h2 className="text-xl font-normal">Historial de Partidas</h2>
-            <Button onClick={onRefresh} disabled={loading} variant="outline" size="sm">
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
+          <h2 className="text-xl font-normal mb-4">Historial de Partidas</h2>
           <div className="space-y-2">
             {matches.map((match) => {
               const isExpanded = expandedMatches.has(match.id)
