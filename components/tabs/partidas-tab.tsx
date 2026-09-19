@@ -11,6 +11,7 @@ import {
   Cannabis,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { formatAmount, formatDate } from "@/lib/formatters"
@@ -61,30 +62,62 @@ export function PartidasTab({
       <TabsContent value="partida" className="pt-4 pb-8 mt-0">
         <div className="space-y-4">
           {activeMatches.length === 0 ? (
-            <div className="space-y-2">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
-                <div className="text-center">
-                  <p className="text-muted-foreground text-lg">
-                    {isTournamentClosed ? "Torneo finalizado 🔒" : "¿Sa-Sa-Sa Sale?"}
-                  </p>
+            isTournamentClosed ? (
+              <div className="rounded-2xl border-2 border-dashed border-muted-foreground/25 px-6 py-12 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <Lock className="h-7 w-7 text-muted-foreground" />
                 </div>
+                <p className="text-xl font-bold">Torneo finalizado</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  No se pueden crear partidas nuevas
+                </p>
               </div>
-              {!isTournamentClosed && (
-                <Button
-                  onClick={onCreateActive}
-                  disabled={loading}
-                  className="w-full"
-                  variant="default"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Cannabis className="w-4 h-4 mr-2" />
-                  )}
-                  Nueva partida
-                </Button>
-              )}
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onCreateActive}
+                disabled={loading}
+                className="group relative w-full overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-b from-primary/15 via-primary/5 to-transparent px-6 py-12 text-center shadow-lg shadow-primary/20 transition-all duration-200 hover:border-primary hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-70"
+              >
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-20 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+                />
+
+                <div className="relative flex flex-col items-center gap-5">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-primary/10 transition-transform duration-200 group-hover:scale-105">
+                    {loading ? (
+                      <Loader2 className="h-9 w-9 animate-spin text-primary" />
+                    ) : (
+                      <Cannabis className="h-9 w-9 text-primary" />
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold tracking-tight">
+                      ¿Sale?
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Tocá para arrancar una nueva partida
+                    </p>
+                  </div>
+
+                  <span className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/30">
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" />
+                        Nueva partida
+                      </>
+                    )}
+                  </span>
+                </div>
+              </button>
+            )
           ) : (
             activeMatches.map((match) => (
               <ActiveMatchCard
