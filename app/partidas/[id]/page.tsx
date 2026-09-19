@@ -33,7 +33,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, ArrowLeft, Plus, Trophy, Medal, Award } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  Plus,
+  Trophy,
+  Medal,
+  Award,
+  Wallet,
+} from "lucide-react";
 // Nota: evitamos CSS.Transform.toString para prevenir errores en algunos entornos
 
 interface FormPlayer {
@@ -659,7 +667,8 @@ export default function EditActiveMatchPage() {
                 disabled={formData.players.some((p) => !p.playerId)}
                 className="flex-1"
               >
-                Cerrar Partida
+                <Wallet className="h-4 w-4 mr-2" />
+                Saldar Cuentas
               </Button>
             </div>
           </>
