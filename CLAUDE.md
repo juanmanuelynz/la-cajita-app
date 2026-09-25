@@ -9,9 +9,15 @@ npm run dev      # Start development server
 npm run build    # Build for production
 npm run lint     # Run ESLint
 npm run start    # Start production server
+npm test         # Run the Vitest suite (also gates Vercel builds and git push)
 ```
 
-There are no automated tests in this project.
+## Commits & Deploys
+
+Vercel is on the **Hobby** plan with a private repo, which blocks any deploy whose commit lists someone other than the account owner. So:
+
+- **Never add a `Co-Authored-By:` trailer** to commit messages (no Claude co-author line).
+- Commit author and committer must be `juanmanuelynz <juanmanuelynz@gmail.com>`. In a fresh environment run `git config user.name juanmanuelynz && git config user.email juanmanuelynz@gmail.com` before committing.
 
 ## Architecture
 
