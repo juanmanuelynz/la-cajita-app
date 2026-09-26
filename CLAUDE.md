@@ -14,11 +14,7 @@ npm test         # Run the Vitest suite (also gates Vercel builds and git push)
 
 ## Commits & Deploys
 
-Vercel is on the **Hobby** plan, which blocks any deploy it can't attribute to the account owner ("commit author did not have contributing access"). So:
-
-- Commit author and committer must be `juanmanuelynz <juanmanuelynz@gmail.com>`. In a fresh environment run `git config user.name juanmanuelynz && git config user.email juanmanuelynz@gmail.com` before committing.
-- **Don't sign commits.** Claude Code cloud sessions sign with their own SSH key, which GitHub shows as "Unverified" (`unknown_key`). Commit with `git -c commit.gpgsign=false commit ...`.
-- Don't add a `Co-Authored-By:` trailer to commit messages.
+Vercel is on the **Hobby** plan. With a *private* repo, Hobby blocked every deploy pushed from Claude Code cloud sessions ("commit author did not have contributing access") — even unsigned commits authored as the owner with no co-author trailer. The fix was making the repo **public**, so keep it public: never commit secrets (they live only in Vercel env vars).
 
 ## Architecture
 
