@@ -54,8 +54,8 @@ export function RankingTab({
               <th className="py-2 px-2 text-left">Pos</th>
               <th className="py-2 px-2 text-left">Jugador</th>
               <th className="py-2 px-2 text-center">Dinero</th>
-              <th className="py-2 px-2 text-center">Puntos</th>
-              <th className="py-2 px-2 text-center hidden md:table-cell">Partidas</th>
+              <th className="py-2 px-2 text-center hidden md:table-cell">Puntos</th>
+              <th className="py-2 px-2 text-center">Partidas</th>
               <th className="py-2 px-2 text-center hidden md:table-cell">Cajitas</th>
               <th className="py-2 px-2 text-center hidden md:table-cell">Promedio/Partida</th>
             </tr>
@@ -136,10 +136,10 @@ export function RankingTab({
                 >
                   ${formatAmount(player.moneyWon)}
                 </td>
-                <td className="py-3 px-2 text-center font-bold text-sm">{player.points}</td>
-                <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
-                  {player.matches}
+                <td className="py-3 px-2 text-center hidden md:table-cell font-bold text-sm">
+                  {player.points}
                 </td>
+                <td className="py-3 px-2 text-center text-sm">{player.matches}</td>
                 <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
                   {player.cajitas}
                 </td>
@@ -156,26 +156,31 @@ export function RankingTab({
         </table>
       </div>
 
-      <div className="flex items-center justify-center gap-4">
-        <span
-          className={`text-sm font-medium ${
-            rankingSortBy === "money" ? "" : "text-muted-foreground"
-          }`}
-        >
-          Dinero
-        </span>
-        <Switch
-          checked={rankingSortBy === "points"}
-          onCheckedChange={(checked) => onRankingSortChange(checked ? "points" : "money")}
-          aria-label="Cambiar orden de ranking"
-        />
-        <span
-          className={`text-sm font-medium ${
-            rankingSortBy === "points" ? "" : "text-muted-foreground"
-          }`}
-        >
-          Puntos
-        </span>
+      {/* Collapsed on mobile; fades and expands in from md up. */}
+      <div className="grid grid-rows-[0fr] opacity-0 invisible transition-all duration-300 md:grid-rows-[1fr] md:opacity-100 md:visible md:animate-fade-in">
+        <div className="overflow-hidden">
+          <div className="flex items-center justify-center gap-4 p-1">
+            <span
+              className={`text-sm font-medium ${
+                rankingSortBy === "money" ? "" : "text-muted-foreground"
+              }`}
+            >
+              Dinero
+            </span>
+            <Switch
+              checked={rankingSortBy === "points"}
+              onCheckedChange={(checked) => onRankingSortChange(checked ? "points" : "money")}
+              aria-label="Cambiar orden de ranking"
+            />
+            <span
+              className={`text-sm font-medium ${
+                rankingSortBy === "points" ? "" : "text-muted-foreground"
+              }`}
+            >
+              Puntos
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
