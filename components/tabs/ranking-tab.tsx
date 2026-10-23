@@ -2,15 +2,20 @@
 
 import { Trophy, Medal, Award } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { formatAmount } from "@/lib/formatters"
 import type { ActiveMatch, PlayerStats } from "@/lib/types"
 import type { SortBy } from "@/lib/stats"
 
+export type RankingScope = "torneo" | "historico"
+
 interface RankingTabProps {
   activeMatches: ActiveMatch[]
   sortedPlayerStats: PlayerStats[]
+  rankingScope: RankingScope
+  onRankingScopeChange: (scope: RankingScope) => void
   rankingSortBy: SortBy
   onRankingSortChange: (sortBy: SortBy) => void
   loading: boolean
@@ -21,6 +26,8 @@ interface RankingTabProps {
 export function RankingTab({
   activeMatches,
   sortedPlayerStats,
+  rankingScope,
+  onRankingScopeChange,
   rankingSortBy,
   onRankingSortChange,
   loading,
@@ -45,7 +52,26 @@ export function RankingTab({
         </div>
       )}
 
-      <h2 className="text-2xl font-bold text-center">Tabla Anual</h2>
+      <h2 className="text-2xl font-bold text-center">
+        {rankingScope === "historico" ? "Tabla Histórica" : "Tabla Anual"}
+      </h2>
+
+      <div className="flex justify-center gap-2">
+        <Button
+          size="sm"
+          variant={rankingScope === "torneo" ? "default" : "outline"}
+          onClick={() => onRankingScopeChange("torneo")}
+        >
+          Torneo actual
+        </Button>
+        <Button
+          size="sm"
+          variant={rankingScope === "historico" ? "default" : "outline"}
+          onClick={() => onRankingScopeChange("historico")}
+        >
+          Histórico
+        </Button>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -56,6 +82,9 @@ export function RankingTab({
               <th className="py-2 px-2 text-center">Dinero</th>
               <th className="py-2 px-2 text-center hidden md:table-cell">Puntos</th>
               <th className="py-2 px-2 text-center">Partidas</th>
+              {rankingScope === "historico" && (
+                <th className="py-2 px-2 text-center hidden md:table-cell">Torneos</th>
+              )}
               <th className="py-2 px-2 text-center hidden md:table-cell">Cajitas</th>
               <th className="py-2 px-2 text-center hidden md:table-cell">Promedio/Partida</th>
             </tr>
@@ -140,6 +169,11 @@ export function RankingTab({
                   {player.points}
                 </td>
                 <td className="py-3 px-2 text-center text-sm">{player.matches}</td>
+                {rankingScope === "historico" && (
+                  <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                    {player.tournaments}
+                  </td>
+                )}
                 <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
                   {player.cajitas}
                 </td>

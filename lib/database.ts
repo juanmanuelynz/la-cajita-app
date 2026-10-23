@@ -372,6 +372,44 @@ export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[
   }))
 }
 
+export async function getAllTimeStats(): Promise<PlayerStats[]> {
+  const rows = await sql`
+    SELECT
+      p.id,
+      p.name,
+      COALESCE(SUM(mp.points), 0)::int    AS points,
+      COUNT(mp.id)::int                   AS matches,
+      COALESCE(SUM(mp.cajitas), 0)::int   AS cajitas,
+      COALESCE(SUM(mp.money_won), 0)::int AS money_won,
+      COUNT(DISTINCT m.tournament_id)::int AS tournaments
+    FROM match_players mp
+    JOIN players p ON p.id = mp.player_id
+    JOIN matches m ON m.id = mp.match_id
+    GROUP BY p.id, p.name
+    ORDER BY points DESC
+  `
+  type StatsRow = {
+    id: string
+    name: string
+    points: number
+    matches: number
+    cajitas: number
+    money_won: number
+    tournaments: number
+  }
+  return (rows as StatsRow[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    points: Number(r.points) || 0,
+    matches: Number(r.matches) || 0,
+    cajitas: Number(r.cajitas) || 0,
+    moneyWon: Number(r.money_won) || 0,
+    averagePerMatch:
+      Number(r.matches) > 0 ? Number(r.money_won) / Number(r.matches) : 0,
+    tournaments: Number(r.tournaments) || 0,
+  }))
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Active matches
 // ────────────────────────────────────────────────────────────────────────────

@@ -51,6 +51,7 @@ import { EstadisticasTab } from "@/components/tabs/estadisticas-tab"
 import { ReglasTab } from "@/components/tabs/reglas-tab"
 import { getTodayLocalDate } from "@/lib/formatters"
 import { sortPlayerStats, type SortBy } from "@/lib/stats"
+import type { RankingScope } from "@/components/tabs/ranking-tab"
 
 ChartJS.register(
   CategoryScale,
@@ -113,6 +114,8 @@ function LaCajitaPoker() {
   const [expandedPlayerCards, setExpandedPlayerCards] = useState<Set<string>>(new Set())
   const [rankingSortBy, setRankingSortBy] = useState<SortBy>("money")
   const [evolutionSortBy, setEvolutionSortBy] = useState<SortBy>("money")
+  const [rankingScope, setRankingScope] = useState<RankingScope>("torneo")
+  const [allTimeStats, setAllTimeStats] = useState<PlayerStats[]>([])
 
   // Tournaments
   const [tournaments, setTournaments] = useState<Tournament[]>([])
@@ -215,6 +218,28 @@ function LaCajitaPoker() {
       setActiveTab(tabParam)
     }
   }, [searchParams])
+
+  // El toggle histórico vuelve a "torneo actual" al salir del tab Ranking.
+  useEffect(() => {
+    if (activeTab !== "ranking") setRankingScope("torneo")
+  }, [activeTab])
+
+  useEffect(() => {
+    if (rankingScope !== "historico") return
+    let cancelled = false
+    db.getAllTimeStats()
+      .then((stats) => {
+        if (!cancelled) setAllTimeStats(stats)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : "Error cargando histórico")
+        setRankingScope("torneo")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [rankingScope])
 
   const refreshData = async () => {
     if (selectedTournamentId) await loadAllData(selectedTournamentId)
@@ -358,6 +383,11 @@ function LaCajitaPoker() {
     [playerStats, rankingSortBy],
   )
 
+  const sortedAllTimeStats = useMemo(
+    () => sortPlayerStats(allTimeStats, rankingSortBy),
+    [allTimeStats, rankingSortBy],
+  )
+
   if (loading && matches.length === 0 && activeMatches.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -470,7 +500,11 @@ function LaCajitaPoker() {
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
               <RankingTab
                 activeMatches={activeMatches}
-                sortedPlayerStats={sortedPlayerStats}
+                sortedPlayerStats={
+                  rankingScope === "historico" ? sortedAllTimeStats : sortedPlayerStats
+                }
+                rankingScope={rankingScope}
+                onRankingScopeChange={setRankingScope}
                 rankingSortBy={rankingSortBy}
                 onRankingSortChange={setRankingSortBy}
                 loading={loading}

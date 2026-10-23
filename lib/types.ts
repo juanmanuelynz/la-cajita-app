@@ -39,6 +39,7 @@ export interface PlayerStats {
   cajitas: number
   moneyWon: number
   averagePerMatch: number
+  tournaments?: number
 }
 
 export interface ActiveMatch {
