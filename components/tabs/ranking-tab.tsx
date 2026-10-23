@@ -2,7 +2,7 @@
 
 import { Trophy, Medal, Award } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "next-themes"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { formatAmount } from "@/lib/formatters"
@@ -56,23 +56,6 @@ export function RankingTab({
         {rankingScope === "historico" ? "Tabla Histórica" : "Tabla Anual"}
       </h2>
 
-      <div className="flex justify-center gap-2">
-        <Button
-          size="sm"
-          variant={rankingScope === "torneo" ? "default" : "outline"}
-          onClick={() => onRankingScopeChange("torneo")}
-        >
-          Torneo actual
-        </Button>
-        <Button
-          size="sm"
-          variant={rankingScope === "historico" ? "default" : "outline"}
-          onClick={() => onRankingScopeChange("historico")}
-        >
-          Histórico
-        </Button>
-      </div>
-
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -80,13 +63,13 @@ export function RankingTab({
               <th className="py-2 px-2 text-left">Pos</th>
               <th className="py-2 px-2 text-left">Jugador</th>
               <th className="py-2 px-2 text-center">Dinero</th>
-              <th className="py-2 px-2 text-center hidden md:table-cell">Puntos</th>
+              <th className="py-2 px-2 text-center hidden md:table-cell landscape:table-cell">Puntos</th>
               <th className="py-2 px-2 text-center">Partidas</th>
               {rankingScope === "historico" && (
-                <th className="py-2 px-2 text-center hidden md:table-cell">Torneos</th>
+                <th className="py-2 px-2 text-center hidden md:table-cell landscape:table-cell">Torneos</th>
               )}
-              <th className="py-2 px-2 text-center hidden md:table-cell">Cajitas</th>
-              <th className="py-2 px-2 text-center hidden md:table-cell">Promedio/Partida</th>
+              <th className="py-2 px-2 text-center hidden md:table-cell landscape:table-cell">Cajitas</th>
+              <th className="py-2 px-2 text-center hidden md:table-cell landscape:table-cell">Promedio/Partida</th>
             </tr>
           </thead>
           <tbody>
@@ -165,20 +148,20 @@ export function RankingTab({
                 >
                   ${formatAmount(player.moneyWon)}
                 </td>
-                <td className="py-3 px-2 text-center hidden md:table-cell font-bold text-sm">
+                <td className="py-3 px-2 text-center hidden md:table-cell landscape:table-cell font-bold text-sm">
                   {player.points}
                 </td>
                 <td className="py-3 px-2 text-center text-sm">{player.matches}</td>
                 {rankingScope === "historico" && (
-                  <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                  <td className="py-3 px-2 text-center hidden md:table-cell landscape:table-cell text-sm">
                     {player.tournaments}
                   </td>
                 )}
-                <td className="py-3 px-2 text-center hidden md:table-cell text-sm">
+                <td className="py-3 px-2 text-center hidden md:table-cell landscape:table-cell text-sm">
                   {player.cajitas}
                 </td>
                 <td
-                  className={`py-3 px-2 text-center hidden md:table-cell text-sm ${
+                  className={`py-3 px-2 text-center hidden md:table-cell landscape:table-cell text-sm ${
                     player.averagePerMatch >= 0 ? "text-emerald-500" : "text-rose-500"
                   }`}
                 >
@@ -191,7 +174,7 @@ export function RankingTab({
       </div>
 
       {/* Collapsed on mobile; fades and expands in from md up. */}
-      <div className="grid grid-rows-[0fr] opacity-0 invisible transition-all duration-300 md:grid-rows-[1fr] md:opacity-100 md:visible md:animate-fade-in">
+      <div className="grid grid-rows-[0fr] opacity-0 invisible transition-all duration-300 md:grid-rows-[1fr] md:opacity-100 md:visible md:animate-fade-in landscape:grid-rows-[1fr] landscape:opacity-100 landscape:visible">
         <div className="overflow-hidden">
           <div className="flex items-center justify-center gap-4 p-1">
             <span
@@ -215,6 +198,18 @@ export function RankingTab({
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm pt-2 pb-3 -mx-1 px-1">
+        <Tabs
+          value={rankingScope}
+          onValueChange={(v) => onRankingScopeChange(v as RankingScope)}
+        >
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="torneo">Torneo actual</TabsTrigger>
+            <TabsTrigger value="historico">Histórico</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
     </div>
   )

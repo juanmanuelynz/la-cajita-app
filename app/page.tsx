@@ -497,7 +497,7 @@ function LaCajitaPoker() {
 
         <div className="overflow-hidden flex-1 min-h-0" ref={emblaRef}>
           <div className="flex h-full touch-pan-y">
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto py-8">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pt-8">
               <RankingTab
                 activeMatches={activeMatches}
                 sortedPlayerStats={
