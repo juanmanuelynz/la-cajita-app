@@ -639,17 +639,6 @@ export function ReglasTab({
                   Sonidos {mounted ? (soundOn ? "activados" : "desactivados") : ""}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Fichas:{" "}
-                <a href="https://freesound.org/s/170295/" target="_blank" rel="noreferrer" className="underline">
-                  “Clay Chips” de ArtOrDie
-                </a>
-                ,{" "}
-                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
-                  CC BY 4.0
-                </a>{" "}
-                (recortado). Mazo: vkproduktion, CC0. Resto: Kenney, CC0.
-              </p>
 
               <form action={logout}>
                 <Button type="submit" variant="outline" className="w-full">
@@ -657,6 +646,20 @@ export function ReglasTab({
                   Cerrar sesión
                 </Button>
               </form>
+              <details className="text-[11px] text-muted-foreground/70">
+                <summary className="cursor-pointer select-none">Créditos de sonido</summary>
+                <p className="mt-1">
+                  Fichas:{" "}
+                  <a href="https://freesound.org/s/170295/" target="_blank" rel="noreferrer" className="underline">
+                    “Clay Chips” de ArtOrDie
+                  </a>
+                  ,{" "}
+                  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
+                    CC BY 4.0
+                  </a>{" "}
+                  (recortado). Mazo: vkproduktion, CC0. Resto: Kenney, CC0.
+                </p>
+              </details>
             </CardContent>
           </Card>
         </TabsContent>
