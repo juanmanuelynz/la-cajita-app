@@ -114,6 +114,11 @@ function PlayingCard({
           if ((e.target as HTMLElement).dataset.last) onCycle?.()
         }}
       >
+        {/* En reposo se ve la carta entera, sin franjas (Safari marca las uniones);
+            las franjas aparecen solo mientras se dobla. */}
+        <div className="hole-card-solid">
+          <CardBack />
+        </div>
         <Segment i={0} card={card} angles={side === "left" ? BEND_LEFT : BEND_RIGHT} />
       </div>
     </div>

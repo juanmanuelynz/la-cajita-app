@@ -579,6 +579,37 @@
   transform-style: preserve-3d;
 }
 
+/* Carta entera para el reposo: tapa las franjas mientras está plana y se
+   oculta solo durante el doblez (mismo ciclo que bend-peek). */
+.hole-card-solid {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(0.5px);
+  animation: hole-card-solid 6.5s linear infinite;
+  animation-delay: -3.4s;
+}
+.hole-card-right .hole-card-solid {
+  animation-delay: -3.26s;
+}
+@keyframes hole-card-solid {
+  0%,
+  66.3% {
+    opacity: 1;
+  }
+  66.6%,
+  99.4% {
+    opacity: 0;
+  }
+  99.7%,
+  100% {
+    opacity: 1;
+  }
+}
+.hole-cards[data-shuffling] .hole-card-solid {
+  animation: none;
+  opacity: 1;
+}
+
 /* Cada franja cuelga del borde inferior de la anterior y gira sobre él. */
 .bend-seg {
   position: absolute;
@@ -749,6 +780,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-chip-flip,
+  .hole-card-solid,
   .bend-seg,
   .bend-shade,
   .hole-card-slot,

@@ -1,74 +1,31 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { ArrowDown, ArrowUp, RotateCcw, Share2, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ArrowDown, ArrowUp } from "lucide-react"
 import { ChipRain } from "@/components/chip-rain"
-import { ChipSpinner, PokerChip } from "@/components/poker-chip"
-import { useCountUp } from "@/hooks/use-count-up"
+import {
+  AnimatedPodium,
+  CelebrationHeader,
+  CelebrationOverlay,
+  REVEAL,
+  ShareFooter,
+  signedMoney,
+} from "@/components/celebration"
 import { formatAmount, formatDate } from "@/lib/formatters"
-import { buildMatchSummary, type RankingMove, type SummaryPlayer } from "@/lib/match-summary"
-import { renderShareCard, shareImage } from "@/lib/share-card"
+import { buildMatchSummary, type RankingMove } from "@/lib/match-summary"
+import { renderShareCard } from "@/lib/share-card"
 import type { SortBy } from "@/lib/stats"
 import type { MatchWithPlayers } from "@/lib/types"
 
-// Línea de tiempo de la revelación (ms desde que se abre el resumen).
+// Lo que aparece después del podio (ms desde que se abre el resumen).
 const T = {
-  third: 300,
-  second: 1000,
-  first: 1700,
-  rain: 2050,
   rest: 2400,
   highlights: 2800,
   ranking: 3300,
   rankingSwap: 4300,
 }
 
-const PODIUM = [
-  { body: "#eab308", edge: "#fefce8", block: "h-28 bg-yellow-500/25 border-yellow-500", text: "text-yellow-500", delay: T.first },
-  { body: "#94a3b8", edge: "#f8fafc", block: "h-20 bg-slate-400/20 border-slate-400", text: "text-slate-400", delay: T.second },
-  { body: "#f97316", edge: "#fff7ed", block: "h-14 bg-orange-500/20 border-orange-500", text: "text-orange-500", delay: T.third },
-]
-
 const ROW_H = 44
-
-function signedMoney(n: number) {
-  return `${n > 0 ? "+" : n < 0 ? "-" : ""}$${formatAmount(Math.abs(n))}`
-}
-
-function PodiumSpot({ player, place }: { player: SummaryPlayer; place: 0 | 1 | 2 }) {
-  const style = PODIUM[place]
-  const money = useCountUp(player.moneyWon, { delayMs: style.delay + 250, durationMs: 1100 })
-  return (
-    <div className="flex w-1/3 flex-col items-center justify-end">
-      <div className="reveal-up flex flex-col items-center gap-1 pb-2" style={{ animationDelay: `${style.delay}ms` }}>
-        <PokerChip
-          className={place === 0 ? "winner-glow h-14 w-14" : "h-10 w-10"}
-          body={style.body}
-          edge={style.edge}
-          suit={place === 0 ? "♠" : place === 1 ? "♥" : "♦"}
-        />
-        <div className={`max-w-full truncate px-1 text-center font-bold ${place === 0 ? "text-lg" : "text-sm"}`}>
-          {player.name}
-        </div>
-        <div
-          className={`font-semibold tabular-nums ${place === 0 ? "text-base" : "text-xs"} ${
-            player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
-          }`}
-        >
-          {signedMoney(money)}
-        </div>
-        <div className="text-[11px] text-muted-foreground">{player.points} pts</div>
-      </div>
-      <div
-        className={`podium-rise flex w-full items-start justify-center rounded-t-xl border-2 border-b-0 pt-2 ${style.block}`}
-        style={{ animationDelay: `${style.delay - 150}ms` }}
-      >
-        <span className={`text-2xl font-black ${style.text}`}>{player.position}°</span>
-      </div>
-    </div>
-  )
-}
 
 function RankingBoard({ ranking, sortBy }: { ranking: RankingMove[]; sortBy: SortBy }) {
   const [swapped, setSwapped] = useState(false)
@@ -149,41 +106,24 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
     [match, tournamentMatches, sortBy],
   )
   const [rain, setRain] = useState(0)
-  const [shareBlob, setShareBlob] = useState<Blob | null>(null)
-  const [shareMsg, setShareMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => setRain(1), T.rain)
+    const t = setTimeout(() => setRain(1), REVEAL.rain)
     return () => clearTimeout(t)
   }, [])
 
-  // La imagen se genera de antemano: en iOS, navigator.share tiene que
-  // llamarse inmediatamente después del toque, sin esperas en el medio.
-  useEffect(() => {
-    let cancelled = false
-    renderShareCard({
-      title: "Resultado de la partida",
-      subtitle: `${tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`,
-      players: summary.players,
-      highlights: summary.highlights,
-      formatMoney: formatAmount,
-    })
-      .then((b) => !cancelled && setShareBlob(b))
-      .catch(() => !cancelled && setShareBlob(null))
-    return () => {
-      cancelled = true
-    }
-  }, [summary, match.date, tournamentName])
-
-  const handleShare = async () => {
-    if (!shareBlob) return
-    const res = await shareImage(
-      shareBlob,
-      `la-cajita-${match.date}.png`,
-      `🃏 La Cajita · ${formatDate(match.date)}`,
-    )
-    setShareMsg(res === "downloaded" ? "Imagen descargada" : null)
-  }
+  const subtitle = `${tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`
+  const makeImage = useCallback(
+    () =>
+      renderShareCard({
+        title: "Resultado de la partida",
+        subtitle,
+        players: summary.players,
+        highlights: summary.highlights,
+        formatMoney: formatAmount,
+      }),
+    [summary, subtitle],
+  )
 
   const top3 = summary.players.slice(0, 3)
   const rest = summary.players.slice(3)
@@ -192,29 +132,16 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
     <>
       <ChipRain trigger={rain} />
       <div className="container mx-auto max-w-lg px-4 pb-32 pt-[max(env(safe-area-inset-top),1rem)]">
-        <div className="flex items-center justify-between py-2">
-          <Button variant="ghost" size="icon" onClick={onReplay} aria-label="Repetir animación">
-            <RotateCcw className="h-5 w-5" />
-          </Button>
-          <div className="text-center">
-            <h2 className="text-xl font-bold">Fin de la partida</h2>
-            <p className="text-xs text-muted-foreground">
-              {tournamentName ? `${tournamentName} · ` : ""}
-              {formatDate(match.date)} · {match.player_count} jugadores
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Cerrar">
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        <CelebrationHeader
+          title="Fin de la partida"
+          subtitle={`${subtitle} · ${match.player_count} jugadores`}
+          onReplay={onReplay}
+          onClose={onClose}
+        />
 
-        {/* Podio: 2° · 1° · 3° */}
-        <div className="mt-6 flex items-end gap-2">
-          {top3[1] && <PodiumSpot player={top3[1]} place={1} />}
-          {top3[0] && <PodiumSpot player={top3[0]} place={0} />}
-          {top3[2] && <PodiumSpot player={top3[2]} place={2} />}
+        <div className="mt-6">
+          <AnimatedPodium top3={top3} />
         </div>
-        <div className="h-1 rounded-full bg-border" />
 
         {rest.length > 0 && (
           <div className="mt-4 space-y-1.5">
@@ -266,53 +193,21 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t bg-background/90 backdrop-blur-sm pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3">
-        <div className="container mx-auto flex max-w-lg gap-3 px-4">
-          <Button variant="outline" className="h-12 flex-1" onClick={handleShare} disabled={!shareBlob}>
-            {shareBlob ? <Share2 className="mr-2 h-4 w-4" /> : <ChipSpinner className="mr-2 h-4 w-4" />}
-            {shareMsg ?? "Compartir"}
-          </Button>
-          <Button className="h-12 flex-1" onClick={onClose}>
-            Listo
-          </Button>
-        </div>
-      </div>
+      <ShareFooter
+        makeImage={makeImage}
+        filename={`la-cajita-${match.date}.png`}
+        text={`🃏 La Cajita · ${formatDate(match.date)}`}
+        onClose={onClose}
+      />
     </>
   )
 }
 
 /** Pantalla completa de "Fin de la partida" con la revelación animada. */
 export function MatchSummary(props: MatchSummaryProps) {
-  const [replayKey, setReplayKey] = useState(0)
-  const { onClose } = props
-
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => {
-      document.body.style.overflow = prev
-      window.removeEventListener("keydown", onKey)
-    }
-  }, [onClose])
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Resumen de la partida"
-      className="animate-fade-in fixed inset-0 z-[100] overflow-y-auto bg-background"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none fixed left-1/2 top-0 h-72 w-72 -translate-x-1/2 -translate-y-1/3 rounded-full bg-primary/25 blur-3xl"
-      />
-      <div className="relative">
-        <SummaryContent key={replayKey} {...props} onReplay={() => setReplayKey((k) => k + 1)} />
-      </div>
-    </div>
+    <CelebrationOverlay label="Resumen de la partida" onClose={props.onClose}>
+      {(onReplay) => <SummaryContent {...props} onReplay={onReplay} />}
+    </CelebrationOverlay>
   )
 }
