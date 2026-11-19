@@ -13,7 +13,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
-import { ChipGlyph, ChipSpinner } from "@/components/poker-chip"
+import { ChipSpinner } from "@/components/poker-chip"
+import { HoleCards } from "@/components/hole-cards"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
 
@@ -87,13 +88,11 @@ export function PartidasTab({
                 />
 
                 <div className="relative flex flex-col items-center gap-5">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-primary/10 transition-transform duration-200 group-hover:scale-105">
+                  <div className="flex h-32 items-center justify-center transition-transform duration-200 group-hover:scale-105">
                     {loading ? (
-                      <ChipSpinner className="h-9 w-9 text-primary" />
+                      <ChipSpinner className="h-10 w-10 text-primary" />
                     ) : (
-                      <span aria-hidden className="block h-10 w-10 [perspective:200px]">
-                        <ChipGlyph className="block h-full w-full text-primary animate-chip-flip" />
-                      </span>
+                      <HoleCards />
                     )}
                   </div>
 
