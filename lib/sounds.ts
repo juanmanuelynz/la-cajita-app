@@ -64,7 +64,10 @@ export function setSoundEnabled(on: boolean) {
     // modo privado o storage bloqueado: queda en memoria
   }
   listeners.forEach((l) => l())
-  if (on && ctx) preloadAll()
+  if (on && ctx) {
+    preloaded = true
+    preloadAll()
+  }
 }
 
 export function subscribeSoundEnabled(listener: () => void) {
@@ -111,30 +114,49 @@ function preloadAll() {
   for (const s of Object.values(SOUNDS)) for (const f of s.files) void load(f)
 }
 
+let sessionSet = false
+let preloaded = false
+
 function unlock() {
   const c = getContext()
   if (!c) return
   // iOS 16.4+: "ambient" respeta el botón de silencio y no corta la música
   // que esté sonando en el teléfono.
   const nav = navigator as Navigator & { audioSession?: { type: string } }
-  if (nav.audioSession) {
+  if (!sessionSet && nav.audioSession) {
+    sessionSet = true
     try {
       nav.audioSession.type = "ambient"
     } catch {
       // no soportado
     }
   }
-  if (c.state !== "running") void c.resume()
-  if (isSoundEnabled()) preloadAll()
+  // iOS suspende o "interrumpe" el contexto al cambiar de app o bloquear el
+  // teléfono: hay que reanudarlo dentro de un toque, cada vez que pase.
+  if (c.state !== "running") {
+    void c.resume().catch(() => {})
+    // Algunas versiones de iOS solo habilitan el audio si algo suena durante
+    // el toque: un buffer de silencio de una muestra alcanza.
+    try {
+      const src = c.createBufferSource()
+      src.buffer = c.createBuffer(1, 1, 22050)
+      src.connect(c.destination)
+      src.start(0)
+    } catch {
+      // ignore
+    }
+  }
+  if (!preloaded && isSoundEnabled()) {
+    preloaded = true
+    preloadAll()
+  }
 }
 
-const UNLOCK_EVENTS = ["pointerdown", "touchend", "click", "keydown"] as const
+// Se escucha siempre (no solo el primer toque): es barato y es la única forma
+// de recuperar el audio después de que iOS lo suspende.
+const UNLOCK_EVENTS = ["touchend", "click", "keydown", "pointerdown"] as const
 if (typeof window !== "undefined") {
-  const onGesture = () => {
-    unlock()
-    if (ctx?.state === "running") UNLOCK_EVENTS.forEach((e) => window.removeEventListener(e, onGesture, true))
-  }
-  UNLOCK_EVENTS.forEach((e) => window.addEventListener(e, onGesture, true))
+  UNLOCK_EVENTS.forEach((e) => window.addEventListener(e, unlock, { capture: true, passive: true }))
 }
 
 export interface PlayOptions {
