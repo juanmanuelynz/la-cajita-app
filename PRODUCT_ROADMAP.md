@@ -4,7 +4,9 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
-**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 2 (points_config por torneo), 3 (podio visual dual al cerrar torneo, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial) y 8 (plata como fuente de verdad del ranking).
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 2 (points_config por torneo), 3 (podio final animado y compartible, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial), 8 (plata como fuente de verdad del ranking), 9 (animaciones y resumen de partida) y 10 (ESLint).
+
+**Descartado**: item 5 (recompras como columna nueva) — ver el item.
 
 ---
 
@@ -24,10 +26,11 @@ Implementado en commit `2633610`. Migration `09-points-config.sql` agrega `tourn
 
 ## 3. Ceremonia de cierre de torneo (Podio Final) ✅ PARCIAL
 
-Implementado el podio visual: modal con **dos podios** (uno por plata, otro por puntos) + resumen del torneo (partidas, plata movida, jugador más activo, mejor partida individual). Se abre automáticamente al cerrar un torneo, y los torneos cerrados muestran un botón "Ver Podio" en Reglas.
+Pantalla completa ([components/tournament-closing-podium.tsx](components/tournament-closing-podium.tsx)): podio por plata revelado 3°→2°→1° con montos que cuentan, lluvia de fichas, campeón, podio por puntos, resumen del torneo (partidas, plata en juego, más activo, mejor noche) y resto del ranking. Se abre automáticamente al cerrar un torneo, y los torneos cerrados muestran un botón "Ver Podio" en Reglas.
+
+**Compartir**: botón que genera una imagen 1080×1350 del ranking final (dibujada en canvas, sin `html-to-image`) y la manda con el menú nativo del celular; si el navegador no puede, la descarga.
 
 **Pendiente del item original** (excluido por scope; pedir si lo necesitamos):
-- Botón "Compartir" como texto/PNG (con `html-to-image`).
 - Botón "Export CSV" para Excel.
 - Persistencia del snapshot en `closed_snapshot JSONB` (hoy se recalcula desde `playerStats` + `matches` cada vez).
 
@@ -51,9 +54,13 @@ Implementado el podio visual: modal con **dos podios** (uno por plata, otro por 
 
 ---
 
-## 5. Recompras: distinguir buy-in inicial vs recompra
+## 5. Recompras: distinguir buy-in inicial vs recompra ❌ DESCARTADO
 
-**Problema actual**
+**Por qué se descarta**: en La Cajita todos arrancan siempre con 1 cajita, así que cada cajita extra es una recompra: `recompras = cajitas - 1`. El dato ya está en la base y no hace falta columna, migration ni contadores separados. Si se quieren métricas como la "tasa de recompra" (% de partidas con `cajitas > 1`), se calculan directo en [lib/stats.ts](lib/stats.ts).
+
+Lo que sigue es la propuesta original, que solo tendría sentido si cambia la regla de buy-in.
+
+**Problema actual (original)**
 `cajitas` mezcla el buy-in inicial con las recompras. Alguien que entró tarde con 2 cajitas se contabiliza igual que alguien que recompró tras perder. Para "agresividad" / "tilt" sería oro saberlo.
 
 **Cambio propuesto**
@@ -101,14 +108,31 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 
 ---
 
+## 9. Animaciones y resumen de partida ✅ HECHO
+
+Todo con CSS 3D / SVG / canvas, sin librerías de animación (la PWA sigue liviana). Respeta "reducir movimiento" del sistema.
+
+- **Fin de la partida** ([components/match-summary.tsx](components/match-summary.tsx), lógica en [lib/match-summary.ts](lib/match-summary.ts) con tests): se abre al registrar una partida y desde el historial ("Ver resumen"). Podio 3°→2°→1°, lluvia de fichas, datos destacados (racha, primera victoria, récord, nuevo líder, escalada, compra de cajitas) y el ranking del torneo reordenándose. Botón para compartir imagen.
+- **Piezas compartidas** de celebración en [components/celebration.tsx](components/celebration.tsx) (overlay, podio animado, compartir), usadas también por el cierre de torneo.
+- **Fichas**: todos los spinners son una ficha que gira ([components/poker-chip.tsx](components/poker-chip.tsx)); en la partida en vivo cae una ficha al sumar cajitas y el pozo cuenta hacia arriba.
+- **Nueva partida**: dos cartas boca abajo que se doblan para espiarlas como en hold'em, con una mano al azar en cada vuelta; al crear la partida se mezclan ([components/hole-cards.tsx](components/hole-cards.tsx)).
+- **Login**: maletín de aluminio de fichas en 3D que se abre con el PIN correcto ([components/chip-case.tsx](components/chip-case.tsx)).
+
+---
+
+## 10. Lint ✅ HECHO
+
+`npm run lint` corre ESLint 9 con la config de Next (`next/core-web-vitals` + `next/typescript`) en [eslint.config.mjs](eslint.config.mjs). `next lint` está deprecado, por eso se usa la CLI de ESLint. Se ignoran los archivos generados por shadcn. `next build` también corre el lint, así que un error de lint frena el deploy.
+
+---
+
 ## Orden recomendado
 
 ### Pendientes
 
 | # | Item | ROI | Esfuerzo | Estado |
 |---|------|-----|----------|--------|
-| 3 | Podio final: share/CSV/snapshot | Medio | Medio | ✅ parcial |
-| 5 | Distinguir recompras | Medio | Alto | pendiente |
+| 3 | Podio final: CSV/snapshot | Bajo | Medio | ✅ parcial |
 | 7 | Bottom sheets con vaul | Bajo | Medio | ✅ parcial |
 | 6 | Lock concurrencia | Bajo | Alto | pendiente |
 
@@ -120,3 +144,11 @@ Si en el futuro se hace configurable por torneo, queda atado al item 2 (`points_
 | 2 | `points_config` por torneo | ✅ |
 | 4 | Métricas (rachas, némesis, día favorito, killer move, ROI por partida) | ✅ |
 | 8 | Decidir default sort | ✅ |
+| 9 | Animaciones y resumen de partida | ✅ |
+| 10 | Lint con ESLint | ✅ |
+
+### Descartados
+
+| # | Item | Motivo |
+|---|------|--------|
+| 5 | Distinguir recompras | Siempre se arranca con 1 cajita: recompras = cajitas − 1 |

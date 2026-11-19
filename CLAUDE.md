@@ -77,5 +77,10 @@ PIN-gated, single shared credential. The middleware in [middleware.ts](middlewar
 - [components/theme-provider.tsx](components/theme-provider.tsx) — next-themes wrapper, default dark mode
 - [components/offline-indicator.tsx](components/offline-indicator.tsx) — PWA offline status banner
 - [components/pwa-install.tsx](components/pwa-install.tsx) — PWA install prompt
+- [components/poker-chip.tsx](components/poker-chip.tsx) — SVG poker chip + `ChipSpinner` (the app-wide loading indicator)
+- [components/celebration.tsx](components/celebration.tsx) — shared full-screen celebration pieces (overlay, animated podium, share footer)
+- [components/match-summary.tsx](components/match-summary.tsx) — "Fin de la partida" screen; pure logic in [lib/match-summary.ts](lib/match-summary.ts), share image drawn on canvas in [lib/share-card.ts](lib/share-card.ts)
+- [components/tournament-closing-podium.tsx](components/tournament-closing-podium.tsx) — animated tournament closing screen
+- [components/hole-cards.tsx](components/hole-cards.tsx), [components/chip-case.tsx](components/chip-case.tsx), [components/chip-rain.tsx](components/chip-rain.tsx) — CSS-3D animations (Nueva partida cards, login chip case, chip rain). Animation keyframes live at the end of [app/globals.css](app/globals.css)
 - [hooks/use-mobile.tsx](hooks/use-mobile.tsx) — breakpoint hook (mobile < 768px)
 - [lib/utils.ts](lib/utils.ts) — `cn()` helper (clsx + tailwind-merge)
