@@ -17,8 +17,8 @@ const SUITS: Suit[] = ["♠", "♥", "♦", "♣"]
 const CARD_W = 78
 const CARD_H = 112
 /** Ángulo de cada franja (desde el extremo lejano, que queda apoyado). */
-const BEND_LEFT = [0, 0, 0, 12, 18, 24, 30, 36]
-const BEND_RIGHT = [0, 0, 0, 12, 18, 24, 30, 35]
+const BEND_LEFT = [0, 0, 8, 16, 22, 28, 34, 38]
+const BEND_RIGHT = [0, 0, 8, 16, 22, 28, 33, 37]
 const SEGMENTS = BEND_LEFT.length
 const SEG_H = CARD_H / SEGMENTS
 
