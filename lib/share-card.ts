@@ -185,17 +185,16 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     ctx.font = font(800, winner ? 48 : 38)
     ctx.fillStyle = "#f8fafc"
     ctx.fillText(fitText(ctx, p.name, BLOCK_W + 10), cx, top - (winner ? 118 : 108))
-    const chipR = winner ? 54 : 40
-    const chipY = top - (winner ? 210 : 180)
+    // El ganador se distingue por la ficha dorada, más grande y con brillo.
+    // ~30px de aire entre la ficha y el nombre.
+    const chipR = winner ? 56 : 40
+    const chipY = top - (winner ? 250 : 215)
     if (winner) {
       ctx.save()
       ctx.shadowColor = "rgba(234,179,8,0.9)"
       ctx.shadowBlur = 50
       drawChip(ctx, cx, chipY, chipR, style.body, style.edge)
       ctx.restore()
-      ctx.font = font(400, 64)
-      ctx.fillStyle = "#ffffff"
-      ctx.fillText("👑", cx, chipY - chipR - 14)
     } else {
       drawChip(ctx, cx, chipY, chipR, style.body, style.edge)
     }
