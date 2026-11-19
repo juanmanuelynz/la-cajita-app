@@ -648,7 +648,7 @@ export function ReglasTab({
                 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
                   CC BY 4.0
                 </a>{" "}
-                (recortado). Resto de los sonidos: Kenney, CC0.
+                (recortado). Mazo: vkproduktion, CC0. Resto: Kenney, CC0.
               </p>
 
               <form action={logout}>

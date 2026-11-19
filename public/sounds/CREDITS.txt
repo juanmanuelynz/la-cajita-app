@@ -17,7 +17,7 @@ ruido, MP3 mono 112 kbps y normalizados a -1 dBFS de pico.
 
 == Mazo: "Shuffling Cards, Riffle 03" de vkproduktion (Freesound) ==
 https://freesound.org/s/217503/
-Licencia: PENDIENTE DE CONFIRMAR (no subir a main hasta confirmarla).
+License: Creative Commons 0 -- http://creativecommons.org/publicdomain/zero/1.0/
 card-shuffle.mp3: archivo completo (5,25 s), pasa-altos de 70 Hz, fade final,
 MP3 mono 112 kbps, normalizado a -1 dBFS de pico.
 
