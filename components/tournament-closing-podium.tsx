@@ -119,10 +119,8 @@ function PodiumContent({
   const rest = byMoney.slice(3)
 
   const makeImage = useCallback(() => {
+    // El campeón ya se ve en el podio de la imagen: los destacados suman otra cosa.
     const highlights: Highlight[] = []
-    if (champion) {
-      highlights.push({ emoji: "👑", text: `${champion.name} campeón con ${signedMoney(champion.moneyWon)}` })
-    }
     if (byPoints[0] && champion && byPoints[0].id !== champion.id) {
       highlights.push({ emoji: "⭐", text: `${byPoints[0].name} ganó por puntos (${byPoints[0].points} pts)` })
     }
