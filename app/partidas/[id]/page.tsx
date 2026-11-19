@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import * as db from "@/lib/database";
 import { ChipGlyph, ChipSpinner, PokerChip } from "@/components/poker-chip";
 import { useCountUp } from "@/hooks/use-count-up";
-import type { ActiveMatch, Player } from "@/lib/types";
+import type { Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
 import { formatAmount } from "@/lib/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,8 +67,8 @@ function PotCounter({ value }: { value: number }) {
 }
 
 export default function EditActiveMatchPage() {
-  const params = useParams();
-  const rawId = (params as any)?.id;
+  const params = useParams<{ id: string | string[] }>();
+  const rawId = params?.id;
   const matchId = Array.isArray(rawId) ? rawId[0] : (rawId as string);
   const router = useRouter();
 
@@ -219,10 +219,10 @@ export default function EditActiveMatchPage() {
     };
   }, [matchId]);
 
-  const updatePlayerMoney = (
+  const updatePlayerMoney = <K extends keyof FormPlayer>(
     index: number,
-    field: keyof FormPlayer,
-    value: any
+    field: K,
+    value: FormPlayer[K]
   ) => {
     if (!formData) return;
     markDirty();

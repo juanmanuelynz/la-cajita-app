@@ -5,22 +5,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { WifiOff } from "lucide-react"
 
 export function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(true)
   const [showOfflineMessage, setShowOfflineMessage] = useState(false)
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true)
       setShowOfflineMessage(false)
     }
 
     const handleOffline = () => {
-      setIsOnline(false)
       setShowOfflineMessage(true)
     }
-
-    // Set initial state
-    setIsOnline(navigator.onLine)
 
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)

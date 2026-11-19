@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import type { TooltipItem } from "chart.js"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -748,8 +749,8 @@ export function EstadisticasTab({
                       legend: { position: "top" as const, labels: { usePointStyle: true } },
                       tooltip: {
                         callbacks: {
-                          label: (context: any) => {
-                            const dataPoint = context.raw
+                          label: (context: TooltipItem<"scatter">) => {
+                            const dataPoint = context.raw as { jugador: string }
                             return `${dataPoint.jugador}: ${context.parsed.y.toFixed(
                               1,
                             )}% eficiencia, ${context.parsed.x.toFixed(1)} cajitas promedio`
@@ -767,7 +768,7 @@ export function EstadisticasTab({
                         display: true,
                         title: { display: true, text: "Eficiencia (%)" },
                         ticks: {
-                          callback: function (value: any) {
+                          callback: function (value: string | number) {
                             return value + "%"
                           },
                         },
