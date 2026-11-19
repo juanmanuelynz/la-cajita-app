@@ -101,8 +101,9 @@ function load(file: string): Promise<AudioBuffer | null> {
     p = fetch(soundUrl(file))
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
       .then((data) => c.decodeAudioData(data))
-      .catch(() => {
+      .catch((err: unknown) => {
         buffers.delete(file) // reintenta la próxima vez (p. ej. volvió la conexión)
+        debug.lastIssue = `no se pudo cargar ${file}: ${err instanceof Error ? err.message : String(err)}`
         return null
       })
     buffers.set(file, p)
@@ -170,30 +171,59 @@ export interface PlayOptions {
  * Reproduce un sonido (una variante al azar si tiene varias). Devuelve una
  * función que lo corta con un fade corto; sirve para limpiar en un useEffect
  * los sonidos programados con `delay` si el componente se desmonta.
+ *
+ * Si el audio está en pausa (iOS lo arranca así y lo vuelve a pausar al
+ * cambiar de app), primero lo reanuda y recién después suena: el toque que
+ * pidió el sonido es el mismo que lo habilita, y la reanudación tarda.
  */
 export function playSound(name: SoundName, { delay = 0, volume = 1 }: PlayOptions = {}): () => void {
   const noop = () => {}
   if (!isSoundEnabled()) return noop
-  const c = ctx
-  if (!c || c.state !== "running") return noop
+  const c = getContext()
+  if (!c) return noop
 
   const def = SOUNDS[name]
   const file = def.files[Math.floor(Math.random() * def.files.length)]
-  const startAt = c.currentTime + delay
+  // Momento pedido, en reloj de pared: el reloj del AudioContext no avanza
+  // mientras está en pausa.
+  const wantedAt = performance.now() + delay * 1000
   let cancelled = false
   let stopFn: (() => void) | null = null
 
-  void load(file).then((buffer) => {
-    if (!buffer || cancelled) return
+  const ready =
+    c.state === "running"
+      ? Promise.resolve(true)
+      : Promise.race([
+          c.resume().then(
+            () => true,
+            () => false,
+          ),
+          new Promise<boolean>((r) => setTimeout(() => r(false), 600)),
+        ])
+
+  void Promise.all([ready, load(file)]).then(([ok, buffer]) => {
+    if (cancelled) return
+    if (!buffer) return
+    if (!ok || c.state !== "running") {
+      debug.skipped++
+      debug.lastIssue = `audio en estado "${c.state}"`
+      return
+    }
+    const wait = (wantedAt - performance.now()) / 1000
+    // Un sonido inmediato que llega muy tarde (primera carga lenta) queda
+    // peor que ninguno.
+    if (wait < -0.4) {
+      debug.skipped++
+      debug.lastIssue = `${file} llegó tarde`
+      return
+    }
     const source = c.createBufferSource()
     const gain = c.createGain()
     source.buffer = buffer
     gain.gain.value = def.volume * volume
     source.connect(gain).connect(c.destination)
-    // Si el archivo tardó en cargar y ya pasó su momento, no lo toca atrasado
-    // más de un instante.
-    if (c.currentTime - startAt > 0.15) return
-    source.start(Math.max(startAt, c.currentTime))
+    source.start(c.currentTime + Math.max(0, wait))
+    debug.played++
     stopFn = () => {
       const now = c.currentTime
       gain.gain.cancelScheduledValues(now)
@@ -211,6 +241,25 @@ export function playSound(name: SoundName, { delay = 0, volume = 1 }: PlayOption
     cancelled = true
     stopFn?.()
   }
+}
+
+// ---------------------------------------------------------------------------
+// Diagnóstico (botón "Probar sonido" en Reglas)
+
+const debug = { played: 0, skipped: 0, lastIssue: "" as string }
+
+export function getAudioStatus() {
+  const nav = typeof navigator !== "undefined" ? (navigator as Navigator & { audioSession?: { type: string } }) : null
+  let loaded = 0
+  return Promise.all([...buffers.values()].map((p) => p.then((b) => b && loaded++))).then(() => ({
+    contexto: ctx ? ctx.state : "sin crear",
+    sesion: nav?.audioSession ? nav.audioSession.type : "no soportada",
+    activado: isSoundEnabled(),
+    cargados: `${loaded}/${Object.values(SOUNDS).reduce((n, s) => n + s.files.length, 0)}`,
+    sonaron: debug.played,
+    descartados: debug.skipped,
+    problema: debug.lastIssue || "ninguno",
+  }))
 }
 
 /** Atajo para programar varios sonidos y cortarlos todos juntos. */

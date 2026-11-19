@@ -38,7 +38,7 @@ import { X } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium";
 import { useSoundEnabled } from "@/hooks/use-sound-enabled";
-import { playSound } from "@/lib/sounds";
+import { getAudioStatus, playSound } from "@/lib/sounds";
 
 type ReglasSubtab = "torneo" | "reglas" | "ajustes";
 
@@ -99,6 +99,20 @@ export function ReglasTab({
   useEffect(() => setMounted(true), []);
   const isDark = mounted && theme === "dark";
   const [soundOn, setSoundOn] = useSoundEnabled();
+  const [audioStatus, setAudioStatus] = useState<string | null>(null);
+  const testSound = () => {
+    playSound("chipsPush");
+    setAudioStatus("Probando…");
+    setTimeout(() => {
+      void getAudioStatus().then((st) =>
+        setAudioStatus(
+          Object.entries(st)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(" · ")
+        )
+      );
+    }, 1000);
+  };
 
   const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG);
   const [createRoster, setCreateRoster] = useState<Set<string>>(new Set());
@@ -638,7 +652,21 @@ export function ReglasTab({
                 <span className="ml-2 text-sm" suppressHydrationWarning>
                   Sonidos {mounted ? (soundOn ? "activados" : "desactivados") : ""}
                 </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-8 text-xs"
+                  onClick={testSound}
+                >
+                  Probar sonido
+                </Button>
               </div>
+              {audioStatus && (
+                <p className="rounded-md bg-muted px-2 py-1.5 font-mono text-[11px] text-muted-foreground break-words">
+                  {audioStatus}
+                </p>
+              )}
 
               <form action={logout}>
                 <Button type="submit" variant="outline" className="w-full">
