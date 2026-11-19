@@ -578,20 +578,101 @@
   inset: 0;
   transform-style: preserve-3d;
   transform-origin: 50% 0%;
-  animation: hole-card-peek 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  animation: hole-card-peek-left 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
 }
-@keyframes hole-card-peek {
+.hole-card-right .hole-card {
+  animation-name: hole-card-peek-right;
+}
+/* Gesto de espiar: cada carta se inclina hacia su lado, a distinta altura,
+   se acomoda un poco mientras se mira y rebota levemente al apoyarse. */
+@keyframes hole-card-peek-left {
   0%,
   66% {
-    transform: rotateX(0deg);
+    transform: rotateX(0deg) rotateY(0deg);
   }
-  72.5%,
+  72.5% {
+    transform: rotateX(130deg) rotateY(-12deg);
+  }
+  80% {
+    transform: rotateX(122deg) rotateY(-7deg);
+  }
   89% {
-    transform: rotateX(125deg);
+    transform: rotateX(126deg) rotateY(-9deg);
   }
-  97%,
+  96% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  98% {
+    transform: rotateX(9deg) rotateY(-1deg);
+  }
   100% {
-    transform: rotateX(0deg);
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+}
+@keyframes hole-card-peek-right {
+  0%,
+  66% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  72.5% {
+    transform: rotateX(118deg) rotateY(10deg);
+  }
+  81% {
+    transform: rotateX(124deg) rotateY(6deg);
+  }
+  89% {
+    transform: rotateX(120deg) rotateY(8deg);
+  }
+  96% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  98% {
+    transform: rotateX(7deg) rotateY(1deg);
+  }
+  100% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+}
+
+/* Mezcla mientras se crea la partida: las cartas se abren y se cruzan. */
+.hole-cards[data-shuffling] .hole-card {
+  animation: none;
+  transform: none;
+}
+.hole-cards[data-shuffling] .hole-card-left {
+  animation: hole-shuffle-left 0.9s ease-in-out infinite;
+}
+.hole-cards[data-shuffling] .hole-card-right {
+  animation: hole-shuffle-right 0.9s ease-in-out infinite;
+}
+@keyframes hole-shuffle-left {
+  0%,
+  100% {
+    transform: translateX(-20px) translateZ(0px) rotateZ(-9deg);
+  }
+  25% {
+    transform: translateX(-48px) translateZ(0px) rotateZ(-18deg);
+  }
+  50% {
+    transform: translateX(20px) translateZ(4px) rotateZ(8deg);
+  }
+  75% {
+    transform: translateX(48px) translateZ(4px) rotateZ(16deg);
+  }
+}
+@keyframes hole-shuffle-right {
+  0%,
+  100% {
+    transform: translateX(20px) translateZ(2px) rotateZ(8deg);
+  }
+  25% {
+    transform: translateX(48px) translateZ(2px) rotateZ(16deg);
+  }
+  50% {
+    transform: translateX(-20px) translateZ(0px) rotateZ(-9deg);
+  }
+  75% {
+    transform: translateX(-48px) translateZ(0px) rotateZ(-18deg);
   }
 }
 .hole-card-back,
@@ -639,6 +720,7 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-chip-flip,
   .hole-card,
+  .hole-card-slot,
   .case-float,
   .case-sway,
   .winner-glow {

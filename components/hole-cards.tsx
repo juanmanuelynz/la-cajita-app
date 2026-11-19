@@ -54,7 +54,11 @@ function PlayingCard({
   )
 }
 
-export function HoleCards() {
+/**
+ * `shuffling`: mientras se crea la partida, las cartas boca abajo se mezclan
+ * en bucle (sirve como indicador de carga sin cambiar de elemento).
+ */
+export function HoleCards({ shuffling = false }: { shuffling?: boolean }) {
   // Arranca con una mano fija (igual en server y cliente, evita diferencias
   // de hidratación) y después reparte al azar.
   const [hand, setHand] = useState<[Card, Card]>([
@@ -65,7 +69,7 @@ export function HoleCards() {
   useEffect(redeal, [redeal])
 
   return (
-    <div className="hole-cards" aria-hidden>
+    <div className="hole-cards" data-shuffling={shuffling || undefined} aria-hidden>
       <div className="hole-cards-table">
         {/* La vuelta termina con ambas cartas boca abajo: ahí cambia la mano. */}
         <PlayingCard card={hand[0]} className="hole-card-left" delayMs={0} onCycle={redeal} />

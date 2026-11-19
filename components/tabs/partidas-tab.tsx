@@ -89,21 +89,10 @@ export function PartidasTab({
 
                 <div className="relative flex flex-col items-center gap-5">
                   <div className="flex h-44 items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                    {loading ? (
-                      <ChipSpinner className="h-10 w-10 text-primary" />
-                    ) : (
-                      <HoleCards />
-                    )}
+                    <HoleCards shuffling={loading} />
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold tracking-tight">
-                      ¿Sale?
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Tocá para arrancar una nueva partida
-                    </p>
-                  </div>
+                  <p className="text-2xl font-bold tracking-tight">¿Sale?</p>
 
                   <span className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/30">
                     {loading ? (
