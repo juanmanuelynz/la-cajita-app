@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildMatchSummary, sortMatchesChronologically } from "../lib/match-summary"
+import { buildMatchSummary, lastMatchMovement, sortMatchesChronologically } from "../lib/match-summary"
 import type { MatchWithPlayers } from "../lib/types"
 
 type Row = [name: string, position: number, moneyWon: number, cajitas?: number, points?: number]
@@ -139,5 +139,33 @@ describe("buildMatchSummary", () => {
     const s = buildMatchSummary(b, [a, b], "money")
     expect(s.ranking.find((r) => r.name === "P4")).toMatchObject({ before: 4, after: 2, delta: 2 })
     expect(s.highlights.map((h) => h.text)).toContain("P4 subió 2 puestos en el ranking")
+  })
+})
+
+describe("lastMatchMovement", () => {
+  const m1 = match("m1", "2026-01-01", [
+    ["Ana", 1, 5000],
+    ["Beto", 2, 1000],
+    ["Caro", 3, -6000],
+  ])
+  const m2 = match("m2", "2026-01-08", [
+    ["Caro", 1, 9000],
+    ["Ana", 2, -1000],
+    ["Beto", 3, -8000],
+    ["Dani", 4, 0],
+  ])
+
+  it("devuelve el movimiento de cada jugador con la última partida", () => {
+    // Antes: Ana, Beto, Caro. Después: Ana 4000, Caro 3000, Dani 0, Beto -7000.
+    const mv = lastMatchMovement([m2, m1], "money")
+    expect(mv.get("Ana")).toBe(0)
+    expect(mv.get("Caro")).toBe(1)
+    expect(mv.get("Beto")).toBe(-2)
+    expect(mv.get("Dani")).toBeNull()
+  })
+
+  it("con menos de dos partidas no hay movimiento", () => {
+    expect(lastMatchMovement([m1], "money").size).toBe(0)
+    expect(lastMatchMovement([], "money").size).toBe(0)
   })
 })

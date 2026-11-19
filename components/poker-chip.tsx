@@ -21,6 +21,8 @@ interface PokerChipProps {
   body?: string
   edge?: string
   suit?: string
+  /** Texto grande y en negrita en el centro (p. ej. el número de puesto) en lugar del palo. */
+  label?: string
   style?: React.CSSProperties
 }
 
@@ -29,6 +31,7 @@ export function PokerChip({
   body = CHIP_COLORS[0].body,
   edge = CHIP_COLORS[0].edge,
   suit = "♠",
+  label,
   style,
 }: PokerChipProps) {
   return (
@@ -61,10 +64,11 @@ export function PokerChip({
         y="51"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize="30"
+        fontSize={label ? 50 : 30}
+        fontWeight={label ? 800 : undefined}
         fill={edge}
       >
-        {suit}
+        {label ?? suit}
       </text>
     </svg>
   )

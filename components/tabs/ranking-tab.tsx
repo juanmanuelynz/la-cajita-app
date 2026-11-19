@@ -1,18 +1,43 @@
 "use client"
 
-import { Trophy, Medal, Award } from "lucide-react"
+import { useMemo } from "react"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useTheme } from "next-themes"
 import { ActiveMatchCard } from "@/components/active-match-card"
+import { PokerChip } from "@/components/poker-chip"
 import { formatAmount } from "@/lib/formatters"
-import type { ActiveMatch, PlayerStats } from "@/lib/types"
+import { lastMatchMovement } from "@/lib/match-summary"
+import type { ActiveMatch, MatchWithPlayers, PlayerStats } from "@/lib/types"
 import type { SortBy } from "@/lib/stats"
+
+// Top 3: fondo de la fila y ficha del puesto (mismos colores que el podio).
+const TOP3 = [
+  { row: "bg-amber-100 dark:bg-yellow-800/40", body: "#eab308", edge: "#fefce8" },
+  { row: "bg-zinc-200 dark:bg-slate-600/50", body: "#94a3b8", edge: "#f8fafc" },
+  { row: "bg-orange-100 dark:bg-orange-800/40", body: "#f97316", edge: "#fff7ed" },
+]
+
+/** "↑2" / "↓1" debajo de la posición: cómo cambió con la última partida. */
+function Movement({ delta }: { delta: number | null | undefined }) {
+  // Sin movimiento igual reserva el alto, así todas las filas miden lo mismo.
+  if (!delta) return <span className="block h-2.5" aria-hidden />
+  return (
+    <span
+      className={`block h-2.5 text-[10px] font-bold leading-none ${delta > 0 ? "text-emerald-500" : "text-rose-500"}`}
+      aria-label={delta > 0 ? `Subió ${delta}` : `Bajó ${-delta}`}
+    >
+      {delta > 0 ? "↑" : "↓"}
+      {Math.abs(delta)}
+    </span>
+  )
+}
 
 export type RankingScope = "torneo" | "historico"
 
 interface RankingTabProps {
   activeMatches: ActiveMatch[]
+  /** Partidas del torneo seleccionado (para el movimiento con la última). */
+  matches: MatchWithPlayers[]
   sortedPlayerStats: PlayerStats[]
   rankingScope: RankingScope
   onRankingScopeChange: (scope: RankingScope) => void
@@ -25,6 +50,7 @@ interface RankingTabProps {
 
 export function RankingTab({
   activeMatches,
+  matches,
   sortedPlayerStats,
   rankingScope,
   onRankingScopeChange,
@@ -34,7 +60,11 @@ export function RankingTab({
   onContinueActive,
   onDeleteActive,
 }: RankingTabProps) {
-  const { theme } = useTheme()
+  // Solo en "Torneo actual": en el histórico no hay una "última partida".
+  const movement = useMemo(
+    () => (rankingScope === "torneo" ? lastMatchMovement(matches, rankingSortBy) : new Map<string, number | null>()),
+    [matches, rankingScope, rankingSortBy],
+  )
 
   return (
     <div className="space-y-6">
@@ -74,70 +104,20 @@ export function RankingTab({
           </thead>
           <tbody>
             {sortedPlayerStats.map((player, index) => (
-              <tr
-                key={player.id}
-                className={`border-b ${
-                  theme === "dark"
-                    ? index === 0
-                      ? "bg-yellow-800/40"
-                      : index === 1
-                        ? "bg-slate-600/50"
-                        : index === 2
-                          ? "bg-orange-800/40"
-                          : ""
-                    : index === 0
-                      ? "bg-amber-100"
-                      : index === 1
-                        ? "bg-zinc-200"
-                        : index === 2
-                          ? "bg-orange-100"
-                          : ""
-                }`}
-              >
+              <tr key={player.id} className={`border-b ${TOP3[index]?.row ?? ""}`}>
                 <td className="py-2 px-2">
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={`font-semibold text-sm ${
-                        theme === "dark"
-                          ? index === 0
-                            ? "text-yellow-400"
-                            : index === 1
-                              ? "text-slate-300"
-                              : index === 2
-                                ? "text-orange-400"
-                                : ""
-                          : index === 0
-                            ? "text-yellow-600"
-                            : index === 1
-                              ? "text-gray-600"
-                              : index === 2
-                                ? "text-orange-600"
-                                : ""
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                    {index === 0 && (
-                      <Trophy
-                        className={`w-4 h-4 ${
-                          theme === "dark" ? "text-yellow-400" : "text-yellow-600"
-                        }`}
+                  <div className="flex w-7 flex-col items-center gap-0.5">
+                    {TOP3[index] ? (
+                      <PokerChip
+                        className="h-7 w-7 drop-shadow-sm"
+                        body={TOP3[index].body}
+                        edge={TOP3[index].edge}
+                        label={String(index + 1)}
                       />
+                    ) : (
+                      <span className="text-sm font-semibold">{index + 1}</span>
                     )}
-                    {index === 1 && (
-                      <Medal
-                        className={`w-4 h-4 ${
-                          theme === "dark" ? "text-slate-300" : "text-gray-600"
-                        }`}
-                      />
-                    )}
-                    {index === 2 && (
-                      <Award
-                        className={`w-4 h-4 ${
-                          theme === "dark" ? "text-orange-400" : "text-orange-600"
-                        }`}
-                      />
-                    )}
+                    <Movement delta={movement.get(player.id)} />
                   </div>
                 </td>
                 <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>

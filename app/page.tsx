@@ -516,6 +516,7 @@ function LaCajitaPoker() {
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pt-8">
               <RankingTab
                 activeMatches={activeMatches}
+                matches={matches}
                 sortedPlayerStats={
                   rankingScope === "historico" ? sortedAllTimeStats : sortedPlayerStats
                 }

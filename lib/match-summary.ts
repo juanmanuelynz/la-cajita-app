@@ -194,3 +194,19 @@ export function buildMatchSummary(
 
   return { players, ranking, highlights }
 }
+
+/**
+ * Cuántos puestos se movió cada jugador en el ranking del torneo con la
+ * última partida jugada (positivo = subió). Devuelve null para quien debutó
+ * en esa partida, y un mapa vacío si todavía no hay al menos dos partidas.
+ */
+export function lastMatchMovement(
+  tournamentMatches: readonly MatchWithPlayers[],
+  sortBy: SortBy,
+): Map<string, number | null> {
+  if (tournamentMatches.length < 2) return new Map()
+  const chronological = sortMatchesChronologically(tournamentMatches)
+  const latest = chronological[chronological.length - 1]
+  const { ranking } = buildMatchSummary(latest, chronological, sortBy)
+  return new Map(ranking.map((r) => [r.playerId, r.before === null ? null : r.delta]))
+}

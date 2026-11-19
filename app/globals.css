@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* dark: sigue el tema de la app (clase .dark que pone next-themes), no el del
+   sistema operativo. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
