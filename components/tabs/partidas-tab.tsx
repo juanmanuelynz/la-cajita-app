@@ -7,14 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Trash2,
   Plus,
-  Cannabis,
   ChevronDown,
   ChevronUp,
   Lock,
   Sparkles,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
-import { ChipSpinner } from "@/components/poker-chip"
+import { ChipGlyph, ChipSpinner } from "@/components/poker-chip"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
 
@@ -92,7 +91,9 @@ export function PartidasTab({
                     {loading ? (
                       <ChipSpinner className="h-9 w-9 text-primary" />
                     ) : (
-                      <Cannabis className="h-9 w-9 text-primary" />
+                      <span aria-hidden className="block h-10 w-10 [perspective:200px]">
+                        <ChipGlyph className="block h-full w-full text-primary animate-chip-flip" />
+                      </span>
                     )}
                   </div>
 
