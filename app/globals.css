@@ -188,3 +188,299 @@
     }
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Animaciones de La Cajita (fichas, resumen de partida, login)
+   ────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --animate-chip-flip: chip-flip 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+
+  @keyframes chip-flip {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+}
+
+/* Ficha que cae sobre el contador de cajitas */
+.chip-drop {
+  animation: chip-drop 900ms cubic-bezier(0.3, 0, 0.4, 1) forwards;
+}
+@keyframes chip-drop {
+  0% {
+    transform: translateY(-90px) rotate(-120deg) scale(0.9);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  62% {
+    transform: translateY(-12px) rotate(8deg) scale(1);
+  }
+  74% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Rebote del número cuando cambia */
+.num-pop {
+  animation: num-pop 420ms ease-out;
+}
+@keyframes num-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* "+1" que flota hacia arriba */
+.float-up {
+  animation: float-up 900ms ease-out forwards;
+}
+@keyframes float-up {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-28px);
+    opacity: 0;
+  }
+}
+
+/* Lluvia de fichas */
+.chip-rain-piece {
+  position: absolute;
+  top: -12vh;
+  animation-name: chip-rain;
+  animation-timing-function: cubic-bezier(0.35, 0.1, 0.65, 1);
+  animation-fill-mode: forwards;
+}
+@keyframes chip-rain {
+  0% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateZ(0deg);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0px), 125vh, 0) rotateX(var(--spin-x, 720deg))
+      rotateZ(var(--spin-z, 360deg));
+    opacity: 0;
+  }
+}
+
+/* Entradas escalonadas del resumen */
+.reveal-up {
+  opacity: 0;
+  animation: reveal-up 550ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.podium-rise {
+  transform-origin: bottom;
+  transform: scaleY(0);
+  animation: podium-rise 600ms cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards;
+}
+@keyframes podium-rise {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.winner-glow {
+  animation: winner-glow 2.4s ease-in-out infinite;
+}
+@keyframes winner-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgb(234 179 8 / 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgb(234 179 8 / 0.75));
+  }
+}
+
+/* Login: PIN incorrecto */
+.shake {
+  animation: shake 450ms ease-in-out;
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+/* Login: la cajita 3D */
+.cajita-scene {
+  perspective: 700px;
+}
+.cajita-float {
+  animation: cajita-float 3.2s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+@keyframes cajita-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.cajita-box {
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  transform-style: preserve-3d;
+  animation: cajita-spin 9s linear infinite;
+}
+@keyframes cajita-spin {
+  from {
+    transform: rotateX(-24deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-24deg) rotateY(360deg);
+  }
+}
+.cajita-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--size) * 0.42);
+  border: 2px solid rgb(16 185 129 / 0.9);
+  border-radius: 6px;
+  background: linear-gradient(145deg, #065f46, #022c22);
+  box-shadow: inset 0 0 18px rgb(0 0 0 / 0.45);
+  backface-visibility: visible;
+}
+.cajita-face.front {
+  transform: translateZ(calc(var(--size) / 2));
+}
+.cajita-face.back {
+  transform: rotateY(180deg) translateZ(calc(var(--size) / 2));
+}
+.cajita-face.right {
+  transform: rotateY(90deg) translateZ(calc(var(--size) / 2));
+}
+.cajita-face.left {
+  transform: rotateY(-90deg) translateZ(calc(var(--size) / 2));
+}
+.cajita-face.bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--size) / 2));
+}
+/* La tapa se abre girando sobre la arista trasera */
+.cajita-lid {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: translateY(calc(var(--size) / -2)) rotateX(90deg);
+  transform-origin: 50% 50%;
+}
+.cajita-lid-inner {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 0%;
+  transition: transform 650ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.cajita-box[data-state="open"] .cajita-lid-inner {
+  transform: rotateX(115deg);
+}
+.cajita-lid .cajita-face {
+  background: linear-gradient(145deg, #047857, #064e3b);
+  font-size: calc(var(--size) * 0.3);
+}
+.cajita-burst {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  opacity: 0;
+  animation: cajita-burst 1100ms cubic-bezier(0.15, 0.8, 0.3, 1) forwards;
+}
+@keyframes cajita-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bx), var(--by)) scale(1) rotate(var(--br));
+  }
+}
+.cajita-glow {
+  position: absolute;
+  inset: -40%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(16 185 129 / 0.35), transparent 65%);
+  filter: blur(6px);
+  transition:
+    opacity 500ms,
+    transform 500ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-chip-flip,
+  .cajita-float,
+  .cajita-box,
+  .winner-glow {
+    animation: none !important;
+  }
+  .chip-drop,
+  .chip-rain-piece,
+  .cajita-burst,
+  .float-up {
+    display: none;
+  }
+  .reveal-up,
+  .podium-rise {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

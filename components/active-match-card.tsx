@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { ChipSpinner } from "@/components/poker-chip"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch } from "@/lib/types"
 
@@ -81,7 +81,7 @@ export function ActiveMatchCard({ match, loading, onContinue, onDelete }: Active
             Continuar partida
           </Button>
           <Button variant="outline" onClick={() => onDelete(match.id)} disabled={loading}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Borrar"}
+            {loading ? <ChipSpinner className="w-4 h-4" /> : "Borrar"}
           </Button>
         </div>
       </CardContent>

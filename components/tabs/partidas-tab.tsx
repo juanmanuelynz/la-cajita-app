@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Trash2,
-  Loader2,
   Plus,
   Cannabis,
   ChevronDown,
   ChevronUp,
   Lock,
+  Sparkles,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
+import { ChipSpinner } from "@/components/poker-chip"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
 
@@ -30,6 +31,7 @@ interface PartidasTabProps {
   onContinueActive: (id: string) => void
   onDeleteActive: (id: string) => void
   onConfirmDeleteMatch: (id: string) => void
+  onShowSummary: (id: string) => void
 }
 
 export function PartidasTab({
@@ -43,6 +45,7 @@ export function PartidasTab({
   onContinueActive,
   onDeleteActive,
   onConfirmDeleteMatch,
+  onShowSummary,
 }: PartidasTabProps) {
   const [subtab, setSubtab] = useState<PartidasSubtab>("partida")
 
@@ -87,7 +90,7 @@ export function PartidasTab({
                 <div className="relative flex flex-col items-center gap-5">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-primary/10 transition-transform duration-200 group-hover:scale-105">
                     {loading ? (
-                      <Loader2 className="h-9 w-9 animate-spin text-primary" />
+                      <ChipSpinner className="h-9 w-9 text-primary" />
                     ) : (
                       <Cannabis className="h-9 w-9 text-primary" />
                     )}
@@ -105,7 +108,7 @@ export function PartidasTab({
                   <span className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/30">
                     {loading ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <ChipSpinner className="h-4 w-4" />
                         Creando...
                       </>
                     ) : (
@@ -137,7 +140,7 @@ export function PartidasTab({
               variant="outline"
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <ChipSpinner className="w-4 h-4 mr-2" />
               ) : (
                 <Plus className="w-4 h-4 mr-2" />
               )}
@@ -199,7 +202,7 @@ export function PartidasTab({
                             disabled={loading}
                           >
                             {loading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <ChipSpinner className="w-4 h-4" />
                             ) : (
                               <Trash2 className="w-4 h-4" />
                             )}
@@ -242,6 +245,16 @@ export function PartidasTab({
                               </div>
                             ))}
                         </div>
+                        <Button
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onShowSummary(match.id)
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Ver resumen
+                        </Button>
                       </div>
                     )}
                   </CardContent>

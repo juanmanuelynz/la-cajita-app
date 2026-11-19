@@ -9,10 +9,17 @@ import {
   verifyPin,
 } from "@/lib/auth"
 
+export interface LoginState {
+  error: string | null
+  ok?: boolean
+}
+
+// En éxito no redirige desde el server: devuelve ok y el cliente navega a "/"
+// después de la animación de la cajita abriéndose. La cookie ya queda seteada.
 export async function login(
-  _prevState: { error: string | null } | null,
+  _prevState: LoginState | null,
   formData: FormData,
-): Promise<{ error: string | null }> {
+): Promise<LoginState> {
   const pin = String(formData.get("pin") || "")
   const expected = process.env.APP_PIN
   const secret = process.env.APP_SECRET
@@ -37,7 +44,7 @@ export async function login(
     maxAge: AUTH_MAX_AGE_SECONDS,
     path: "/",
   })
-  redirect("/")
+  return { error: null, ok: true }
 }
 
 export async function logout() {

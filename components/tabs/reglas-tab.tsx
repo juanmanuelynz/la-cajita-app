@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, LogOut, Trophy } from "lucide-react";
+import { Plus, LogOut, Trophy } from "lucide-react";
+import { ChipSpinner } from "@/components/poker-chip";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants";
@@ -287,7 +288,7 @@ export function ReglasTab({
                             aria-label={`Quitar ${p.name}`}
                           >
                             {busyPlayerId === p.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <ChipSpinner className="w-4 h-4" />
                             ) : (
                               <X className="w-4 h-4" />
                             )}
@@ -316,7 +317,7 @@ export function ReglasTab({
                               disabled={busyPlayerId === p.id}
                             >
                               {busyPlayerId === p.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                <ChipSpinner className="w-3 h-3 mr-1" />
                               ) : (
                                 <Plus className="w-3 h-3 mr-1" />
                               )}
@@ -350,7 +351,7 @@ export function ReglasTab({
                             }
                           >
                             {creatingNewPlayer ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <ChipSpinner className="w-4 h-4" />
                             ) : (
                               "Crear"
                             )}
@@ -738,7 +739,7 @@ export function ReglasTab({
               disabled={creatingTournament || !newTournamentName.trim()}
             >
               {creatingTournament ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <ChipSpinner className="w-4 h-4 mr-2" />
               ) : null}
               Crear
             </Button>
@@ -765,7 +766,7 @@ export function ReglasTab({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {creatingTournament ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <ChipSpinner className="w-4 h-4 mr-2" />
               ) : null}
               Cerrar Torneo
             </AlertDialogAction>

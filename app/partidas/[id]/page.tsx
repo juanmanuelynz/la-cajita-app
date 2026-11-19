@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import * as db from "@/lib/database";
+import { ChipGlyph, ChipSpinner, PokerChip } from "@/components/poker-chip";
+import { useCountUp } from "@/hooks/use-count-up";
 import type { ActiveMatch, Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
 import { formatAmount } from "@/lib/formatters";
@@ -34,7 +36,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Loader2,
   ArrowLeft,
   Plus,
   Trophy,
@@ -52,6 +53,17 @@ interface FormPlayer {
   cajitas: number;
   finalChips: number;
   moneyWon: number;
+}
+
+// Total del pozo en la cabecera de "Jugadores": cuenta hacia arriba con
+// cada cajita que se suma.
+function PotCounter({ value }: { value: number }) {
+  const shown = useCountUp(value, { durationMs: 600, from: value });
+  return (
+    <span className="flex items-center gap-1.5 text-base font-semibold tabular-nums text-primary">
+      <ChipGlyph className="h-4 w-4" />${formatAmount(shown)}
+    </span>
+  );
 }
 
 export default function EditActiveMatchPage() {
@@ -77,6 +89,22 @@ export default function EditActiveMatchPage() {
   const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [currentView, setCurrentView] = useState<"edit" | "close">("edit");
+  // Fichas que caen sobre el contador de cajitas al tocar "+".
+  const [chipDrops, setChipDrops] = useState<{ id: number; index: number }[]>(
+    []
+  );
+  const chipDropIdRef = useRef(0);
+  const dropChip = (index: number) => {
+    const id = ++chipDropIdRef.current;
+    setChipDrops((d) => [...d, { id, index }]);
+  };
+  const removeChipDrop = (id: number) =>
+    setChipDrops((d) => d.filter((x) => x.id !== id));
+  // Contador de cambios por jugador: re-monta el número para que "rebote"
+  // solo cuando se toca +/−, no en la carga inicial.
+  const [cajitaBumps, setCajitaBumps] = useState<Record<number, number>>({});
+  const bumpCajitas = (index: number) =>
+    setCajitaBumps((b) => ({ ...b, [index]: (b[index] ?? 0) + 1 }));
 
   const [pointsConfig, setPointsConfig] = useState<number[]>([
     ...POINTS_DISTRIBUTION,
@@ -315,8 +343,8 @@ export default function EditActiveMatchPage() {
   const confirmRegister = async () => {
     setRegistering(true);
     try {
-      await db.registerActiveMatch(matchId);
-      router.push("/?tab=partidas");
+      const registered = await db.registerActiveMatch(matchId);
+      router.push(`/?tab=partidas&resumen=${registered.id}`);
     } finally {
       setRegistering(false);
     }
@@ -369,7 +397,7 @@ export default function EditActiveMatchPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <ChipSpinner className="w-8 h-8 mx-auto mb-4" />
           <p>Cargando partida...</p>
         </div>
       </div>
@@ -393,7 +421,7 @@ export default function EditActiveMatchPage() {
                 </div>
               ) : saveState === "saving" ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Guardando...
+                  <ChipSpinner className="w-3 h-3" /> Guardando...
                 </div>
               ) : saveState === "error" ? (
                 <div className="flex items-center gap-2 text-rose-500">
@@ -505,7 +533,10 @@ export default function EditActiveMatchPage() {
 
             <Card className="">
               <CardHeader>
-                <CardTitle>Jugadores</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Jugadores
+                  <PotCounter value={balance.totalInvestment} />
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.players.map((player, index) => (
@@ -540,7 +571,7 @@ export default function EditActiveMatchPage() {
                                   }
                                 >
                                   {creatingPlayer ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <ChipSpinner className="w-4 h-4" />
                                   ) : (
                                     <Plus className="w-4 h-4" />
                                   )}
@@ -620,18 +651,41 @@ export default function EditActiveMatchPage() {
                                     player.cajitas - 1
                                   );
                                   updatePlayerMoney(index, "cajitas", newValue);
+                                  bumpCajitas(index);
                                 }}
                                 disabled={player.cajitas <= 1}
                               >
                                 -
                               </Button>
-                              <Input
-                                type="text"
-                                value={player.cajitas.toString()}
-                                readOnly
-                                className="text-center text-xl h-12 bg-muted cursor-default min-w-[48px]"
-                                placeholder="1"
-                              />
+                              <div className="relative min-w-[48px] flex-1">
+                                <Input
+                                  key={cajitaBumps[index] ?? 0}
+                                  type="text"
+                                  value={player.cajitas.toString()}
+                                  readOnly
+                                  className={`${cajitaBumps[index] ? "num-pop " : ""}text-center text-xl h-12 bg-muted cursor-default min-w-[48px]`}
+                                  placeholder="1"
+                                />
+                                {chipDrops
+                                  .filter((d) => d.index === index)
+                                  .map((d) => (
+                                    <span
+                                      key={d.id}
+                                      aria-hidden
+                                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                                    >
+                                      <span
+                                        className="chip-drop absolute -top-1 right-1 h-6 w-6"
+                                        onAnimationEnd={() => removeChipDrop(d.id)}
+                                      >
+                                        <PokerChip className="h-full w-full drop-shadow" />
+                                      </span>
+                                      <span className="float-up absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">
+                                        +1
+                                      </span>
+                                    </span>
+                                  ))}
+                              </div>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -643,6 +697,8 @@ export default function EditActiveMatchPage() {
                                     player.cajitas + 1
                                   );
                                   updatePlayerMoney(index, "cajitas", newValue);
+                                  dropChip(index);
+                                  bumpCajitas(index);
                                 }}
                                 disabled={player.cajitas >= 999}
                               >
@@ -814,7 +870,7 @@ export default function EditActiveMatchPage() {
               >
                 {registering ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />{" "}
+                    <ChipSpinner className="w-4 h-4 mr-2" />{" "}
                     Registrando...
                   </>
                 ) : (
@@ -899,7 +955,7 @@ export default function EditActiveMatchPage() {
               <Button onClick={confirmRegister} disabled={registering}>
                 {registering ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />{" "}
+                    <ChipSpinner className="w-4 h-4 mr-2" />{" "}
                     Registrando...
                   </>
                 ) : (

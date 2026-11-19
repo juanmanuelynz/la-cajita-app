@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   Trophy,
-  Loader2,
   NotebookPen,
   AlertCircle,
   BarChart3,
@@ -35,6 +34,8 @@ import {
   Legend,
 } from "chart.js"
 import * as db from "@/lib/database"
+import { ChipSpinner } from "@/components/poker-chip"
+import { MatchSummary } from "@/components/match-summary"
 import type {
   MatchWithPlayers,
   Player,
@@ -125,6 +126,8 @@ function LaCajitaPoker() {
   const [creatingTournament, setCreatingTournament] = useState(false)
   const [showCloseTournamentDialog, setShowCloseTournamentDialog] = useState(false)
   const [showPodium, setShowPodium] = useState(false)
+  // Resumen animado de una partida ("Fin de la partida").
+  const [summaryMatchId, setSummaryMatchId] = useState<string | null>(null)
 
   // Data
   const [matches, setMatches] = useState<MatchWithPlayers[]>([])
@@ -217,7 +220,14 @@ function LaCajitaPoker() {
     if (tabParam && TABS.some((t) => t.id === tabParam)) {
       setActiveTab(tabParam)
     }
-  }, [searchParams])
+    // ?resumen=<matchId> llega al registrar una partida: abrimos el resumen
+    // y limpiamos el parámetro para que no se reabra al refrescar.
+    const resumen = searchParams?.get("resumen")
+    if (resumen) {
+      setSummaryMatchId(resumen)
+      router.replace(tabParam ? `/?tab=${tabParam}` : "/", { scroll: false })
+    }
+  }, [searchParams, router])
 
   // El toggle histórico vuelve a "torneo actual" al salir del tab Ranking.
   useEffect(() => {
@@ -378,6 +388,11 @@ function LaCajitaPoker() {
     })
   }
 
+  const summaryMatch = summaryMatchId
+    ? matches.find((m) => m.id === summaryMatchId)
+    : undefined
+  const closeSummary = useCallback(() => setSummaryMatchId(null), [])
+
   const sortedPlayerStats = useMemo(
     () => sortPlayerStats(playerStats, rankingSortBy),
     [playerStats, rankingSortBy],
@@ -392,7 +407,7 @@ function LaCajitaPoker() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <ChipSpinner className="w-8 h-8 mx-auto mb-4" />
           <p>Cargando datos...</p>
           {connectionStatus === false && (
             <div className="mt-4 p-4 border rounded-lg">
@@ -432,7 +447,7 @@ function LaCajitaPoker() {
                 className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <ChipSpinner className="w-4 h-4" />
                 ) : (
                   <RefreshCw className="w-4 h-4" />
                 )}
@@ -484,7 +499,7 @@ function LaCajitaPoker() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <ChipSpinner className="w-4 h-4 mr-2" />
                     Eliminando...
                   </>
                 ) : (
@@ -524,6 +539,7 @@ function LaCajitaPoker() {
                 onContinueActive={editActiveMatch}
                 onDeleteActive={setActiveMatchToDelete}
                 onConfirmDeleteMatch={confirmDeleteMatch}
+                onShowSummary={setSummaryMatchId}
               />
             </div>
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
@@ -611,6 +627,16 @@ function LaCajitaPoker() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {summaryMatch && (
+        <MatchSummary
+          match={summaryMatch}
+          tournamentMatches={matches}
+          tournamentName={selectedTournament?.name}
+          sortBy={rankingSortBy}
+          onClose={closeSummary}
+        />
+      )}
+
       <PWAInstall />
       <OfflineIndicator />
     </div>
@@ -623,7 +649,7 @@ export default function Page() {
       fallback={
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <ChipSpinner className="w-8 h-8 mx-auto mb-4" />
             <p>Cargando...</p>
           </div>
         </div>
