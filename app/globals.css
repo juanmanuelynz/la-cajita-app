@@ -587,9 +587,12 @@
   transform-style: preserve-3d;
   transform-origin: 50% 0%;
   animation: bend-peek 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  /* Arranca el ciclo ya avanzado: el primer espiado llega a ~0,9 s en vez de
+     esperar la pausa completa de 4,3 s. */
+  animation-delay: -3.4s;
 }
 .hole-card-right .bend-seg {
-  animation-delay: 140ms;
+  animation-delay: -3.26s;
 }
 @keyframes bend-peek {
   0%,
@@ -632,9 +635,10 @@
   opacity: 0;
   pointer-events: none;
   animation: bend-shade 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  animation-delay: -3.4s;
 }
 .hole-card-right .bend-shade {
-  animation-delay: 140ms;
+  animation-delay: -3.26s;
 }
 @keyframes bend-shade {
   0%,
@@ -680,10 +684,12 @@
   position: absolute;
   left: 6px;
   top: 5px;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
   font-size: 19px;
   font-weight: 800;
   line-height: 1;
-  text-align: center;
 }
 .hole-card-pip {
   position: absolute;

@@ -17,8 +17,8 @@ const SUITS: Suit[] = ["♠", "♥", "♦", "♣"]
 const CARD_W = 78
 const CARD_H = 112
 /** Ángulo de cada franja (desde el extremo lejano, que queda apoyado). */
-const BEND_LEFT = [0, 0, 8, 14, 20, 26]
-const BEND_RIGHT = [0, 0, 7, 12, 17, 22]
+const BEND_LEFT = [0, 0, 0, 12, 18, 24, 30, 36]
+const BEND_RIGHT = [0, 0, 0, 12, 18, 24, 30, 35]
 const SEGMENTS = BEND_LEFT.length
 const SEG_H = CARD_H / SEGMENTS
 
@@ -51,9 +51,8 @@ function CardFace({ card }: { card: Card }) {
   return (
     <div className={`hole-card-face ${isRed(card.suit) ? "text-rose-600" : "text-slate-900"}`} style={{ height: CARD_H }}>
       <span className="hole-card-corner">
-        {card.rank}
-        <br />
-        {card.suit}
+        <span>{card.rank}</span>
+        <span>{card.suit}</span>
       </span>
       <span className="hole-card-pip">{card.suit}</span>
     </div>
