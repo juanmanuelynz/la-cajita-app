@@ -543,18 +543,17 @@
 
 /* Nueva partida: cartas que se espían (hold'em) */
 .hole-cards {
-  width: 168px;
-  height: 172px;
-  perspective: 420px;
+  width: 230px;
+  height: 150px;
+  perspective: 520px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 4px;
 }
 .hole-cards-table {
   position: relative;
-  width: 130px;
-  height: 92px;
+  width: 196px;
+  height: 120px;
   transform-style: preserve-3d;
   transform: rotateX(38deg);
 }
@@ -562,80 +561,141 @@
   position: absolute;
   left: 50%;
   top: 0;
-  width: 60px;
-  height: 86px;
-  margin-left: -30px;
+  width: 78px;
+  height: 112px;
+  margin-left: -39px;
   transform-style: preserve-3d;
 }
+/* Separadas para que al doblarse no se atraviesen entre sí. */
 .hole-card-left {
-  transform: translateX(-20px) rotateZ(-9deg);
+  transform: translateX(-44px) rotateZ(-7deg);
 }
 .hole-card-right {
-  transform: translateX(20px) translateZ(1px) rotateZ(8deg);
+  transform: translateX(44px) translateZ(2px) rotateZ(6deg);
 }
 .hole-card {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
+}
+
+/* Cada franja cuelga del borde inferior de la anterior y gira sobre él. */
+.bend-seg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  transform-style: preserve-3d;
   transform-origin: 50% 0%;
-  animation: hole-card-peek-left 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+  animation: bend-peek 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
 }
-.hole-card-right .hole-card {
-  animation-name: hole-card-peek-right;
+.hole-card-right .bend-seg {
+  animation-delay: 140ms;
 }
-/* Gesto de espiar: cada carta se inclina hacia su lado, a distinta altura,
-   se acomoda un poco mientras se mira y rebota levemente al apoyarse. */
-@keyframes hole-card-peek-left {
+@keyframes bend-peek {
   0%,
   66% {
-    transform: rotateX(0deg) rotateY(0deg);
+    transform: rotateX(0deg);
   }
   72.5% {
-    transform: rotateX(130deg) rotateY(-12deg);
+    transform: rotateX(var(--a));
   }
   80% {
-    transform: rotateX(122deg) rotateY(-7deg);
+    transform: rotateX(var(--a-settle));
   }
   89% {
-    transform: rotateX(126deg) rotateY(-9deg);
+    transform: rotateX(var(--a-hold));
   }
   96% {
-    transform: rotateX(0deg) rotateY(0deg);
+    transform: rotateX(0deg);
   }
   98% {
-    transform: rotateX(9deg) rotateY(-1deg);
+    transform: rotateX(var(--a-bounce));
   }
   100% {
-    transform: rotateX(0deg) rotateY(0deg);
+    transform: rotateX(0deg);
   }
 }
-@keyframes hole-card-peek-right {
+.bend-slice {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+.bend-slice-face {
+  transform: rotateX(180deg);
+}
+/* Oscurece la parte doblada, sincronizado con el gesto. */
+.bend-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.6));
+  opacity: 0;
+  pointer-events: none;
+  animation: bend-shade 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+.hole-card-right .bend-shade {
+  animation-delay: 140ms;
+}
+@keyframes bend-shade {
   0%,
   66% {
-    transform: rotateX(0deg) rotateY(0deg);
+    opacity: 0;
   }
-  72.5% {
-    transform: rotateX(118deg) rotateY(10deg);
-  }
-  81% {
-    transform: rotateX(124deg) rotateY(6deg);
-  }
+  72.5%,
   89% {
-    transform: rotateX(120deg) rotateY(8deg);
+    opacity: var(--shade);
   }
-  96% {
-    transform: rotateX(0deg) rotateY(0deg);
-  }
-  98% {
-    transform: rotateX(7deg) rotateY(1deg);
-  }
+  96%,
   100% {
-    transform: rotateX(0deg) rotateY(0deg);
+    opacity: 0;
   }
+}
+.hole-cards[data-shuffling] .bend-shade {
+  animation: none;
+  opacity: 0;
+}
+
+.hole-card-back,
+.hole-card-face {
+  position: relative;
+  width: 78px;
+  border-radius: 8px;
+}
+.hole-card-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #f8fafc;
+  color: rgb(236 253 245 / 0.9);
+  font-size: 27px;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #059669, #064e3b);
+}
+.hole-card-face {
+  background: #f8fafc;
+}
+.hole-card-corner {
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+.hole-card-pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
 }
 
 /* Mezcla mientras se crea la partida: las cartas se abren y se cruzan. */
-.hole-cards[data-shuffling] .hole-card {
+.hole-cards[data-shuffling] .bend-seg {
   animation: none;
   transform: none;
 }
@@ -648,78 +708,38 @@
 @keyframes hole-shuffle-left {
   0%,
   100% {
-    transform: translateX(-20px) translateZ(0px) rotateZ(-9deg);
+    transform: translateX(-44px) translateZ(0px) rotateZ(-7deg);
   }
   25% {
-    transform: translateX(-48px) translateZ(0px) rotateZ(-18deg);
+    transform: translateX(-66px) translateZ(0px) rotateZ(-16deg);
   }
   50% {
-    transform: translateX(20px) translateZ(4px) rotateZ(8deg);
+    transform: translateX(44px) translateZ(4px) rotateZ(6deg);
   }
   75% {
-    transform: translateX(48px) translateZ(4px) rotateZ(16deg);
+    transform: translateX(66px) translateZ(4px) rotateZ(15deg);
   }
 }
 @keyframes hole-shuffle-right {
   0%,
   100% {
-    transform: translateX(20px) translateZ(2px) rotateZ(8deg);
+    transform: translateX(44px) translateZ(2px) rotateZ(6deg);
   }
   25% {
-    transform: translateX(48px) translateZ(2px) rotateZ(16deg);
+    transform: translateX(66px) translateZ(2px) rotateZ(15deg);
   }
   50% {
-    transform: translateX(-20px) translateZ(0px) rotateZ(-9deg);
+    transform: translateX(-44px) translateZ(0px) rotateZ(-7deg);
   }
   75% {
-    transform: translateX(-48px) translateZ(0px) rotateZ(-18deg);
+    transform: translateX(-66px) translateZ(0px) rotateZ(-16deg);
   }
-}
-.hole-card-back,
-.hole-card-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  backface-visibility: hidden;
-  box-shadow: 0 3px 8px rgb(0 0 0 / 0.45);
-}
-.hole-card-back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid #f8fafc;
-  color: rgb(236 253 245 / 0.9);
-  font-size: 21px;
-  background:
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 7px),
-    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 7px),
-    linear-gradient(160deg, #059669, #064e3b);
-}
-.hole-card-face {
-  background: #f8fafc;
-  transform: rotateX(180deg);
-}
-.hole-card-corner {
-  position: absolute;
-  left: 5px;
-  top: 4px;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1;
-  text-align: center;
-}
-.hole-card-pip {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-chip-flip,
-  .hole-card,
+  .bend-seg,
+  .bend-shade,
   .hole-card-slot,
   .case-float,
   .case-sway,
