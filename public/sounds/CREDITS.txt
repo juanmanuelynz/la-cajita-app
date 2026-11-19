@@ -1,0 +1,17 @@
+Efectos de sonido de Kenney (www.kenney.nl), licencia CC0 1.0 (dominio público).
+Packs: "Casino sounds", "RPG sounds" y "Jingle sounds".
+
+Archivo                   Original
+chip-lay-1..3.mp3         Casino sounds/chipLay1..3.ogg
+chips-collide-1..4.mp3    Casino sounds/chipsCollide1..4.ogg
+chips-stack-1..4.mp3      Casino sounds/chipsStack1..4.ogg
+chips-handle-1.mp3        Casino sounds/chipsHandle1.ogg
+chips-handle-5.mp3        Casino sounds/chipsHandle5.ogg
+card-shuffle.mp3          Casino sounds/cardShuffle.ogg
+metal-latch.mp3           RPG sounds/metalLatch.ogg
+metal-click.mp3           RPG sounds/metalClick.ogg
+drop-leather.mp3          RPG sounds/dropLeather.ogg
+jingle-match.mp3          Jingle sounds/jingles_STEEL/jingles_STEEL07.ogg
+jingle-tournament.mp3     Jingle sounds/jingles_SAX/jingles_SAX07.ogg
+
+Convertidos a MP3 mono 96 kbps y normalizados a -1 dBFS de pico.

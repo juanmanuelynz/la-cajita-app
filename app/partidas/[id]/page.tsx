@@ -8,6 +8,7 @@ import { useCountUp } from "@/hooks/use-count-up";
 import type { Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
 import { formatAmount } from "@/lib/formatters";
+import { playSound } from "@/lib/sounds";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,6 +342,7 @@ export default function EditActiveMatchPage() {
   };
 
   const confirmRegister = async () => {
+    playSound("chipsPush");
     setRegistering(true);
     try {
       const registered = await db.registerActiveMatch(matchId);
@@ -652,6 +654,7 @@ export default function EditActiveMatchPage() {
                                   );
                                   updatePlayerMoney(index, "cajitas", newValue);
                                   bumpCajitas(index);
+                                  playSound("chipsCollide", { volume: 0.7 });
                                 }}
                                 disabled={player.cajitas <= 1}
                               >
@@ -699,6 +702,7 @@ export default function EditActiveMatchPage() {
                                   updatePlayerMoney(index, "cajitas", newValue);
                                   dropChip(index);
                                   bumpCajitas(index);
+                                  playSound("chipLay");
                                 }}
                                 disabled={player.cajitas >= 999}
                               >

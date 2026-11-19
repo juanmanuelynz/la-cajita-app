@@ -147,7 +147,7 @@ function PodiumContent({
         <CelebrationHeader title="Cierre del torneo" subtitle={subtitle} onReplay={onReplay} onClose={onClose} />
 
         <div className="mt-6">
-          <AnimatedPodium top3={podium} />
+          <AnimatedPodium top3={podium} jingle="jingleTournament" />
         </div>
 
         {champion && (

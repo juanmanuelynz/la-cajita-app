@@ -37,6 +37,8 @@ import type {
 import { X } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium";
+import { useSoundEnabled } from "@/hooks/use-sound-enabled";
+import { playSound } from "@/lib/sounds";
 
 type ReglasSubtab = "torneo" | "reglas" | "ajustes";
 
@@ -96,6 +98,7 @@ export function ReglasTab({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = mounted && theme === "dark";
+  const [soundOn, setSoundOn] = useSoundEnabled();
 
   const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG);
   const [createRoster, setCreateRoster] = useState<Set<string>>(new Set());
@@ -617,6 +620,23 @@ export function ReglasTab({
                 <span className="text-sm">🌙</span>
                 <span className="ml-2 text-sm" suppressHydrationWarning>
                   Tema {mounted ? (isDark ? "oscuro" : "claro") : ""}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2" suppressHydrationWarning>
+                <span className="text-sm">🔇</span>
+                <Switch
+                  checked={mounted ? soundOn : true}
+                  onCheckedChange={(checked) => {
+                    setSoundOn(checked);
+                    // Muestra cómo suena al prenderlo.
+                    if (checked) playSound("chipLay");
+                  }}
+                  aria-label="Activar sonidos"
+                />
+                <span className="text-sm">🔊</span>
+                <span className="ml-2 text-sm" suppressHydrationWarning>
+                  Sonidos {mounted ? (soundOn ? "activados" : "desactivados") : ""}
                 </span>
               </div>
 

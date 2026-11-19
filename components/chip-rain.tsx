@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
+import { playSequence } from "@/lib/sounds"
 
 const SUITS = ["♠", "♥", "♦", "♣"]
 
@@ -46,7 +47,19 @@ export function ChipRain({ trigger, count = 36 }: { trigger: number; count?: num
     setPieces(next)
     const longest = Math.max(...next.map((p) => p.delay + p.duration))
     const t = setTimeout(() => setPieces([]), longest + 100)
-    return () => clearTimeout(t)
+    // Unos pocos choques de fichas repartidos mientras caen, no uno por ficha.
+    const clinks = Math.min(6, Math.ceil(count / 10))
+    const stopSound = playSequence(
+      Array.from({ length: clinks }, (_, i) => ({
+        name: "chipsCollide" as const,
+        at: (i * 1.2) / clinks + Math.random() * 0.15,
+        volume: 0.35 + Math.random() * 0.25,
+      })),
+    )
+    return () => {
+      clearTimeout(t)
+      stopSound()
+    }
   }, [trigger, count])
 
   if (pieces.length === 0) return null

@@ -82,5 +82,6 @@ PIN-gated, single shared credential. The middleware in [middleware.ts](middlewar
 - [components/match-summary.tsx](components/match-summary.tsx) — "Fin de la partida" screen; pure logic in [lib/match-summary.ts](lib/match-summary.ts), share image drawn on canvas in [lib/share-card.ts](lib/share-card.ts)
 - [components/tournament-closing-podium.tsx](components/tournament-closing-podium.tsx) — animated tournament closing screen
 - [components/hole-cards.tsx](components/hole-cards.tsx), [components/chip-case.tsx](components/chip-case.tsx), [components/chip-rain.tsx](components/chip-rain.tsx) — CSS-3D animations (Nueva partida cards, login chip case, chip rain). Animation keyframes live at the end of [app/globals.css](app/globals.css)
+- [lib/sounds.ts](lib/sounds.ts) — sound effects via Web Audio (`playSound` / `playSequence`, both return a stop fn for effect cleanup). Files in `public/sounds/` (Kenney CC0, see `CREDITS.txt`; excluded from the auth middleware so the login can use them, precached by the service worker). Per-device mute toggle in Reglas → Configuración via [hooks/use-sound-enabled.ts](hooks/use-sound-enabled.ts)
 - [hooks/use-mobile.tsx](hooks/use-mobile.tsx) — breakpoint hook (mobile < 768px)
 - [lib/utils.ts](lib/utils.ts) — `cn()` helper (clsx + tailwind-merge)

@@ -25,8 +25,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Excluye assets estáticos y PWA. Cualquier ruta de app pasa por el middleware.
+  // Excluye assets estáticos, PWA y sonidos (el login también los usa). Cualquier ruta de app pasa por el middleware.
   matcher: [
-    "/((?!_next/static|_next/image|favicon|icon-|manifest.json|browserconfig.xml|sw.js|workbox-).*)",
+    "/((?!_next/static|_next/image|favicon|icon-|manifest.json|browserconfig.xml|sw.js|workbox-|sounds/).*)",
   ],
 }

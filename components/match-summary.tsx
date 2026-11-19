@@ -140,7 +140,7 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
         />
 
         <div className="mt-6">
-          <AnimatedPodium top3={top3} />
+          <AnimatedPodium top3={top3} jingle="jingleMatch" />
         </div>
 
         {rest.length > 0 && (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { playSound } from "@/lib/sounds"
 
 // Dos cartas boca abajo sobre la mesa. Cada tanto se "espían" como en
 // hold'em: el extremo cercano se dobla hacia arriba y se ve la esquina.
@@ -162,6 +163,8 @@ export function HoleCards({ shuffling = false }: { shuffling?: boolean }) {
   ])
   const redeal = useCallback(() => setHand(dealHand()), [])
   useEffect(redeal, [redeal])
+  // El mazo suena mientras se mezcla; se corta cuando termina de crear.
+  useEffect(() => (shuffling ? playSound("cardShuffle") : undefined), [shuffling])
 
   return (
     <div className="hole-cards" data-shuffling={shuffling || undefined} aria-hidden>

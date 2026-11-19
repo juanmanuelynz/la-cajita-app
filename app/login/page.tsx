@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ChipSpinner } from "@/components/poker-chip";
 import { ChipCase } from "@/components/chip-case";
 import { login } from "./actions";
+import { playSequence, playSound } from "@/lib/sounds";
 
 const PIN_LENGTH = 6;
 // Tiempo que se muestra el maletín abriéndose antes de entrar a la app.
@@ -20,11 +21,21 @@ export default function LoginPage() {
   const opened = !!state?.ok;
 
   useEffect(() => {
-    if (state?.error) setShakeKey((k) => k + 1);
+    if (state?.error) {
+      setShakeKey((k) => k + 1);
+      playSound("error");
+    }
   }, [state]);
 
   useEffect(() => {
     if (!state?.ok) return;
+    // Trabas, tapa y las fichas que saltan (ver tiempos en chip-case / globals.css).
+    playSequence([
+      { name: "latch", at: 0 },
+      { name: "latch", at: 0.09 },
+      { name: "latchClick", at: 0.22, volume: 0.7 },
+      { name: "chipsBurst", at: 0.45 },
+    ]);
     const t = setTimeout(() => window.location.replace("/"), OPEN_DURATION_MS);
     return () => clearTimeout(t);
   }, [state]);

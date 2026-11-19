@@ -11,6 +11,7 @@ import { ChipSpinner, PokerChip } from "@/components/poker-chip"
 import { useCountUp } from "@/hooks/use-count-up"
 import { formatAmount } from "@/lib/formatters"
 import { shareImage } from "@/lib/share-card"
+import { playSequence, type SoundName } from "@/lib/sounds"
 
 /** Línea de tiempo de la revelación del podio (ms desde que se abre). */
 export const REVEAL = {
@@ -72,7 +73,20 @@ function PodiumSpot({ player, place }: { player: PodiumPlayer; place: 0 | 1 | 2 
 }
 
 /** Podio 2° · 1° · 3° que se revela de abajo hacia arriba. */
-export function AnimatedPodium({ top3 }: { top3: PodiumPlayer[] }) {
+export function AnimatedPodium({ top3, jingle }: { top3: PodiumPlayer[]; jingle: SoundName }) {
+  const count = top3.length
+  // Una pila de fichas por puesto y la música al revelar el 1°. Al repetir la
+  // animación se re-monta y vuelve a sonar; al cerrar se corta.
+  useEffect(() => {
+    if (count === 0) return
+    return playSequence([
+      ...(count > 2 ? [{ name: "chipsStack" as const, at: REVEAL.third / 1000 }] : []),
+      ...(count > 1 ? [{ name: "chipsStack" as const, at: REVEAL.second / 1000 }] : []),
+      { name: "chipsPush", at: REVEAL.first / 1000 },
+      { name: jingle, at: REVEAL.first / 1000 + 0.1 },
+    ])
+  }, [count, jingle])
+
   return (
     <>
       <div className="flex items-end gap-2">
