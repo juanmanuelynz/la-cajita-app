@@ -22,12 +22,6 @@ const BEND_RIGHT = [0, 0, 8, 16, 22, 28, 33, 37]
 const SEGMENTS = BEND_LEFT.length
 const SEG_H = CARD_H / SEGMENTS
 
-/** Sombreado de cada franja: proporcional a cuánto se dobló acumulado. */
-function shadeFor(angles: number[], i: number): number {
-  const bent = angles.slice(0, i + 1).reduce((a, b) => a + b, 0)
-  return Math.min(0.55, bent / 140)
-}
-
 /** Dos cartas distintas al azar de un mazo de 52. */
 function dealHand(): [Card, Card] {
   const a = Math.floor(Math.random() * 52)
@@ -73,7 +67,6 @@ function Segment({ i, card, angles }: { i: number; card: Card; angles: number[] 
           "--a-settle": `${angles[i] * 0.88}deg`,
           "--a-hold": `${angles[i] * 0.95}deg`,
           "--a-bounce": `${angles[i] * 0.12}deg`,
-          "--shade": shadeFor(angles, i),
         } as React.CSSProperties
       }
     >
@@ -82,7 +75,6 @@ function Segment({ i, card, angles }: { i: number; card: Card; angles: number[] 
         <div style={{ position: "absolute", left: 0, right: 0, top: -i * SEG_H }}>
           <CardBack />
         </div>
-        <div className="bend-shade" />
       </div>
       {/* Cara: del otro lado, dada vuelta, por eso la porción va invertida */}
       <div className="bend-slice bend-slice-face">

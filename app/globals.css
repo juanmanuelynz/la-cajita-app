@@ -659,42 +659,6 @@
 .bend-slice-face {
   transform: rotateX(180deg);
 }
-/* Oscurece la parte doblada, sincronizado con el gesto. */
-.bend-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.6));
-  opacity: 0;
-  pointer-events: none;
-  /* Safari no hereda el ocultamiento del dorso a una capa animada: sin esto
-     el sombreado del dorso se ve encima de la cara al doblarse. */
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  animation: bend-shade 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
-  animation-delay: -3.4s;
-}
-.hole-card-right .bend-shade {
-  animation-delay: -3.26s;
-}
-@keyframes bend-shade {
-  0%,
-  66% {
-    opacity: 0;
-  }
-  72.5%,
-  89% {
-    opacity: var(--shade);
-  }
-  96%,
-  100% {
-    opacity: 0;
-  }
-}
-.hole-cards[data-shuffling] .bend-shade {
-  animation: none;
-  opacity: 0;
-}
-
 .hole-card-back,
 .hole-card-face {
   position: relative;
@@ -782,7 +746,6 @@
   .animate-chip-flip,
   .hole-card-solid,
   .bend-seg,
-  .bend-shade,
   .hole-card-slot,
   .case-float,
   .case-sway,
