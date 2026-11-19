@@ -15,11 +15,16 @@ chips-tap-1..3       64.71 / 98.52 / 119.07
 Recortados del FLAC original, con filtro pasa-altos de 70 Hz, reducción leve de
 ruido, MP3 mono 112 kbps y normalizados a -1 dBFS de pico.
 
+== Mazo: "Shuffling Cards, Riffle 03" de vkproduktion (Freesound) ==
+https://freesound.org/s/217503/
+Licencia: PENDIENTE DE CONFIRMAR (no subir a main hasta confirmarla).
+card-shuffle.mp3: archivo completo (5,25 s), pasa-altos de 70 Hz, fade final,
+MP3 mono 112 kbps, normalizado a -1 dBFS de pico.
+
 == Resto: Kenney (www.kenney.nl), licencia CC0 1.0 (dominio público) ==
 Packs: "Casino sounds", "RPG sounds" y "Jingle sounds".
 
 Archivo                   Original
-card-shuffle.mp3          Casino sounds/cardShuffle.ogg
 metal-latch.mp3           RPG sounds/metalLatch.ogg
 metal-click.mp3           RPG sounds/metalClick.ogg
 drop-leather.mp3          RPG sounds/dropLeather.ogg
