@@ -101,9 +101,8 @@ function load(file: string): Promise<AudioBuffer | null> {
     p = fetch(soundUrl(file))
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
       .then((data) => c.decodeAudioData(data))
-      .catch((err: unknown) => {
+      .catch(() => {
         buffers.delete(file) // reintenta la próxima vez (p. ej. volvió la conexión)
-        debug.lastIssue = `no se pudo cargar ${file}: ${err instanceof Error ? err.message : String(err)}`
         return null
       })
     buffers.set(file, p)
@@ -204,26 +203,17 @@ export function playSound(name: SoundName, { delay = 0, volume = 1 }: PlayOption
   void Promise.all([ready, load(file)]).then(([ok, buffer]) => {
     if (cancelled) return
     if (!buffer) return
-    if (!ok || c.state !== "running") {
-      debug.skipped++
-      debug.lastIssue = `audio en estado "${c.state}"`
-      return
-    }
+    if (!ok || c.state !== "running") return
     const wait = (wantedAt - performance.now()) / 1000
     // Un sonido inmediato que llega muy tarde (primera carga lenta) queda
     // peor que ninguno.
-    if (wait < -0.4) {
-      debug.skipped++
-      debug.lastIssue = `${file} llegó tarde`
-      return
-    }
+    if (wait < -0.4) return
     const source = c.createBufferSource()
     const gain = c.createGain()
     source.buffer = buffer
     gain.gain.value = def.volume * volume
     source.connect(gain).connect(c.destination)
     source.start(c.currentTime + Math.max(0, wait))
-    debug.played++
     stopFn = () => {
       const now = c.currentTime
       gain.gain.cancelScheduledValues(now)
@@ -241,25 +231,6 @@ export function playSound(name: SoundName, { delay = 0, volume = 1 }: PlayOption
     cancelled = true
     stopFn?.()
   }
-}
-
-// ---------------------------------------------------------------------------
-// Diagnóstico (botón "Probar sonido" en Reglas)
-
-const debug = { played: 0, skipped: 0, lastIssue: "" as string }
-
-export function getAudioStatus() {
-  const nav = typeof navigator !== "undefined" ? (navigator as Navigator & { audioSession?: { type: string } }) : null
-  let loaded = 0
-  return Promise.all([...buffers.values()].map((p) => p.then((b) => b && loaded++))).then(() => ({
-    contexto: ctx ? ctx.state : "sin crear",
-    sesion: nav?.audioSession ? nav.audioSession.type : "no soportada",
-    activado: isSoundEnabled(),
-    cargados: `${loaded}/${Object.values(SOUNDS).reduce((n, s) => n + s.files.length, 0)}`,
-    sonaron: debug.played,
-    descartados: debug.skipped,
-    problema: debug.lastIssue || "ninguno",
-  }))
 }
 
 /** Atajo para programar varios sonidos y cortarlos todos juntos. */
