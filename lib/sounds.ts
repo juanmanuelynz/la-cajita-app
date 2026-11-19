@@ -1,5 +1,6 @@
-// Efectos de sonido de la app. Los archivos están en /public/sounds (pack
-// "Casino/RPG/Jingle sounds" de Kenney, licencia CC0; ver CREDITS.txt).
+// Efectos de sonido de la app. Los archivos están en /public/sounds: fichas
+// recortadas de "clay chips" (ArtOrDie, Freesound) y el resto del pack de
+// Kenney (CC0). Origen y licencia de cada uno en CREDITS.txt.
 //
 // Se usa Web Audio en vez de <audio>: menos latencia, sonidos superpuestos y
 // control de volumen en iOS. Los navegadores no dejan reproducir audio hasta
@@ -8,16 +9,18 @@
 // un sonido que llega tarde queda peor que ninguno).
 
 export const SOUNDS = {
-  /** Ficha que se apoya: +1 cajita. */
-  chipLay: { files: ["chip-lay-1", "chip-lay-2", "chip-lay-3"], volume: 0.6 },
-  /** Fichas que chocan: −1 cajita y lluvia de fichas. */
-  chipsCollide: { files: ["chips-collide-1", "chips-collide-2", "chips-collide-3", "chips-collide-4"], volume: 0.5 },
-  /** Pila de fichas: 3° y 2° puesto del podio. */
+  /** Puñadito de fichas que caen: +1 cajita. */
+  chipLay: { files: ["chip-lay-1", "chip-lay-2", "chip-lay-3", "chip-lay-4"], volume: 0.6 },
+  /** Golpecito corto de fichas: −1 cajita. */
+  chipsTap: { files: ["chips-tap-1", "chips-tap-2", "chips-tap-3"], volume: 0.5 },
+  /** Montón de fichas cayendo: lluvia de fichas. */
+  chipsRain: { files: ["chips-rain-1", "chips-rain-2", "chips-rain-3", "chips-rain-4"], volume: 0.6 },
+  /** Muchas fichas cayendo: 3° y 2° puesto del podio. */
   chipsStack: { files: ["chips-stack-1", "chips-stack-2", "chips-stack-3", "chips-stack-4"], volume: 0.8 },
-  /** Puñado de fichas: las que saltan del maletín. */
-  chipsBurst: { files: ["chips-handle-1"], volume: 0.8 },
-  /** Empujar las fichas al centro: registrar la partida y 1° puesto. */
-  chipsPush: { files: ["chips-handle-5"], volume: 0.9 },
+  /** Fichas que saltan del maletín. */
+  chipsBurst: { files: ["chips-burst"], volume: 0.8 },
+  /** La cascada más larga: registrar la partida y 1° puesto. */
+  chipsPush: { files: ["chip-push"], volume: 0.9 },
   /** Mazo mezclándose: crear partida nueva. */
   cardShuffle: { files: ["card-shuffle"], volume: 0.7 },
   /** Trabas del maletín. */

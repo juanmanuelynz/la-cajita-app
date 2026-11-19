@@ -1,17 +1,28 @@
-Efectos de sonido de Kenney (www.kenney.nl), licencia CC0 1.0 (dominio público).
+Efectos de sonido de La Cajita: origen y licencia de cada archivo.
+
+== Fichas: "clay chips" de ArtOrDie (Freesound) ==
+https://freesound.org/people/ArtOrDie/sounds/170295/
+Licencia: PENDIENTE DE CONFIRMAR en la página del sonido (no se pudo leer desde
+el entorno de desarrollo). Si es Attribution, este archivo es la atribución.
+
+Archivo              Desde (s)   Golpe
+chip-push.mp3        128.89      clay072
+chips-burst.mp3      139.08      clay086
+chips-stack-1..4     66.05 / 70.00 / 71.76 / 73.31
+chips-rain-1..4      14.20 / 59.42 / 60.85 / 147.07
+chip-lay-1..4        7.61 / 41.97 / 94.39 / 135.11
+chips-tap-1..3       64.71 / 98.52 / 119.07
+Recortados del FLAC original, con filtro pasa-altos de 70 Hz, reducción leve de
+ruido, MP3 mono 112 kbps y normalizados a -1 dBFS de pico.
+
+== Resto: Kenney (www.kenney.nl), licencia CC0 1.0 (dominio público) ==
 Packs: "Casino sounds", "RPG sounds" y "Jingle sounds".
 
 Archivo                   Original
-chip-lay-1..3.mp3         Casino sounds/chipLay1..3.ogg
-chips-collide-1..4.mp3    Casino sounds/chipsCollide1..4.ogg
-chips-stack-1..4.mp3      Casino sounds/chipsStack1..4.ogg
-chips-handle-1.mp3        Casino sounds/chipsHandle1.ogg
-chips-handle-5.mp3        Casino sounds/chipsHandle5.ogg
 card-shuffle.mp3          Casino sounds/cardShuffle.ogg
 metal-latch.mp3           RPG sounds/metalLatch.ogg
 metal-click.mp3           RPG sounds/metalClick.ogg
 drop-leather.mp3          RPG sounds/dropLeather.ogg
 jingle-match.mp3          Jingle sounds/jingles_STEEL/jingles_STEEL07.ogg
 jingle-tournament.mp3     Jingle sounds/jingles_SAX/jingles_SAX07.ogg
-
 Convertidos a MP3 mono 96 kbps y normalizados a -1 dBFS de pico.

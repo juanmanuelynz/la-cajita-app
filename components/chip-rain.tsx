@@ -47,11 +47,11 @@ export function ChipRain({ trigger, count = 36 }: { trigger: number; count?: num
     setPieces(next)
     const longest = Math.max(...next.map((p) => p.delay + p.duration))
     const t = setTimeout(() => setPieces([]), longest + 100)
-    // Unos pocos choques de fichas repartidos mientras caen, no uno por ficha.
-    const clinks = Math.min(6, Math.ceil(count / 10))
+    // Unos pocos montones de fichas repartidos mientras caen, no uno por ficha.
+    const clinks = Math.min(5, Math.ceil(count / 12))
     const stopSound = playSequence(
       Array.from({ length: clinks }, (_, i) => ({
-        name: "chipsCollide" as const,
+        name: "chipsRain" as const,
         at: (i * 1.2) / clinks + Math.random() * 0.15,
         volume: 0.35 + Math.random() * 0.25,
       })),

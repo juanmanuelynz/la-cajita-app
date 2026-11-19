@@ -654,7 +654,7 @@ export default function EditActiveMatchPage() {
                                   );
                                   updatePlayerMoney(index, "cajitas", newValue);
                                   bumpCajitas(index);
-                                  playSound("chipsCollide", { volume: 0.7 });
+                                  playSound("chipsTap");
                                 }}
                                 disabled={player.cajitas <= 1}
                               >

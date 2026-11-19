@@ -20,7 +20,6 @@ describe("sounds", () => {
 
   it("todos los archivos figuran en CREDITS.txt", () => {
     const credits = readFileSync(join(PUBLIC, "sounds", "CREDITS.txt"), "utf8")
-    expect(credits).toContain("CC0")
     for (const file of declared) {
       const base = file.replace(/-\d+$/, "")
       expect(credits, file).toContain(base)
