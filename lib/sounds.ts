@@ -1,6 +1,7 @@
 // Efectos de sonido de la app. Los archivos están en /public/sounds: fichas
-// recortadas de "clay chips" (ArtOrDie, Freesound) y el resto del pack de
-// Kenney (CC0). Origen y licencia de cada uno en CREDITS.txt.
+// recortadas de "Clay Chips" (ArtOrDie, Freesound, CC BY 4.0: la atribución
+// se muestra en Reglas → Configuración) y el resto del pack de Kenney (CC0).
+// Origen y licencia de cada uno en CREDITS.txt.
 //
 // Se usa Web Audio en vez de <audio>: menos latencia, sonidos superpuestos y
 // control de volumen en iOS. Los navegadores no dejan reproducir audio hasta

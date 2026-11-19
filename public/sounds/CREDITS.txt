@@ -1,9 +1,9 @@
 Efectos de sonido de La Cajita: origen y licencia de cada archivo.
 
 == Fichas: "clay chips" de ArtOrDie (Freesound) ==
-https://freesound.org/people/ArtOrDie/sounds/170295/
-Licencia: PENDIENTE DE CONFIRMAR en la página del sonido (no se pudo leer desde
-el entorno de desarrollo). Si es Attribution, este archivo es la atribución.
+Clay Chips.flac by ArtOrDie -- https://freesound.org/s/170295/
+License: Attribution 4.0 -- https://creativecommons.org/licenses/by/4.0/
+Modificado: recortado en golpes sueltos y procesado (ver abajo).
 
 Archivo              Desde (s)   Golpe
 chip-push.mp3        128.89      clay072
