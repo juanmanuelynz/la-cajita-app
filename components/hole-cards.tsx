@@ -68,7 +68,7 @@ function Segment({ i, card, angles }: { i: number; card: Card; angles: number[] 
       style={
         {
           top: i === 0 ? 0 : SEG_H,
-          height: SEG_H + 0.5, // medio píxel de solape para que no se vean costuras
+          height: SEG_H + 1, // 1px de solape para que no se vean costuras (Safari las marca más)
           "--a": `${angles[i]}deg`,
           "--a-settle": `${angles[i] * 0.88}deg`,
           "--a-hold": `${angles[i] * 0.95}deg`,

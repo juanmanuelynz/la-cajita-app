@@ -622,6 +622,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 .bend-slice-face {
@@ -634,6 +635,10 @@
   background: linear-gradient(180deg, rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.6));
   opacity: 0;
   pointer-events: none;
+  /* Safari no hereda el ocultamiento del dorso a una capa animada: sin esto
+     el sombreado del dorso se ve encima de la cara al doblarse. */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   animation: bend-shade 6.5s cubic-bezier(0.45, 0, 0.3, 1) infinite;
   animation-delay: -3.4s;
 }
