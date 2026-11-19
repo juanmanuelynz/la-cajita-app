@@ -88,7 +88,7 @@ export function PartidasTab({
                 />
 
                 <div className="relative flex flex-col items-center gap-5">
-                  <div className="flex h-32 items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                  <div className="flex h-44 items-center justify-center transition-transform duration-200 group-hover:scale-105">
                     {loading ? (
                       <ChipSpinner className="h-10 w-10 text-primary" />
                     ) : (
