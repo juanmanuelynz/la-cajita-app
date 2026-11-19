@@ -700,45 +700,58 @@
   font-size: 44px;
 }
 
-/* Mezcla mientras se crea la partida: las cartas se abren y se cruzan. */
+/* Al crear la partida: las dos cartas se van y un mazo se mezcla en riffle. */
+.hole-card-slot {
+  transition: opacity 200ms ease-out;
+}
+.hole-cards[data-shuffling] .hole-card-slot {
+  opacity: 0;
+}
 .hole-cards[data-shuffling] .bend-seg {
   animation: none;
   transform: none;
 }
-.hole-cards[data-shuffling] .hole-card-left {
-  animation: hole-shuffle-left 0.9s ease-in-out infinite;
+.riffle-deck {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 78px;
+  height: 112px;
+  margin-left: -39px;
+  transform-style: preserve-3d;
+  animation: riffle-in 200ms ease-out;
 }
-.hole-cards[data-shuffling] .hole-card-right {
-  animation: hole-shuffle-right 0.9s ease-in-out infinite;
+@keyframes riffle-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-@keyframes hole-shuffle-left {
+.riffle-card {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(0, 0, var(--z));
+  animation: riffle 1.15s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+.riffle-card .hole-card-back {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+/* Se abre en dos mitades, espera, y cada carta cae al centro a su turno
+   (el animation-delay escalonado hace que vuelvan intercaladas). */
+@keyframes riffle {
   0%,
+  8% {
+    transform: translate3d(0, 0, var(--z)) rotateZ(0deg);
+  }
+  30%,
+  48% {
+    transform: translate3d(var(--x), 0, var(--z)) rotateZ(var(--r));
+  }
+  72%,
   100% {
-    transform: translateX(-44px) translateZ(0px) rotateZ(-7deg);
-  }
-  25% {
-    transform: translateX(-66px) translateZ(0px) rotateZ(-16deg);
-  }
-  50% {
-    transform: translateX(44px) translateZ(4px) rotateZ(6deg);
-  }
-  75% {
-    transform: translateX(66px) translateZ(4px) rotateZ(15deg);
-  }
-}
-@keyframes hole-shuffle-right {
-  0%,
-  100% {
-    transform: translateX(44px) translateZ(2px) rotateZ(6deg);
-  }
-  25% {
-    transform: translateX(66px) translateZ(2px) rotateZ(15deg);
-  }
-  50% {
-    transform: translateX(-44px) translateZ(0px) rotateZ(-7deg);
-  }
-  75% {
-    transform: translateX(-66px) translateZ(0px) rotateZ(-16deg);
+    transform: translate3d(0, 0, var(--z)) rotateZ(0deg);
   }
 }
 
@@ -747,6 +760,7 @@
   .hole-card-solid,
   .bend-seg,
   .hole-card-slot,
+  .riffle-card,
   .case-float,
   .case-sway,
   .winner-glow {

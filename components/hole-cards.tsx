@@ -117,9 +117,41 @@ function PlayingCard({
   )
 }
 
+const DECK_SIZE = 10
+
 /**
- * `shuffling`: mientras se crea la partida, las cartas boca abajo se mezclan
- * en bucle (sirve como indicador de carga sin cambiar de elemento).
+ * Mazo boca abajo que se mezcla en riffle: se abre en dos mitades y las
+ * cartas vuelven intercaladas al centro, en bucle.
+ */
+function RiffleDeck() {
+  return (
+    <div className="riffle-deck">
+      {Array.from({ length: DECK_SIZE }, (_, i) => {
+        const side = i % 2 === 0 ? -1 : 1
+        return (
+          <div
+            key={i}
+            className="riffle-card"
+            style={
+              {
+                "--x": `${side * (58 + (i % 4) * 3)}px`,
+                "--r": `${side * (9 + (i % 3) * 2)}deg`,
+                "--z": `${i * 0.8}px`,
+                animationDelay: `${i * 45}ms`,
+              } as React.CSSProperties
+            }
+          >
+            <CardBack />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * `shuffling`: mientras se crea la partida, las dos cartas se van y aparece
+ * un mazo que se mezcla en bucle (sirve como indicador de carga).
  */
 export function HoleCards({ shuffling = false }: { shuffling?: boolean }) {
   // Arranca con una mano fija (igual en server y cliente, evita diferencias
@@ -137,6 +169,7 @@ export function HoleCards({ shuffling = false }: { shuffling?: boolean }) {
         {/* La vuelta termina con ambas cartas boca abajo: ahí cambia la mano. */}
         <PlayingCard card={hand[0]} side="left" onCycle={redeal} />
         <PlayingCard card={hand[1]} side="right" />
+        {shuffling && <RiffleDeck />}
       </div>
     </div>
   )

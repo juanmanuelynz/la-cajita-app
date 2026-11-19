@@ -323,10 +323,11 @@ function LaCajitaPoker() {
             moneyWon: -2000,
           })),
       })
+      // Sin setLoading(false) en el éxito: la mezcla de cartas sigue hasta
+      // que se desmonta esta pantalla al navegar a la partida.
       router.push(`/partidas/${newMatch.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error creating active match")
-    } finally {
       setLoading(false)
     }
   }
