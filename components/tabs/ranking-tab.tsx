@@ -17,15 +17,15 @@ const TOP3 = [
   { row: "bg-orange-100 dark:bg-orange-800/40", body: "#f97316", edge: "#fff7ed" },
 ]
 
-/** "↑2" / "↓1" al lado del dinero: cómo cambió con la última partida. */
+/** "▲2" / "▼1" al lado del nombre: cómo cambió con la última partida. */
 function Movement({ delta }: { delta: number | null | undefined }) {
   if (!delta) return null
   return (
     <span
-      className={`ml-1 text-[10px] font-bold ${delta > 0 ? "text-emerald-500" : "text-rose-500"}`}
+      className={`ml-1.5 whitespace-nowrap text-[10px] font-bold ${delta > 0 ? "text-emerald-500" : "text-rose-500"}`}
       aria-label={delta > 0 ? `Subió ${delta}` : `Bajó ${-delta}`}
     >
-      {delta > 0 ? "↑" : "↓"}
+      {delta > 0 ? "▲" : "▼"}
       {Math.abs(delta)}
     </span>
   )
@@ -105,7 +105,8 @@ export function RankingTab({
             {sortedPlayerStats.map((player, index) => (
               <tr key={player.id} className={`border-b ${TOP3[index]?.row ?? ""}`}>
                 <td className="py-2 px-2">
-                  <div className="flex w-7 justify-center">
+                  <div className="flex items-center">
+                    <div className="flex w-7 justify-center">
                     {TOP3[index] ? (
                       <PokerChip
                         className="h-7 w-7 drop-shadow-sm"
@@ -116,16 +117,17 @@ export function RankingTab({
                     ) : (
                       <span className="text-sm font-semibold">{index + 1}</span>
                     )}
+                    </div>
+                    <Movement delta={movement.get(player.id)} />
                   </div>
                 </td>
                 <td className="py-3 px-2 font-semibold text-sm">{player.name}</td>
                 <td
-                  className={`py-3 px-2 text-center font-semibold text-sm whitespace-nowrap ${
+                  className={`py-3 px-2 text-center font-semibold text-sm ${
                     player.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"
                   }`}
                 >
                   ${formatAmount(player.moneyWon)}
-                  <Movement delta={movement.get(player.id)} />
                 </td>
                 <td className="py-3 px-2 text-center hidden md:table-cell landscape:table-cell font-bold text-sm">
                   {player.points}
