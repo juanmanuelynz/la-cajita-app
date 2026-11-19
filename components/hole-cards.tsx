@@ -117,7 +117,7 @@ function PlayingCard({
   )
 }
 
-const DECK_SIZE = 10
+const DECK_SIZE = 20
 
 /**
  * Mazo boca abajo que se mezcla en riffle: se abre en dos mitades y las
@@ -136,8 +136,8 @@ function RiffleDeck() {
               {
                 "--x": `${side * (58 + (i % 4) * 3)}px`,
                 "--r": `${side * (9 + (i % 3) * 2)}deg`,
-                "--z": `${i * 0.8}px`,
-                animationDelay: `${i * 45}ms`,
+                "--z": `${i * 0.6}px`,
+                animationDelay: `${i * 25}ms`,
               } as React.CSSProperties
             }
           >
