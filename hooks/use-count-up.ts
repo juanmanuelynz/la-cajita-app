@@ -2,19 +2,12 @@
 
 import { useEffect, useRef, useState } from "react"
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  )
-}
-
 /**
  * Anima un número hasta `to` (easing out cúbico) y devuelve el valor actual
  * redondeado. La primera vez arranca en `from`; después, cada cambio de `to`
- * anima desde el valor que se está mostrando. Con "reducir movimiento" salta
- * directo al final.
+ * anima desde el valor que se está mostrando. Ignora "reducir movimiento" a
+ * propósito: la app es para un grupo chico y todos quieren las animaciones,
+ * aunque el teléfono pida reducirlas.
  */
 export function useCountUp(
   to: number,
@@ -27,10 +20,6 @@ export function useCountUp(
     const set = (v: number) => {
       valueRef.current = v
       setValue(v)
-    }
-    if (prefersReducedMotion()) {
-      set(to)
-      return
     }
     const start = valueRef.current
     if (start === to) return

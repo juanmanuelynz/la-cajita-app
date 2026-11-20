@@ -759,26 +759,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-chip-flip,
-  .hole-card-solid,
-  .bend-seg,
-  .hole-card-slot,
-  .riffle-card,
-  .case-float,
-  .case-sway,
-  .winner-glow {
-    animation: none !important;
-  }
-  .chip-drop,
-  .chip-rain-piece,
-  .cajita-burst,
-  .float-up {
-    display: none;
-  }
-  .reveal-up,
-  .podium-rise {
-    animation-duration: 1ms !important;
-    animation-delay: 0ms !important;
-  }
-}
+/* Sin bloque de prefers-reduced-motion a propósito: la app es para un grupo
+   chico y todos quieren ver las animaciones (la ficha que cae, la lluvia, el
+   maletín) aunque el teléfono tenga activado "Quitar animaciones". */
