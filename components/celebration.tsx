@@ -5,6 +5,7 @@
 // 3°→2°→1°, y pie con botón para compartir la imagen.
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { RotateCcw, Share2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChipSpinner, PokerChip } from "@/components/poker-chip"
@@ -179,6 +180,11 @@ export function ShareFooter({
 /**
  * Overlay a pantalla completa: bloquea el scroll de fondo, cierra con Escape
  * y permite repetir la animación (re-monta el contenido).
+ *
+ * Se renderiza en un portal sobre <body>: si queda dentro del carrusel de
+ * pestañas, el transform de Embla hace que `position: fixed` se ubique
+ * relativo a la tira del carrusel y el overlay queda fuera de pantalla (le
+ * pasaba al podio de torneo, que vive dentro de la pestaña Reglas).
  */
 export function CelebrationOverlay({
   label,
@@ -190,6 +196,8 @@ export function CelebrationOverlay({
   children: (onReplay: () => void) => React.ReactNode
 }) {
   const [replayKey, setReplayKey] = useState(0)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -204,7 +212,8 @@ export function CelebrationOverlay({
     }
   }, [onClose])
 
-  return (
+  if (!mounted) return null
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -218,6 +227,7 @@ export function CelebrationOverlay({
       <div key={replayKey} className="relative">
         {children(() => setReplayKey((k) => k + 1))}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
