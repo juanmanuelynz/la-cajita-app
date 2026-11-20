@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import * as db from "@/lib/database";
-import { ChipGlyph, ChipSpinner, PokerChip } from "@/components/poker-chip";
+import { CHIP_COLORS, ChipGlyph, ChipSpinner, PokerChip } from "@/components/poker-chip";
 import { useCountUp } from "@/hooks/use-count-up";
 import type { Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
@@ -90,14 +90,15 @@ export default function EditActiveMatchPage() {
   const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [currentView, setCurrentView] = useState<"edit" | "close">("edit");
-  // Fichas que caen sobre el contador de cajitas al tocar "+".
-  const [chipDrops, setChipDrops] = useState<{ id: number; index: number }[]>(
-    []
-  );
+  // Fichas sobre el contador de cajitas: al tocar "+" cae una verde desde
+  // arriba; al tocar "−" una roja se va cayendo hacia abajo.
+  const [chipDrops, setChipDrops] = useState<
+    { id: number; index: number; kind: "in" | "out" }[]
+  >([]);
   const chipDropIdRef = useRef(0);
-  const dropChip = (index: number) => {
+  const dropChip = (index: number, kind: "in" | "out" = "in") => {
     const id = ++chipDropIdRef.current;
-    setChipDrops((d) => [...d, { id, index }]);
+    setChipDrops((d) => [...d, { id, index, kind }]);
   };
   const removeChipDrop = (id: number) =>
     setChipDrops((d) => d.filter((x) => x.id !== id));
@@ -654,6 +655,7 @@ export default function EditActiveMatchPage() {
                                   );
                                   updatePlayerMoney(index, "cajitas", newValue);
                                   bumpCajitas(index);
+                                  dropChip(index, "out");
                                   playSound("chipsTap");
                                 }}
                                 disabled={player.cajitas <= 1}
@@ -678,14 +680,29 @@ export default function EditActiveMatchPage() {
                                       className="pointer-events-none absolute inset-0 flex items-center justify-center"
                                     >
                                       <span
-                                        className="chip-drop absolute -top-1 right-1 h-6 w-6"
+                                        className={`${d.kind === "in" ? "chip-drop" : "chip-fall"} absolute -top-1 right-1 h-6 w-6`}
                                         onAnimationEnd={() => removeChipDrop(d.id)}
                                       >
-                                        <PokerChip className="h-full w-full drop-shadow" />
+                                        {d.kind === "in" ? (
+                                          <PokerChip className="h-full w-full drop-shadow" />
+                                        ) : (
+                                          <PokerChip
+                                            className="h-full w-full drop-shadow"
+                                            body={CHIP_COLORS[1].body}
+                                            edge={CHIP_COLORS[1].edge}
+                                            suit="♥"
+                                          />
+                                        )}
                                       </span>
-                                      <span className="float-up absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">
-                                        +1
-                                      </span>
+                                      {d.kind === "in" ? (
+                                        <span className="float-up absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-primary">
+                                          +1
+                                        </span>
+                                      ) : (
+                                        <span className="float-down absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-rose-500">
+                                          −1
+                                        </span>
+                                      )}
                                     </span>
                                   ))}
                               </div>

@@ -238,6 +238,48 @@
   }
 }
 
+/* Ficha roja que se va al restar una cajita: el espejo de chip-drop. Aparece
+   sobre el contador, da un saltito y se cae para abajo girando. */
+.chip-fall {
+  animation: chip-fall 900ms cubic-bezier(0.45, 0, 0.7, 0.4) forwards;
+}
+@keyframes chip-fall {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  32% {
+    transform: translateY(-12px) rotate(-8deg) scale(1);
+  }
+  48% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px) rotate(120deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* "−1" que se hunde */
+.float-down {
+  animation: float-down 900ms ease-in forwards;
+}
+@keyframes float-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+}
+
 /* Rebote del número cuando cambia */
 .num-pop {
   animation: num-pop 420ms ease-out;
