@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "migrate": "node scripts/migrate.mjs",
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start",

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm test && npm run build",
+  "buildCommand": "npm test && npm run migrate && npm run build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "functions": {
