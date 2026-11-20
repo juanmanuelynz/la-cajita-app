@@ -28,6 +28,6 @@ Archivo                   Original
 metal-latch.mp3           RPG sounds/metalLatch.ogg
 metal-click.mp3           RPG sounds/metalClick.ogg
 drop-leather.mp3          RPG sounds/dropLeather.ogg
-jingle-match.mp3          Jingle sounds/jingles_STEEL/jingles_STEEL07.ogg
-jingle-tournament.mp3     Jingle sounds/jingles_SAX/jingles_SAX07.ogg
+jingle-match.mp3          Jingle sounds/jingles_STEEL/jingles_STEEL04.ogg
+jingle-tournament.mp3     Jingle sounds/jingles_PIZZA/jingles_PIZZA02.ogg
 Convertidos a MP3 mono 96 kbps y normalizados a -1 dBFS de pico.
