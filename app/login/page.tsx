@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ChipSpinner } from "@/components/poker-chip";
 import { ChipCase } from "@/components/chip-case";
 import { login } from "./actions";
-import { playSequence, playSound } from "@/lib/sounds";
+import { playSequence, playSound, preloadSounds } from "@/lib/sounds";
 
 const PIN_LENGTH = 6;
 // Tiempo que se muestra el maletín abriéndose antes de entrar a la app.
@@ -19,6 +19,13 @@ export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, { error: null });
   const [shakeKey, setShakeKey] = useState(0);
   const opened = !!state?.ok;
+
+  // Los sonidos del maletín se descargan apenas abre la página: en la PWA el
+  // teclado aparece solo y el primer toque suele ser "Entrar", así que no
+  // hay tiempo de cargarlos entre el toque y la respuesta del servidor.
+  useEffect(() => {
+    preloadSounds(["latch", "latchClick", "chipsBurst", "error"]);
+  }, []);
 
   useEffect(() => {
     if (state?.error) {

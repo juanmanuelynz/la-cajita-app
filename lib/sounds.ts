@@ -114,6 +114,20 @@ function preloadAll() {
   for (const s of Object.values(SOUNDS)) for (const f of s.files) void load(f)
 }
 
+function loadAll(names: SoundName[]): Promise<unknown> {
+  return Promise.all([...new Set(names)].flatMap((n) => SOUNDS[n].files.map((f) => load(f))))
+}
+
+/**
+ * Descarga y decodifica estos sonidos ya, sin esperar al primer toque (eso
+ * solo hace falta para reproducir). Para pantallas que suenan enseguida de la
+ * primera interacción, como el login.
+ */
+export function preloadSounds(names: SoundName[]) {
+  if (!isSoundEnabled()) return
+  void loadAll(names)
+}
+
 let sessionSet = false
 let preloaded = false
 
@@ -234,7 +248,23 @@ export function playSound(name: SoundName, { delay = 0, volume = 1 }: PlayOption
 }
 
 /** Atajo para programar varios sonidos y cortarlos todos juntos. */
+/**
+ * Programa varios sonidos y devuelve una función que los corta todos. Espera
+ * a tener todos los archivos cargados antes de arrancar, así la secuencia no
+ * sale desfasada ni pierde partes en una primera carga lenta. Si la carga
+ * tarda demasiado (más de 1,5 s), no suena: ya pasó el momento.
+ */
 export function playSequence(steps: { name: SoundName; at: number; volume?: number }[]): () => void {
-  const stops = steps.map((s) => playSound(s.name, { delay: s.at, volume: s.volume }))
-  return () => stops.forEach((stop) => stop())
+  if (!isSoundEnabled() || !getContext()) return () => {}
+  const requestedAt = performance.now()
+  let cancelled = false
+  let stops: (() => void)[] = []
+  void loadAll(steps.map((s) => s.name)).then(() => {
+    if (cancelled || performance.now() - requestedAt > 1500) return
+    stops = steps.map((s) => playSound(s.name, { delay: s.at, volume: s.volume }))
+  })
+  return () => {
+    cancelled = true
+    stops.forEach((stop) => stop())
+  }
 }
