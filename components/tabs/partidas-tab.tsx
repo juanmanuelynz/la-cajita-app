@@ -11,10 +11,12 @@ import {
   ChevronUp,
   Lock,
   Sparkles,
+  Coffee,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { ChipSpinner } from "@/components/poker-chip"
 import { HoleCards } from "@/components/hole-cards"
+import { CasualBadge } from "@/components/casual-badge"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
 
@@ -28,6 +30,7 @@ interface PartidasTabProps {
   isTournamentClosed: boolean
   onToggleExpand: (id: string) => void
   onCreateActive: () => void
+  onCreateCasual: () => void
   onContinueActive: (id: string) => void
   onDeleteActive: (id: string) => void
   onConfirmDeleteMatch: (id: string) => void
@@ -42,6 +45,7 @@ export function PartidasTab({
   isTournamentClosed,
   onToggleExpand,
   onCreateActive,
+  onCreateCasual,
   onContinueActive,
   onDeleteActive,
   onConfirmDeleteMatch,
@@ -136,6 +140,26 @@ export function PartidasTab({
               Nueva partida
             </Button>
           )}
+          {/* Amistosa: para seguir jugando después de la fecha del torneo.
+              Se anota igual pero no suma, así que va aunque el torneo esté cerrado. */}
+          <Button
+            onClick={onCreateCasual}
+            disabled={loading}
+            className="w-full h-auto py-3 mt-2 flex-col gap-0.5 border-dashed"
+            variant="outline"
+          >
+            <span className="flex items-center font-semibold">
+              {loading ? (
+                <ChipSpinner className="w-4 h-4 mr-2" />
+              ) : (
+                <Coffee className="w-4 h-4 mr-2" />
+              )}
+              Partida amistosa
+            </span>
+            <span className="text-xs font-normal text-muted-foreground">
+              Se anota igual, pero no suma al torneo
+            </span>
+          </Button>
         </div>
       </TabsContent>
 
@@ -155,7 +179,10 @@ export function PartidasTab({
                       onClick={() => onToggleExpand(match.id)}
                     >
                       <div className="flex-1">
-                        <div className="text-lg font-semibold">{formatDate(match.date)}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-semibold">{formatDate(match.date)}</span>
+                          {match.is_casual && <CasualBadge />}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {match.player_count} jugadores - ${formatAmount(match.total_money)}
                         </div>
@@ -256,3 +283,4 @@ export function PartidasTab({
     </Tabs>
   )
 }
+

@@ -107,10 +107,12 @@ export function buildMatchSummary(
       cajitas: Number(mp.cajitas),
     }))
 
+  // Una amistosa no mueve el ranking ni tiene historia en el torneo: solo
+  // podio y los destacados propios de la partida.
+  const context = match.is_casual ? [] : tournamentMatches
+
   const chronological = sortMatchesChronologically(
-    tournamentMatches.some((m) => m.id === match.id)
-      ? tournamentMatches
-      : [...tournamentMatches, match],
+    context.some((m) => m.id === match.id) ? context : [...context, match],
   )
   const idx = chronological.findIndex((m) => m.id === match.id)
   const previous = chronological.slice(0, idx)
@@ -121,7 +123,7 @@ export function buildMatchSummary(
   const beforePos = new Map(rankBefore.map((s, i) => [s.id, i + 1]))
   const inMatch = new Set(players.map((p) => p.playerId))
 
-  const ranking: RankingMove[] = rankAfter.map((s, i) => {
+  const ranking: RankingMove[] = match.is_casual ? [] : rankAfter.map((s, i) => {
     const before = beforePos.get(s.id) ?? null
     const after = i + 1
     return {

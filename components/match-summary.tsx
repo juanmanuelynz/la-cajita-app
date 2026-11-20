@@ -112,7 +112,8 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
     return () => clearTimeout(t)
   }, [])
 
-  const subtitle = `${tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`
+  const casual = !!match.is_casual
+  const subtitle = `${casual ? "Amistosa · " : tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`
   const makeImage = useCallback(
     () =>
       renderShareCard({
@@ -121,8 +122,9 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
         players: summary.players,
         highlights: summary.highlights,
         formatMoney: formatAmount,
+        showPoints: !casual,
       }),
-    [summary, subtitle],
+    [summary, subtitle, casual],
   )
 
   const top3 = summary.players.slice(0, 3)
@@ -140,7 +142,7 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
         />
 
         <div className="mt-6">
-          <AnimatedPodium top3={top3} jingle="jingleMatch" />
+          <AnimatedPodium top3={top3} jingle="jingleMatch" showPoints={!casual} />
         </div>
 
         {rest.length > 0 && (
@@ -161,7 +163,9 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
                   <span className={`font-semibold tabular-nums ${p.moneyWon >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                     {signedMoney(p.moneyWon)}
                   </span>
-                  <span className="w-12 text-right text-xs text-muted-foreground">{p.points} pts</span>
+                  {!casual && (
+                    <span className="w-12 text-right text-xs text-muted-foreground">{p.points} pts</span>
+                  )}
                 </div>
               </div>
             ))}

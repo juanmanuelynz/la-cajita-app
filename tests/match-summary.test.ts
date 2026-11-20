@@ -169,3 +169,18 @@ describe("lastMatchMovement", () => {
     expect(lastMatchMovement([], "money").size).toBe(0)
   })
 })
+
+describe("buildMatchSummary · amistosa", () => {
+  it("no arma ranking del torneo ni destacados que dependan de la historia", () => {
+    const m1 = match("m1", "2026-01-01", [["Ana", 1, 5000], ["Beto", 2, -5000]])
+    const casual = {
+      ...match("c1", "2026-01-01", [["Beto", 1, 90000, 3], ["Ana", 2, -90000, 1]], "2026-01-01T23:00:00Z"),
+      is_casual: true,
+    }
+    const summary = buildMatchSummary(casual, [m1], "money")
+    expect(summary.ranking).toEqual([])
+    expect(summary.players.map((p) => p.name)).toEqual(["Beto", "Ana"])
+    // Solo el destacado propio de la partida (cajitas), nada de récords del torneo.
+    expect(summary.highlights.map((h) => h.emoji)).toEqual(["📦"])
+  })
+})

@@ -36,6 +36,13 @@ describe("CreateMatchSchema", () => {
     expect(result.success).toBe(true)
   })
 
+  it("isCasual es opcional y por defecto false (partida de torneo)", () => {
+    const plain = CreateMatchSchema.parse(baseValid)
+    expect(plain.isCasual).toBe(false)
+    const casual = CreateMatchSchema.parse({ ...baseValid, isCasual: true })
+    expect(casual.isCasual).toBe(true)
+  })
+
   it("rechaza partidas con menos de 2 jugadores", () => {
     const result = CreateMatchSchema.safeParse({
       ...baseValid,

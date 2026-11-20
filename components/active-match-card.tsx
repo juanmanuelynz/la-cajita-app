@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ChipSpinner } from "@/components/poker-chip"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch } from "@/lib/types"
+import { CasualBadge } from "@/components/casual-badge"
 
 interface ActiveMatchCardProps {
   match: ActiveMatch
@@ -21,11 +22,20 @@ export function ActiveMatchCard({ match, loading, onContinue, onDelete }: Active
   )
 
   return (
-    <Card className="border border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.45)]">
+    <Card
+      className={
+        match.is_casual
+          ? "border border-sky-500 shadow-[0_0_20px_rgba(14,165,233,0.4)]"
+          : "border border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.45)]"
+      }
+    >
       <CardContent className="p-4 space-y-4">
         <div>
           <div className="flex justify-between items-center">
-            <div className="text-xl font-bold">{formatDate(match.date)}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold">{formatDate(match.date)}</span>
+              {match.is_casual && <CasualBadge />}
+            </div>
             <div className="text-xl font-bold">${formatAmount(totalInvestment)}</div>
           </div>
           <div className="text-sm text-muted-foreground">

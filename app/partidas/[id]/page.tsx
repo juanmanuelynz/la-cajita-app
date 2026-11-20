@@ -9,6 +9,7 @@ import type { Player } from "@/lib/types";
 import { POINTS_DISTRIBUTION } from "@/lib/constants";
 import { formatAmount } from "@/lib/formatters";
 import { playSound } from "@/lib/sounds";
+import { CasualBadge } from "@/components/casual-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,8 @@ export default function EditActiveMatchPage() {
   const [registering, setRegistering] = useState(false);
   const [playersList, setPlayersList] = useState<Player[]>([]);
   const [tournamentId, setTournamentId] = useState<string | null>(null);
+  // Amistosa: cualquier jugador de la app, sin roster ni puntos.
+  const [isCasual, setIsCasual] = useState(false);
   const [formData, setFormData] = useState<{
     date: string;
     cajiValue: number;
@@ -182,9 +185,14 @@ export default function EditActiveMatchPage() {
         return;
       }
       // El roster se filtra por torneo: solo los jugadores que participan
-      // en este torneo deben aparecer en el dropdown.
+      // en este torneo deben aparecer en el dropdown. Las amistosas no
+      // dependen del torneo, así que muestran a todos los jugadores.
       setTournamentId(match.tournament_id);
-      const roster = await db.getTournamentRoster(match.tournament_id);
+      const casual = !!match.is_casual;
+      setIsCasual(casual);
+      const roster = casual
+        ? await db.getAllPlayers()
+        : await db.getTournamentRoster(match.tournament_id);
       if (!mounted) return;
       setPlayersList(roster);
       {
@@ -372,9 +380,14 @@ export default function EditActiveMatchPage() {
     setCreatingPlayer(true);
     try {
       // createPlayer con tournamentId hace upsert del jugador y lo agrega
-      // al roster del torneo en una sola request.
-      const created = await db.createPlayer(newPlayerName.trim(), tournamentId);
-      const refreshed = await db.getTournamentRoster(tournamentId);
+      // al roster del torneo en una sola request. En una amistosa no lo
+      // sumamos al roster: solo se crea el jugador.
+      const created = isCasual
+        ? await db.createPlayer(newPlayerName.trim())
+        : await db.createPlayer(newPlayerName.trim(), tournamentId);
+      const refreshed = isCasual
+        ? await db.getAllPlayers()
+        : await db.getTournamentRoster(tournamentId);
       setPlayersList(refreshed);
       selectPlayer(index, created.id);
       setNewPlayerName("");
@@ -415,7 +428,9 @@ export default function EditActiveMatchPage() {
             <Button variant="outline" size="sm" onClick={handleBack}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Editar Partida</h1>
+            <h1 className="text-2xl font-bold">
+              {isCasual ? "Amistosa" : "Editar Partida"}
+            </h1>
             <div className="ml-auto flex items-center gap-2 text-xs">
               {!isOnline ? (
                 <div className="flex items-center gap-2 text-rose-500">
@@ -457,6 +472,12 @@ export default function EditActiveMatchPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Datos de la Partida</CardTitle>
+                {isCasual && (
+                  <div className="flex items-center gap-2 pt-1 text-sm text-muted-foreground">
+                    <CasualBadge />
+                    No suma puntos ni cuenta para el torneo
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -906,7 +927,11 @@ export default function EditActiveMatchPage() {
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Vista previa del registro</DialogTitle>
+              <DialogTitle>
+                {isCasual
+                  ? "Vista previa · amistosa"
+                  : "Vista previa del registro"}
+              </DialogTitle>
               <DialogDescription>
                 {formData.date} · {formData.playerCount} jugadores · ${" "}
                 {formatAmount(formData.cajiValue)} por cajita
@@ -924,7 +949,7 @@ export default function EditActiveMatchPage() {
                 })
                 .map((p, idx) => {
                   const pos = idx + 1;
-                  const points = pointsConfig[idx] || 0;
+                  const points = isCasual ? 0 : pointsConfig[idx] || 0;
                   return (
                     <div
                       key={p.originalIndex}
@@ -961,9 +986,11 @@ export default function EditActiveMatchPage() {
                         >
                           ${formatAmount(p.moneyWon)}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {points} pts
-                        </div>
+                        {!isCasual && (
+                          <div className="text-sm text-muted-foreground">
+                            {points} pts
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

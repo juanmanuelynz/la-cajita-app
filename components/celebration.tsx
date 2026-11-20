@@ -39,7 +39,15 @@ export interface PodiumPlayer {
   points: number
 }
 
-function PodiumSpot({ player, place }: { player: PodiumPlayer; place: 0 | 1 | 2 }) {
+function PodiumSpot({
+  player,
+  place,
+  showPoints,
+}: {
+  player: PodiumPlayer
+  place: 0 | 1 | 2
+  showPoints: boolean
+}) {
   const style = PODIUM[place]
   const money = useCountUp(player.moneyWon, { delayMs: style.delay + 250, durationMs: 1100 })
   return (
@@ -61,7 +69,9 @@ function PodiumSpot({ player, place }: { player: PodiumPlayer; place: 0 | 1 | 2 
         >
           {signedMoney(money)}
         </div>
-        <div className="text-[11px] text-muted-foreground">{player.points} pts</div>
+        {showPoints && (
+          <div className="text-[11px] text-muted-foreground">{player.points} pts</div>
+        )}
       </div>
       <div
         className={`podium-rise flex w-full items-start justify-center rounded-t-xl border-2 border-b-0 pt-2 ${style.block}`}
@@ -74,7 +84,16 @@ function PodiumSpot({ player, place }: { player: PodiumPlayer; place: 0 | 1 | 2 
 }
 
 /** Podio 2° · 1° · 3° que se revela de abajo hacia arriba. */
-export function AnimatedPodium({ top3, jingle }: { top3: PodiumPlayer[]; jingle: SoundName }) {
+export function AnimatedPodium({
+  top3,
+  jingle,
+  showPoints = true,
+}: {
+  top3: PodiumPlayer[]
+  jingle: SoundName
+  /** false en amistosas: no reparten puntos. */
+  showPoints?: boolean
+}) {
   const count = top3.length
   // Una pila de fichas por puesto y la música al revelar el 1°. Al repetir la
   // animación se re-monta y vuelve a sonar; al cerrar se corta.
@@ -91,9 +110,9 @@ export function AnimatedPodium({ top3, jingle }: { top3: PodiumPlayer[]; jingle:
   return (
     <>
       <div className="flex items-end gap-2">
-        {top3[1] && <PodiumSpot player={top3[1]} place={1} />}
-        {top3[0] && <PodiumSpot player={top3[0]} place={0} />}
-        {top3[2] && <PodiumSpot player={top3[2]} place={2} />}
+        {top3[1] && <PodiumSpot player={top3[1]} place={1} showPoints={showPoints} />}
+        {top3[0] && <PodiumSpot player={top3[0]} place={0} showPoints={showPoints} />}
+        {top3[2] && <PodiumSpot player={top3[2]} place={2} showPoints={showPoints} />}
       </div>
       <div className="h-1 rounded-full bg-border" />
     </>

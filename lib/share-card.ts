@@ -14,6 +14,8 @@ export interface ShareCardData {
   players: SummaryPlayer[]
   highlights: Highlight[]
   formatMoney: (n: number) => string
+  /** false en amistosas: no reparten puntos. */
+  showPoints?: boolean
 }
 
 const W = 1080
@@ -178,7 +180,7 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     // Encima del bloque: puntos, plata, nombre, ficha (y corona al ganador).
     ctx.font = font(600, 28)
     ctx.fillStyle = "rgba(236,253,245,0.7)"
-    ctx.fillText(`${p.points} pts`, cx, top - 22)
+    if (data.showPoints !== false) ctx.fillText(`${p.points} pts`, cx, top - 22)
     ctx.font = font(800, winner ? 44 : 36)
     ctx.fillStyle = p.moneyWon >= 0 ? "#34d399" : "#fb7185"
     ctx.fillText(money(p.moneyWon), cx, top - 62)
@@ -227,7 +229,7 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
     ctx.fillText(money(p.moneyWon), W - PAD - 130, cy + 1)
     ctx.font = font(600, 26)
     ctx.fillStyle = "rgba(236,253,245,0.6)"
-    ctx.fillText(`${p.points} pts`, W - PAD - 24, cy + 1)
+    if (data.showPoints !== false) ctx.fillText(`${p.points} pts`, W - PAD - 24, cy + 1)
     ctx.textBaseline = "alphabetic"
     y += rowH + 10
   }

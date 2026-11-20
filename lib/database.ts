@@ -187,6 +187,7 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
       m.caji_value,
       m.total_money,
       m.player_count,
+      m.is_casual,
       m.created_at,
       COALESCE(
         json_agg(
@@ -221,6 +222,7 @@ export async function createMatch(matchData: {
   date: string
   cajiValue: number
   tournamentId: string
+  isCasual?: boolean
   players: Array<{
     playerId?: string
     name: string
@@ -282,20 +284,23 @@ export async function createMatch(matchData: {
   const matchId = randomUUID()
 
   const matchInsert = sql`
-    INSERT INTO matches (id, date, caji_value, total_money, player_count, tournament_id)
+    INSERT INTO matches
+      (id, date, caji_value, total_money, player_count, tournament_id, is_casual)
     VALUES (
       ${matchId},
       ${validated.date},
       ${validated.cajiValue},
       ${totalMoney},
       ${validated.players.length},
-      ${validated.tournamentId}
+      ${validated.tournamentId},
+      ${validated.isCasual}
     )
     RETURNING *
   `
 
   const mpInserts = resolvedPlayers.map((p, position) => {
-    const points = pointsConfig[position] ?? 0
+    // Las amistosas guardan la posición (para el podio) pero no reparten puntos.
+    const points = validated.isCasual ? 0 : (pointsConfig[position] ?? 0)
     return sql`
       INSERT INTO match_players
         (match_id, player_id, cajitas, final_chips, money_won, position, points, tie_break)
@@ -348,7 +353,7 @@ export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[
     FROM match_players mp
     JOIN players p ON p.id = mp.player_id
     JOIN matches m ON m.id = mp.match_id
-    WHERE m.tournament_id = ${parsed}
+    WHERE m.tournament_id = ${parsed} AND NOT m.is_casual
     GROUP BY p.id, p.name
     ORDER BY points DESC
   `
@@ -385,6 +390,7 @@ export async function getAllTimeStats(): Promise<PlayerStats[]> {
     FROM match_players mp
     JOIN players p ON p.id = mp.player_id
     JOIN matches m ON m.id = mp.match_id
+    WHERE NOT m.is_casual
     GROUP BY p.id, p.name
     ORDER BY points DESC
   `
@@ -437,6 +443,7 @@ export async function createActiveMatch(matchData: {
   cajiValue: number
   playerCount: number
   tournamentId: string
+  isCasual?: boolean
   players: Array<{
     playerId?: string
     name: string
@@ -453,12 +460,13 @@ export async function createActiveMatch(matchData: {
 
   const rows = await sql`
     INSERT INTO active_matches
-      (date, caji_value, player_count, tournament_id, players)
+      (date, caji_value, player_count, tournament_id, is_casual, players)
     VALUES (
       ${validated.date},
       ${validated.cajiValue},
       ${validated.playerCount},
       ${validated.tournamentId},
+      ${validated.isCasual},
       ${JSON.stringify(playersClean)}::jsonb
     )
     RETURNING *
@@ -516,6 +524,7 @@ export async function registerActiveMatch(matchId: string): Promise<MatchWithPla
     date: activeMatch.date,
     cajiValue: activeMatch.caji_value,
     tournamentId: activeMatch.tournament_id,
+    isCasual: activeMatch.is_casual ?? false,
     players: activeMatch.players,
   })
 

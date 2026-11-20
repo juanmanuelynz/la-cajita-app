@@ -304,7 +304,9 @@ function LaCajitaPoker() {
   const selectedTournament = tournaments.find((t) => t.id === selectedTournamentId)
   const isTournamentClosed = !!selectedTournament?.closed_at
 
-  const createNewActiveMatch = async () => {
+  // isCasual = partida amistosa: se anota igual pero no suma al torneo, así
+  // que se permite aunque el torneo esté cerrado.
+  const createNewActiveMatch = async (isCasual = false) => {
     if (!selectedTournamentId) return
     setLoading(true)
     setError(null)
@@ -314,6 +316,7 @@ function LaCajitaPoker() {
         cajiValue: 2000,
         playerCount: 4,
         tournamentId: selectedTournamentId,
+        isCasual,
         players: Array(4)
           .fill(null)
           .map(() => ({
@@ -388,6 +391,13 @@ function LaCajitaPoker() {
       return next
     })
   }
+
+  // Solo las partidas del torneo: las amistosas aparecen en el Historial pero
+  // no cuentan para ranking, estadísticas, podio ni resumen.
+  const tournamentMatches = useMemo(
+    () => matches.filter((m) => !m.is_casual),
+    [matches],
+  )
 
   const summaryMatch = summaryMatchId
     ? matches.find((m) => m.id === summaryMatchId)
@@ -516,7 +526,7 @@ function LaCajitaPoker() {
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pt-8">
               <RankingTab
                 activeMatches={activeMatches}
-                matches={matches}
+                matches={tournamentMatches}
                 sortedPlayerStats={
                   rankingScope === "historico" ? sortedAllTimeStats : sortedPlayerStats
                 }
@@ -537,7 +547,8 @@ function LaCajitaPoker() {
                 loading={loading}
                 isTournamentClosed={isTournamentClosed}
                 onToggleExpand={toggleMatchExpansion}
-                onCreateActive={createNewActiveMatch}
+                onCreateActive={() => createNewActiveMatch(false)}
+                onCreateCasual={() => createNewActiveMatch(true)}
                 onContinueActive={editActiveMatch}
                 onDeleteActive={setActiveMatchToDelete}
                 onConfirmDeleteMatch={confirmDeleteMatch}
@@ -546,7 +557,7 @@ function LaCajitaPoker() {
             </div>
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
               <EstadisticasTab
-                matches={matches}
+                matches={tournamentMatches}
                 sortedPlayerStats={sortedPlayerStats}
                 expandedPlayerCards={expandedPlayerCards}
                 evolutionSortBy={evolutionSortBy}
@@ -564,7 +575,7 @@ function LaCajitaPoker() {
                 newTournamentName={newTournamentName}
                 creatingTournament={creatingTournament}
                 playerStats={playerStats}
-                matches={matches}
+                matches={tournamentMatches}
                 showPodium={showPodium}
                 allPlayers={allPlayers}
                 roster={roster}
@@ -632,7 +643,7 @@ function LaCajitaPoker() {
       {summaryMatch && (
         <MatchSummary
           match={summaryMatch}
-          tournamentMatches={matches}
+          tournamentMatches={tournamentMatches}
           tournamentName={selectedTournament?.name}
           sortBy={rankingSortBy}
           onClose={closeSummary}

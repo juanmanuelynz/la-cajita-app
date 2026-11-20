@@ -49,6 +49,8 @@ export const CreateMatchSchema = z
     date: z.string().regex(dateRegex, "La fecha debe estar en formato YYYY-MM-DD"),
     cajiValue: z.number().int().positive("El valor de la cajita debe ser positivo"),
     tournamentId: z.string().uuid("ID de torneo inválido"),
+    // Amistosa: se registra pero no reparte puntos ni cuenta para el torneo.
+    isCasual: z.boolean().optional().default(false),
     players: z
       .array(FinalMatchPlayerSchema)
       .min(2, "Una partida necesita al menos 2 jugadores")
@@ -88,6 +90,7 @@ export const CreateActiveMatchSchema = z.object({
   cajiValue: z.number().int().positive(),
   playerCount: z.number().int().min(2).max(8),
   tournamentId: z.string().uuid(),
+  isCasual: z.boolean().optional().default(false),
   players: z.array(ActiveMatchPlayerSchema).min(2).max(8),
 })
 

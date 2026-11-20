@@ -42,6 +42,8 @@ The Neon `DATABASE_URL` is read server-side only; it must not be prefixed with `
 
 **Active matches** (`active_matches` table): draft/in-progress sessions stored as JSONB. Players fill in results during a live game. When finished, `registerActiveMatch()` promotes the draft into the permanent `matches`/`match_players` tables and deletes the active match.
 
+**Amistosas** (`is_casual` on `matches` and `active_matches`): one-off games played after the tournament night ends. Same flow as a normal match, but any player can join (not just the roster, and creating one doesn't add them to the roster), they can be created even if the tournament is closed, and they store `points = 0`. They hang off the current tournament only to show up in its Historial (with a badge); `getPlayerStats`/`getAllTimeStats` exclude them in SQL and `app/page.tsx` filters them out (`tournamentMatches`) before passing matches to ranking, stats, podium and summary.
+
 ### Routes
 - `/` — Main dashboard: player stats, match history, charts, create new match or active match. This is a large "use client" component.
 - `/partidas/[id]` — Edit an active match in progress.
@@ -50,11 +52,11 @@ The Neon `DATABASE_URL` is read server-side only; it must not be prefixed with `
 Tables in Neon (DDL reference in [scripts/](scripts/), originally written for Supabase but pure standard Postgres):
 - `tournaments` — id, name, closed_at, created_at (a `closed_at IS NULL` row is the active tournament)
 - `players` — id, name, created_at
-- `matches` — id, date, caji_value, total_money, player_count, tournament_id (→ tournaments), created_at
+- `matches` — id, date, caji_value, total_money, player_count, tournament_id (→ tournaments), is_casual, created_at
 - `match_players` — id, match_id (→ matches), player_id (→ players), cajitas, final_chips, money_won, position, points, created_at
-- `active_matches` — id, date, caji_value, player_count, tournament_id (→ tournaments), players (JSONB array), created_at, updated_at
+- `active_matches` — id, date, caji_value, player_count, tournament_id (→ tournaments), is_casual, players (JSONB array), created_at, updated_at
 
-To bootstrap a fresh Neon DB, run scripts 01→06 in order via `psql "$DATABASE_URL" -f scripts/0X-...sql`. The current production schema was migrated wholesale from Supabase via `pg_dump`.
+To bootstrap a fresh Neon DB, run the numbered scripts in order (01→12) via `psql "$DATABASE_URL" -f scripts/0X-...sql`. The current production schema was migrated wholesale from Supabase via `pg_dump`.
 
 ### Environment Variables
 Create `.env.local` with:
