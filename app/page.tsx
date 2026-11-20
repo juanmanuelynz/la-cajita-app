@@ -304,7 +304,7 @@ function LaCajitaPoker() {
   const selectedTournament = tournaments.find((t) => t.id === selectedTournamentId)
   const isTournamentClosed = !!selectedTournament?.closed_at
 
-  // isCasual = partida amistosa: se anota igual pero no suma al torneo, así
+  // isCasual = partida suelta: se anota igual pero no suma al torneo, así
   // que se permite aunque el torneo esté cerrado.
   const createNewActiveMatch = async (isCasual = false) => {
     if (!selectedTournamentId) return
@@ -392,7 +392,7 @@ function LaCajitaPoker() {
     })
   }
 
-  // Solo las partidas del torneo: las amistosas aparecen en el Historial pero
+  // Solo las partidas del torneo: las sueltas aparecen en el Historial pero
   // no cuentan para ranking, estadísticas, podio ni resumen.
   const tournamentMatches = useMemo(
     () => matches.filter((m) => !m.is_casual),

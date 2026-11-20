@@ -1,4 +1,4 @@
--- Partidas amistosas (one-time): se juegan y se anotan con la app, pero no
+-- Partidas sueltas (one-time): se juegan y se anotan con la app, pero no
 -- suman al torneo. Quedan colgadas del torneo en curso solo para aparecer en
 -- su Historial; el ranking, las estadísticas y el histórico las ignoran.
 

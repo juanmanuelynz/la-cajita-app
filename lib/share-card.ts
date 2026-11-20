@@ -14,7 +14,7 @@ export interface ShareCardData {
   players: SummaryPlayer[]
   highlights: Highlight[]
   formatMoney: (n: number) => string
-  /** false en amistosas: no reparten puntos. */
+  /** false en sueltas: no reparten puntos. */
   showPoints?: boolean
 }
 

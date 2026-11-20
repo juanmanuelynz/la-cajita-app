@@ -42,7 +42,7 @@ The Neon `DATABASE_URL` is read server-side only; it must not be prefixed with `
 
 **Active matches** (`active_matches` table): draft/in-progress sessions stored as JSONB. Players fill in results during a live game. When finished, `registerActiveMatch()` promotes the draft into the permanent `matches`/`match_players` tables and deletes the active match.
 
-**Amistosas** (`is_casual` on `matches` and `active_matches`): one-off games played after the tournament night ends. Same flow as a normal match, but any player can join (not just the roster, and creating one doesn't add them to the roster), they can be created even if the tournament is closed, and they store `points = 0`. They hang off the current tournament only to show up in its Historial (with a badge); `getPlayerStats`/`getAllTimeStats` exclude them in SQL and `app/page.tsx` filters them out (`tournamentMatches`) before passing matches to ranking, stats, podium and summary.
+**Sueltas** (`is_casual` on `matches` and `active_matches`): one-off games played after the tournament night ends. Same flow as a normal match, but any player can join (not just the roster, and creating one doesn't add them to the roster), they can be created even if the tournament is closed, and they store `points = 0`. They hang off the current tournament only to show up in its Historial (with a badge); `getPlayerStats`/`getAllTimeStats` exclude them in SQL and `app/page.tsx` filters them out (`tournamentMatches`) before passing matches to ranking, stats, podium and summary.
 
 ### Routes
 - `/` — Main dashboard: player stats, match history, charts, create new match or active match. This is a large "use client" component.

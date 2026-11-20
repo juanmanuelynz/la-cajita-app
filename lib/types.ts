@@ -10,7 +10,7 @@ export interface Match {
   caji_value: number
   total_money: number
   player_count: number
-  /** Partida amistosa: no suma puntos ni cuenta para el ranking/estadísticas. */
+  /** Partida suelta: no suma puntos ni cuenta para el ranking/estadísticas. */
   is_casual?: boolean
   created_at: string
 }

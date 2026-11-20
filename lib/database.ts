@@ -299,7 +299,7 @@ export async function createMatch(matchData: {
   `
 
   const mpInserts = resolvedPlayers.map((p, position) => {
-    // Las amistosas guardan la posición (para el podio) pero no reparten puntos.
+    // Las sueltas guardan la posición (para el podio) pero no reparten puntos.
     const points = validated.isCasual ? 0 : (pointsConfig[position] ?? 0)
     return sql`
       INSERT INTO match_players

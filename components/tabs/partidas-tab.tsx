@@ -140,7 +140,7 @@ export function PartidasTab({
               Nueva partida
             </Button>
           )}
-          {/* Amistosa: para seguir jugando después de la fecha del torneo.
+          {/* Suelta: para seguir jugando después de la fecha del torneo.
               Se anota igual pero no suma, así que va aunque el torneo esté cerrado. */}
           <Button
             onClick={onCreateCasual}
@@ -154,7 +154,7 @@ export function PartidasTab({
               ) : (
                 <Coffee className="w-4 h-4 mr-2" />
               )}
-              Partida amistosa
+              Partida suelta
             </span>
             <span className="text-xs font-normal text-muted-foreground">
               Se anota igual, pero no suma al torneo

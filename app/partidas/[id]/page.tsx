@@ -78,7 +78,7 @@ export default function EditActiveMatchPage() {
   const [registering, setRegistering] = useState(false);
   const [playersList, setPlayersList] = useState<Player[]>([]);
   const [tournamentId, setTournamentId] = useState<string | null>(null);
-  // Amistosa: cualquier jugador de la app, sin roster ni puntos.
+  // Suelta: cualquier jugador de la app, sin roster ni puntos.
   const [isCasual, setIsCasual] = useState(false);
   const [formData, setFormData] = useState<{
     date: string;
@@ -185,7 +185,7 @@ export default function EditActiveMatchPage() {
         return;
       }
       // El roster se filtra por torneo: solo los jugadores que participan
-      // en este torneo deben aparecer en el dropdown. Las amistosas no
+      // en este torneo deben aparecer en el dropdown. Las sueltas no
       // dependen del torneo, así que muestran a todos los jugadores.
       setTournamentId(match.tournament_id);
       const casual = !!match.is_casual;
@@ -380,7 +380,7 @@ export default function EditActiveMatchPage() {
     setCreatingPlayer(true);
     try {
       // createPlayer con tournamentId hace upsert del jugador y lo agrega
-      // al roster del torneo en una sola request. En una amistosa no lo
+      // al roster del torneo en una sola request. En una suelta no lo
       // sumamos al roster: solo se crea el jugador.
       const created = isCasual
         ? await db.createPlayer(newPlayerName.trim())
@@ -429,7 +429,7 @@ export default function EditActiveMatchPage() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <h1 className="text-2xl font-bold">
-              {isCasual ? "Amistosa" : "Editar Partida"}
+              {isCasual ? "Partida suelta" : "Editar Partida"}
             </h1>
             <div className="ml-auto flex items-center gap-2 text-xs">
               {!isOnline ? (
@@ -929,7 +929,7 @@ export default function EditActiveMatchPage() {
             <DialogHeader>
               <DialogTitle>
                 {isCasual
-                  ? "Vista previa · amistosa"
+                  ? "Vista previa · suelta"
                   : "Vista previa del registro"}
               </DialogTitle>
               <DialogDescription>

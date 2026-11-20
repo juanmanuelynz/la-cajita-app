@@ -113,7 +113,7 @@ function SummaryContent({ match, tournamentMatches, tournamentName, sortBy, onCl
   }, [])
 
   const casual = !!match.is_casual
-  const subtitle = `${casual ? "Amistosa · " : tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`
+  const subtitle = `${casual ? "Suelta · " : tournamentName ? `${tournamentName} · ` : ""}${formatDate(match.date)}`
   const makeImage = useCallback(
     () =>
       renderShareCard({

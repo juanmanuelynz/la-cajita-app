@@ -170,7 +170,7 @@ describe("lastMatchMovement", () => {
   })
 })
 
-describe("buildMatchSummary · amistosa", () => {
+describe("buildMatchSummary · suelta", () => {
   it("no arma ranking del torneo ni destacados que dependan de la historia", () => {
     const m1 = match("m1", "2026-01-01", [["Ana", 1, 5000], ["Beto", 2, -5000]])
     const casual = {

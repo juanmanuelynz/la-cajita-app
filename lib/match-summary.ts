@@ -107,7 +107,7 @@ export function buildMatchSummary(
       cajitas: Number(mp.cajitas),
     }))
 
-  // Una amistosa no mueve el ranking ni tiene historia en el torneo: solo
+  // Una suelta no mueve el ranking ni tiene historia en el torneo: solo
   // podio y los destacados propios de la partida.
   const context = match.is_casual ? [] : tournamentMatches
 

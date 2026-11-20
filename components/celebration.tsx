@@ -91,7 +91,7 @@ export function AnimatedPodium({
 }: {
   top3: PodiumPlayer[]
   jingle: SoundName
-  /** false en amistosas: no reparten puntos. */
+  /** false en sueltas: no reparten puntos. */
   showPoints?: boolean
 }) {
   const count = top3.length

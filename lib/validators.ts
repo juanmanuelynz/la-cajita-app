@@ -49,7 +49,7 @@ export const CreateMatchSchema = z
     date: z.string().regex(dateRegex, "La fecha debe estar en formato YYYY-MM-DD"),
     cajiValue: z.number().int().positive("El valor de la cajita debe ser positivo"),
     tournamentId: z.string().uuid("ID de torneo inválido"),
-    // Amistosa: se registra pero no reparte puntos ni cuenta para el torneo.
+    // Suelta: se registra pero no reparte puntos ni cuenta para el torneo.
     isCasual: z.boolean().optional().default(false),
     players: z
       .array(FinalMatchPlayerSchema)
