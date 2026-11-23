@@ -18,9 +18,9 @@ export function IconTabsList({
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
     >
       {tabs.map(({ value, label, icon: Icon }) => (
-        <TabsTrigger key={value} value={value} className="gap-1.5 rounded-xl py-2 data-[state=active]:shadow">
+        <TabsTrigger key={value} value={value} className="gap-1.5 rounded-xl px-1.5 py-2 data-[state=active]:shadow">
           <Icon className="size-4 shrink-0" />
-          <span className="truncate">{label}</span>
+          <span className="whitespace-nowrap">{label}</span>
         </TabsTrigger>
       ))}
     </TabsList>

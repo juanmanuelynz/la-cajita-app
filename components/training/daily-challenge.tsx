@@ -362,10 +362,7 @@ function RunningChallenge({
         </div>
         <div className={cn("flex flex-col items-end gap-1", q.drill === "gto" && "hidden")}>
           <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
-              q.variant.deck === "short" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-400",
-            )}
+            className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
           >
             {q.variant.deck === "short" ? "Short · sin 2 a 5" : "Long · 52 cartas"}
           </span>

@@ -45,14 +45,14 @@ type Structure = "luz" | "ciegas"
 /** "Antes del flop" muestra el ejercicio de luz o el de ciegas según la estructura elegida. */
 type DrillChoice = Exclude<DrillId, "luz" | "preflop"> | "antes"
 
-const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; color: string; isNew?: boolean }[] = [
-  { id: "usable", label: "¿Qué tenés?", icon: Layers, color: "text-sky-400 bg-sky-500/15" },
-  { id: "whoWins", label: "¿Quién gana?", icon: Swords, color: "text-rose-400 bg-rose-500/15" },
-  { id: "outs", label: "Outs", icon: Target, color: "text-emerald-400 bg-emerald-500/15" },
-  { id: "potOdds", label: "¿Call o fold?", icon: Scale, color: "text-amber-400 bg-amber-500/15" },
-  { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows, color: "text-violet-400 bg-violet-500/15" },
-  { id: "antes", label: "Antes del flop", icon: Coins, color: "text-orange-400 bg-orange-500/15" },
-  { id: "gto", label: "GTO river", icon: Brain, color: "text-fuchsia-400 bg-fuchsia-500/15", isNew: true },
+const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; isNew?: boolean }[] = [
+  { id: "usable", label: "¿Qué tenés?", icon: Layers },
+  { id: "whoWins", label: "¿Quién gana?", icon: Swords },
+  { id: "outs", label: "Outs", icon: Target },
+  { id: "potOdds", label: "¿Call o fold?", icon: Scale },
+  { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows },
+  { id: "antes", label: "Antes del flop", icon: Coins },
+  { id: "gto", label: "GTO river", icon: Brain, isNew: true },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -126,11 +126,16 @@ function DrillPicker({
             )}
           >
             {d.isNew && (
-              <span className="absolute right-1.5 top-1.5 rounded-full bg-fuchsia-500 px-1.5 text-[9px] font-black uppercase leading-4 text-white">
+              <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
                 Nuevo
               </span>
             )}
-            <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", d.color)}>
+            <div
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
+                active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+              )}
+            >
               <Icon className="h-5 w-5" />
             </div>
             <div className={cn("min-h-8 text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
@@ -243,8 +248,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
         onClick={() => setDeck((d) => (d === "long" ? "short" : "long"))}
         aria-label={`Mazo ${deck === "long" ? "Long" : "Short"}: tocá para cambiar`}
         className={cn(
-          "flex shrink-0 flex-col items-center rounded-2xl border px-2.5 py-1 leading-tight transition-colors active:scale-95",
-          deck === "short" ? "border-violet-500/50 bg-violet-500/15 text-violet-300" : "border-sky-500/50 bg-sky-500/15 text-sky-300",
+          "flex shrink-0 flex-col items-center rounded-2xl border bg-muted/70 px-2.5 py-1 leading-tight transition-colors active:scale-95",
         )}
       >
         <span className="text-sm font-bold">{deck === "long" ? "Long" : "Short"}</span>

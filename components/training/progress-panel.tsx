@@ -38,18 +38,7 @@ export function useTrainingProgress(playerId: string | null, version: number) {
   return progress
 }
 
-const AVATAR_COLORS = [
-  "from-emerald-400 to-teal-600",
-  "from-sky-400 to-indigo-600",
-  "from-amber-300 to-orange-600",
-  "from-rose-400 to-fuchsia-600",
-  "from-violet-400 to-purple-700",
-  "from-lime-300 to-green-600",
-]
-
 export function Avatar({ name, className }: { name: string; className?: string }) {
-  let h = 0
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
   const initials = name
     .trim()
     .split(/\s+/)
@@ -59,8 +48,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-black text-white shadow-inner",
-        AVATAR_COLORS[h % AVATAR_COLORS.length],
+        "flex shrink-0 items-center justify-center rounded-full bg-primary font-black text-primary-foreground",
         className,
       )}
     >

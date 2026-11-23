@@ -160,7 +160,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
               right={bs}
               leftLabel={`Valor ${pct(1 - bs, 0)}`}
               rightLabel={`Bluff ${pct(bs, 0)}`}
-              leftClass="bg-sky-500"
+              leftClass="bg-primary"
               rightClass="bg-amber-500"
             />
           )}

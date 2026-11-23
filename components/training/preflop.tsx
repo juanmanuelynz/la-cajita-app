@@ -61,7 +61,7 @@ export function RangeGrid({ variant, pos, highlight }: { variant: Variant; pos: 
 
 export function BetaBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded bg-violet-500/15 text-violet-400 px-1.5 py-0.5 text-[11px] font-semibold">
+    <span className="inline-flex items-center gap-1 rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[11px] font-semibold">
       <FlaskConical className="w-3 h-3" /> Beta
     </span>
   )
