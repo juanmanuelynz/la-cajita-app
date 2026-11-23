@@ -87,7 +87,7 @@ export function OutsMath({
         </p>
       ) : (
         <p className="text-muted-foreground">
-          En mazo corto quedan menos cartas, así que cada out vale más: ≈ {pct(1 / unseen)} cada uno (en mazo largo
+          En Short deck quedan menos cartas, así que cada out vale más: ≈ {pct(1 / unseen)} cada uno (en Long deck
           es ≈ 2%). La regla de «× 2» se queda corta acá.
         </p>
       )}

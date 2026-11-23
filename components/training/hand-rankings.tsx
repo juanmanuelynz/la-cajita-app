@@ -32,7 +32,7 @@ export function HandRankings({ variant }: { variant: Variant }) {
           </p>
           {variant.deck === "short" && (
             <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-              <li>Mazo corto: 36 cartas, sin 2, 3, 4 ni 5.</li>
+              <li>Short deck: 36 cartas, sin 2, 3, 4 ni 5.</li>
               <li>
                 El <b>color le gana al full</b>: con 9 cartas por palo, el color sale menos.
               </li>

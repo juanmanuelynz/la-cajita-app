@@ -49,12 +49,12 @@ export interface Variant {
 }
 
 export const DECK_NAMES: Record<DeckType, string> = {
-  long: "Mazo largo",
-  short: "Mazo corto",
+  long: "Long deck",
+  short: "Short deck",
 }
 
 export function variantName(v: Variant): string {
-  return `${GAMES[v.game].name} · ${v.deck === "short" ? "corto" : "largo"}`
+  return `${GAMES[v.game].name} · ${v.deck === "short" ? "Short" : "Long"}`
 }
 
 /** Cartas en la mesa por calle. */

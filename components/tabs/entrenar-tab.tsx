@@ -63,7 +63,7 @@ export function EntrenarTab() {
       if (saved?.game in GAMES) setGame(saved.game)
       if (saved?.deck === "long" || saved?.deck === "short") setDeck(saved.deck)
     } catch {
-      // sin storage: arrancamos con Hold'em largo
+      // sin storage: arrancamos con Hold'em Long
     }
   }, [])
   useEffect(() => {
@@ -92,8 +92,8 @@ export function EntrenarTab() {
             value={deck}
             onChange={setDeck}
             options={[
-              { id: "long", label: "Largo" },
-              { id: "short", label: "Corto" },
+              { id: "long", label: "Long" },
+              { id: "short", label: "Short" },
             ]}
           />
         </div>
