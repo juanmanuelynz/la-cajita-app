@@ -269,7 +269,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
           <IconTabsList
             tabs={[
               { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },
-              { value: "calculadora", label: "Calculadora", icon: Calculator },
+              { value: "calculadora", label: "Calc", icon: Calculator },
               { value: "manos", label: "Jugadas", icon: BookOpen },
             ]}
           />
