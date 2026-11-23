@@ -4,11 +4,11 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import type { Card } from "@/lib/poker/cards"
 import type { BestHand } from "@/lib/poker/evaluator"
-import { makeOuts } from "@/lib/poker/drills"
+import { makeOuts, type OutsDrill as OutsData } from "@/lib/poker/drills"
 import type { Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, pct, useDrill } from "./drill-shell"
+import { DrillShell, Label, pct, useDrill, type DrillProps } from "./drill-shell"
 
 /** Mesa + tu mano + la del rival (a la vista, para practicar). */
 export function SpotView({
@@ -95,8 +95,9 @@ export function OutsMath({
   )
 }
 
-export function OutsDrill({ variant }: { variant: Variant }) {
-  const { drill, verdict, score, answer, next } = useDrill(variant, makeOuts)
+export function OutsDrill(props: DrillProps<OutsData>) {
+  const { variant } = props
+  const { drill, verdict, score, answer, next, inChallenge } = useDrill("outs", props, makeOuts)
   const [picked, setPicked] = useState<number | null>(null)
 
   if (!drill) return null
@@ -112,7 +113,8 @@ export function OutsDrill({ variant }: { variant: Variant }) {
           Vas perdiendo. ¿Cuántas cartas te ponen <b>adelante</b> si salen en {nextCard}?
         </>
       }
-      score={score}
+      score={inChallenge ? undefined : score}
+      nextLabel={props.nextLabel}
       verdict={verdict}
       onNext={() => {
         setPicked(null)

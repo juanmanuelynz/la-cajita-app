@@ -3,16 +3,17 @@
 import { useState } from "react"
 import { Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { makeWhoWins } from "@/lib/poker/drills"
-import { GAMES, type Variant } from "@/lib/poker/variants"
+import { makeWhoWins, type WhoWinsDrill as WhoWinsData } from "@/lib/poker/drills"
+import { GAMES } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, useDrill } from "./drill-shell"
+import { DrillShell, Label, useDrill, type DrillProps } from "./drill-shell"
 
 const TIE = -1
 
-export function WhoWinsDrill({ variant }: { variant: Variant }) {
-  const { drill, verdict, score, answer, next } = useDrill(variant, makeWhoWins)
+export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
+  const { variant } = props
+  const { drill, verdict, score, answer, next, inChallenge } = useDrill("whoWins", props, makeWhoWins)
   const [picked, setPicked] = useState<number | null>(null)
 
   if (!drill) return null
@@ -36,7 +37,8 @@ export function WhoWinsDrill({ variant }: { variant: Variant }) {
     <DrillShell
       title="¿Qué mano gana?"
       question="Mirá la mesa y tocá la mano que gana. Si reparten, tocá «Empate»."
-      score={score}
+      score={inChallenge ? undefined : score}
+      nextLabel={props.nextLabel}
       verdict={verdict}
       onNext={onNext}
       feedback={

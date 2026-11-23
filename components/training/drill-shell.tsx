@@ -1,41 +1,64 @@
 "use client"
 
-import { useCallback, useEffect, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 import { CheckCircle2, XCircle, Flame, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { playSound } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
+import type { DrillId } from "@/lib/poker/training"
 import { cn } from "@/lib/utils"
 
 export type Verdict = "right" | "wrong" | "close"
 
+/** Lo que el ejercicio avisa hacia afuera (para guardar el progreso). */
+export const TrainingContext = createContext<{
+  onAnswer?: (drill: DrillId, variant: Variant, correct: boolean) => void
+}>({})
+
+/** Props comunes de los ejercicios. Con `preset` muestran una situación dada (Desafío del día). */
+export interface DrillProps<T> {
+  variant: Variant
+  preset?: T
+  onNext?: () => void
+  nextLabel?: string
+}
+
 /**
  * Estado común de un ejercicio: genera la situación (solo en el cliente, para
  * no romper la hidratación con cartas al azar), lleva aciertos y racha, y la
- * vuelve a generar al cambiar de juego.
+ * vuelve a generar al cambiar de juego. Con `preset` usa esa situación y
+ * "Siguiente" llama a `onNext`.
  */
-export function useDrill<T>(variant: Variant, make: (v: Variant) => T) {
-  const [drill, setDrill] = useState<T | null>(null)
+export function useDrill<T>(id: DrillId, { variant, preset, onNext }: DrillProps<T>, make: (v: Variant) => T) {
+  const [drill, setDrill] = useState<T | null>(preset ?? null)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [score, setScore] = useState({ right: 0, total: 0, streak: 0 })
+  const { onAnswer } = useContext(TrainingContext)
 
   const next = useCallback(() => {
-    setDrill(make(variant))
     setVerdict(null)
-  }, [make, variant])
+    if (onNext) onNext()
+    else setDrill(make(variant))
+  }, [make, variant, onNext])
 
   useEffect(() => {
-    next()
-  }, [next])
+    if (preset) return
+    setDrill(make(variant))
+    setVerdict(null)
+  }, [make, variant, preset])
 
-  const answer = useCallback((v: Verdict) => {
-    setVerdict(v)
-    const ok = v !== "wrong"
-    setScore((s) => ({ right: s.right + (ok ? 1 : 0), total: s.total + 1, streak: ok ? s.streak + 1 : 0 }))
-    playSound(ok ? "chipLay" : "error")
-  }, [])
+  const answer = useCallback(
+    (v: Verdict) => {
+      setVerdict(v)
+      const ok = v !== "wrong"
+      setScore((s) => ({ right: s.right + (ok ? 1 : 0), total: s.total + 1, streak: ok ? s.streak + 1 : 0 }))
+      playSound(ok ? "chipLay" : "error")
+      onAnswer?.(id, variant, ok)
+    },
+    [id, variant, onAnswer],
+  )
 
-  return { drill, verdict, score, answer, next }
+  return { drill, verdict, score, answer, next, inChallenge: !!preset }
 }
 
 export function DrillShell({
@@ -46,30 +69,35 @@ export function DrillShell({
   onNext,
   children,
   feedback,
+  nextLabel = "Siguiente",
 }: {
   title: string
   question: ReactNode
-  score: { right: number; total: number; streak: number }
+  /** Sin score no se muestra el contador (en el Desafío lo lleva el desafío). */
+  score?: { right: number; total: number; streak: number }
   verdict: Verdict | null
   onNext: () => void
   children: ReactNode
   feedback?: ReactNode
+  nextLabel?: string
 }) {
   return (
     <div className="pt-2 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold">{title}</h3>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-          <span>
-            {score.right}/{score.total} bien
-          </span>
-          {score.streak >= 2 && (
-            <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
-              <Flame className="w-3.5 h-3.5" />
-              {score.streak}
+        {score && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+            <span>
+              {score.right}/{score.total} bien
             </span>
-          )}
-        </div>
+            {score.streak >= 2 && (
+              <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
+                <Flame className="w-3.5 h-3.5" />
+                {score.streak}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="text-sm">{question}</div>
@@ -93,7 +121,7 @@ export function DrillShell({
           </div>
           {feedback}
           <Button className="w-full mt-1" onClick={onNext}>
-            Siguiente <ArrowRight className="w-4 h-4 ml-1" />
+            {nextLabel} <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
       )}

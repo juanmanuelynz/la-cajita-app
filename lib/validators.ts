@@ -103,6 +103,31 @@ export const UpdateActiveMatchSchema = z.object({
 
 export const UuidSchema = z.string().uuid()
 
+export const DateSchema = z.string().regex(dateRegex)
+
 export type CreateMatchInput = z.infer<typeof CreateMatchSchema>
 export type CreateActiveMatchInput = z.infer<typeof CreateActiveMatchSchema>
 export type UpdateActiveMatchInput = z.infer<typeof UpdateActiveMatchSchema>
+
+// ── Entrenar ────────────────────────────────────────────────────────────────
+
+export const TrainingAnswerSchema = z.object({
+  playerId: z.string().uuid(),
+  drill: z.enum(["usable", "whoWins", "outs", "potOdds"]),
+  game: z.enum(["holdem", "omaha", "manhattan"]),
+  deck: z.enum(["long", "short"]),
+  correct: z.boolean(),
+  localDate: z.string().regex(dateRegex),
+})
+
+export const DailyResultSchema = z
+  .object({
+    playerId: z.string().uuid(),
+    date: z.string().regex(dateRegex),
+    score: z.number().int().min(0),
+    total: z.number().int().min(1).max(50),
+  })
+  .refine((r) => r.score <= r.total, "El puntaje no puede superar el total")
+
+export type TrainingAnswerInput = z.infer<typeof TrainingAnswerSchema>
+export type DailyResultInput = z.infer<typeof DailyResultSchema>

@@ -2,14 +2,14 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { makePotOdds } from "@/lib/poker/drills"
-import type { Variant } from "@/lib/poker/variants"
+import { makePotOdds, type PotOddsDrill as PotOddsData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
-import { DrillShell, pct, pesos, useDrill } from "./drill-shell"
+import { DrillShell, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 import { OutsMath, SpotView } from "./outs-drill"
 
-export function PotOddsDrill({ variant }: { variant: Variant }) {
-  const { drill, verdict, score, answer, next } = useDrill(variant, makePotOdds)
+export function PotOddsDrill(props: DrillProps<PotOddsData>) {
+  const { variant } = props
+  const { drill, verdict, score, answer, next, inChallenge } = useDrill("potOdds", props, makePotOdds)
   const [picked, setPicked] = useState<"call" | "fold" | null>(null)
 
   if (!drill) return null
@@ -43,7 +43,8 @@ export function PotOddsDrill({ variant }: { variant: Variant }) {
           </p>
         </div>
       }
-      score={score}
+      score={inChallenge ? undefined : score}
+      nextLabel={props.nextLabel}
       verdict={verdict}
       onNext={() => {
         setPicked(null)

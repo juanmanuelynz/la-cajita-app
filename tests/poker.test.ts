@@ -262,3 +262,24 @@ describe("¿Qué tenés?", () => {
     else expect(traps).toBeGreaterThan(20)
   })
 })
+
+describe("progreso y Desafío del día", () => {
+  it("racha de días: cuenta hasta hoy o hasta ayer", async () => {
+    const { dayStreak, addDays } = await import("../lib/poker/training")
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28")
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01")
+    expect(dayStreak(["2026-11-23", "2026-11-22", "2026-11-20"], "2026-11-23")).toBe(2)
+    expect(dayStreak(["2026-11-22", "2026-11-21"], "2026-11-23")).toBe(2) // hoy todavía no jugó
+    expect(dayStreak(["2026-11-20"], "2026-11-23")).toBe(0)
+    expect(dayStreak([], "2026-11-23")).toBe(0)
+  })
+
+  it("el desafío es igual para todos el mismo día y cambia de un día a otro", async () => {
+    const { dailyChallenge, DAILY_LENGTH } = await import("../lib/poker/training")
+    const a = dailyChallenge("2026-11-23")
+    const b = dailyChallenge("2026-11-23")
+    expect(a).toHaveLength(DAILY_LENGTH)
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b))
+    expect(JSON.stringify(dailyChallenge("2026-11-24"))).not.toBe(JSON.stringify(a))
+  })
+})

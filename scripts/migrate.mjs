@@ -12,6 +12,26 @@ const MIGRATIONS = [
   // 12-casual-matches.sql: partidas sueltas (no suman al torneo).
   "ALTER TABLE matches ADD COLUMN IF NOT EXISTS is_casual BOOLEAN NOT NULL DEFAULT false",
   "ALTER TABLE active_matches ADD COLUMN IF NOT EXISTS is_casual BOOLEAN NOT NULL DEFAULT false",
+  // 13-training.sql: progreso de la pestaña Entrenar y Desafío del día.
+  `CREATE TABLE IF NOT EXISTS training_answers (
+    id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    player_id  UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    drill      TEXT NOT NULL,
+    game       TEXT NOT NULL,
+    deck       TEXT NOT NULL,
+    correct    BOOLEAN NOT NULL,
+    local_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS training_answers_player_date ON training_answers (player_id, local_date)",
+  `CREATE TABLE IF NOT EXISTS training_daily (
+    player_id      UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    challenge_date DATE NOT NULL,
+    score          INTEGER NOT NULL,
+    total          INTEGER NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (player_id, challenge_date)
+  )`,
 ]
 
 const url = process.env.DATABASE_URL

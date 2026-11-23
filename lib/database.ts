@@ -8,15 +8,22 @@ import type {
   PlayerStats,
   ActiveMatch,
   Tournament,
+  TrainingProgress,
+  DailyResult,
 } from "./types"
 import {
   CreateActiveMatchSchema,
   CreateMatchSchema,
+  DailyResultSchema,
+  DateSchema,
   PlayerNameSchema,
   PointsConfigSchema,
   TournamentNameSchema,
   UpdateActiveMatchSchema,
   UuidSchema,
+  TrainingAnswerSchema,
+  type DailyResultInput,
+  type TrainingAnswerInput,
 } from "./validators"
 import { POINTS_DISTRIBUTION } from "./constants"
 import { rankMatchPlayers } from "./ranking"
@@ -532,3 +539,68 @@ export async function registerActiveMatch(matchId: string): Promise<MatchWithPla
   return realMatch
 }
 
+
+// ────────────────────────────────────────────────────────────────────────────
+// Entrenar: progreso y Desafío del día
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function recordTrainingAnswer(input: TrainingAnswerInput): Promise<void> {
+  const a = TrainingAnswerSchema.parse(input)
+  await sql`
+    INSERT INTO training_answers (player_id, drill, game, deck, correct, local_date)
+    VALUES (${a.playerId}, ${a.drill}, ${a.game}, ${a.deck}, ${a.correct}, ${a.localDate})
+  `
+}
+
+export async function getTrainingProgress(playerId: string, today: string): Promise<TrainingProgress> {
+  const id = UuidSchema.parse(playerId)
+  const day = DateSchema.parse(today)
+  const [drills, variants, days, todayRows] = (await sql.transaction([
+    sql`
+      SELECT drill AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers WHERE player_id = ${id} GROUP BY drill
+    `,
+    sql`
+      SELECT game || ':' || deck AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers WHERE player_id = ${id} GROUP BY game, deck
+    `,
+    sql`
+      SELECT DISTINCT local_date::text AS day FROM training_answers
+      WHERE player_id = ${id} ORDER BY day DESC LIMIT 400
+    `,
+    sql`
+      SELECT COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers WHERE player_id = ${id} AND local_date = ${day}
+    `,
+  ])) as Array<Array<Record<string, unknown>>>
+
+  const toMap = (rows: Array<Record<string, unknown>>) =>
+    Object.fromEntries(rows.map((r) => [String(r.key), { right: Number(r.right), total: Number(r.total) }]))
+  return {
+    byDrill: toMap(drills),
+    byVariant: toMap(variants),
+    days: days.map((r) => String(r.day)),
+    today: { right: Number(todayRows[0]?.right ?? 0), total: Number(todayRows[0]?.total ?? 0) },
+  }
+}
+
+/** Guarda el resultado del Desafío del día. Un solo intento por día: si ya había uno, queda el primero. */
+export async function submitDailyResult(input: DailyResultInput): Promise<void> {
+  const r = DailyResultSchema.parse(input)
+  await sql`
+    INSERT INTO training_daily (player_id, challenge_date, score, total)
+    VALUES (${r.playerId}, ${r.date}, ${r.score}, ${r.total})
+    ON CONFLICT (player_id, challenge_date) DO NOTHING
+  `
+}
+
+export async function getDailyLeaderboard(date: string): Promise<DailyResult[]> {
+  const day = DateSchema.parse(date)
+  const rows = await sql`
+    SELECT d.player_id, p.name, d.score, d.total
+    FROM training_daily d JOIN players p ON p.id = d.player_id
+    WHERE d.challenge_date = ${day}
+    ORDER BY d.score DESC, d.created_at ASC
+  `
+  return rows as DailyResult[]
+}

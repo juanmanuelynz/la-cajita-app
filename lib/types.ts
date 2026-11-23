@@ -69,3 +69,26 @@ export interface Tournament {
   created_at: string
   points_config: number[]
 }
+
+export interface TrainingTally {
+  right: number
+  total: number
+}
+
+export interface TrainingProgress {
+  /** Aciertos por ejercicio (clave: id del ejercicio). */
+  byDrill: Record<string, TrainingTally>
+  /** Aciertos por juego y mazo (clave: "holdem:long", etc.). */
+  byVariant: Record<string, TrainingTally>
+  /** Fechas (YYYY-MM-DD) en que entrenó, de la más nueva a la más vieja. */
+  days: string[]
+  /** Respuestas de hoy. */
+  today: TrainingTally
+}
+
+export interface DailyResult {
+  player_id: string
+  name: string
+  score: number
+  total: number
+}

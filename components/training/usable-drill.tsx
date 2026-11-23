@@ -3,16 +3,17 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { CATEGORY_NAMES, type Cat } from "@/lib/poker/evaluator"
-import { makeUsable } from "@/lib/poker/drills"
-import { GAMES, type Variant } from "@/lib/poker/variants"
+import { makeUsable, type UsableDrill as UsableData } from "@/lib/poker/drills"
+import { GAMES } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, useDrill } from "./drill-shell"
+import { DrillShell, Label, useDrill, type DrillProps } from "./drill-shell"
 
 const cuantas = (n: number) => (n === 1 ? "1 carta" : `${n} cartas`)
 
-export function UsableDrill({ variant }: { variant: Variant }) {
-  const { drill, verdict, score, answer, next } = useDrill(variant, makeUsable)
+export function UsableDrill(props: DrillProps<UsableData>) {
+  const { variant } = props
+  const { drill, verdict, score, answer, next, inChallenge } = useDrill("usable", props, makeUsable)
   const [picked, setPicked] = useState<Cat | null>(null)
 
   if (!drill) return null
@@ -30,7 +31,8 @@ export function UsableDrill({ variant }: { variant: Variant }) {
           Con la mesa completa, ¿cuál es tu mejor jugada en <b>{game.name}</b>?
         </>
       }
-      score={score}
+      score={inChallenge ? undefined : score}
+      nextLabel={props.nextLabel}
       verdict={verdict}
       onNext={() => {
         setPicked(null)
