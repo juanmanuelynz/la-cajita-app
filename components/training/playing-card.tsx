@@ -20,6 +20,7 @@ export function PlayingCard({
   highlight,
   dim,
   className,
+  dealDelay,
 }: {
   card: Card
   size?: CardSize
@@ -28,11 +29,15 @@ export function PlayingCard({
   /** Atenúa la carta (no se usa). */
   dim?: boolean
   className?: string
+  /** Si se pasa, la carta entra con la animación de reparto después de esos ms. */
+  dealDelay?: number
 }) {
   const suit = suitOf(card)
   return (
     <div
+      style={dealDelay !== undefined ? { animationDelay: `${dealDelay}ms` } : undefined}
       className={cn(
+        dealDelay !== undefined && "card-deal",
         "relative bg-white border border-slate-300 shadow-sm flex flex-col items-center justify-center font-bold leading-none select-none transition-all",
         SIZES[size],
         SUIT_TEXT[suit],
@@ -69,17 +74,28 @@ export function CardRow({
   size = "md",
   used,
   className,
+  deal,
 }: {
   cards: readonly Card[]
   size?: CardSize
   /** Si se pasa, resalta estas cartas y atenúa el resto. */
   used?: readonly Card[]
   className?: string
+  /** Repartir las cartas con animación, una tras otra, empezando a los `deal` ms. */
+  deal?: number
 }) {
+  // La key con las cartas hace que una mano nueva se vuelva a repartir.
   return (
-    <div className={cn("flex gap-1 flex-wrap", className)}>
-      {cards.map((c) => (
-        <PlayingCard key={c} card={c} size={size} highlight={used?.includes(c)} dim={used ? !used.includes(c) : false} />
+    <div key={cards.join("-")} className={cn("flex gap-1 flex-wrap [perspective:600px]", className)}>
+      {cards.map((c, i) => (
+        <PlayingCard
+          key={c}
+          card={c}
+          size={size}
+          highlight={used?.includes(c)}
+          dim={used ? !used.includes(c) : false}
+          dealDelay={deal !== undefined ? deal + i * 70 : undefined}
+        />
       ))}
     </div>
   )

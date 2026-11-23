@@ -41,6 +41,12 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
       nextLabel={props.nextLabel}
       verdict={verdict}
       onNext={onNext}
+      headline={
+        <div className="text-2xl font-black leading-tight">
+          {isTie ? "Reparten" : `Gana el Jugador ${drill.winners[0] + 1}`}
+          <div className="text-base font-semibold text-muted-foreground">{drill.hands[drill.winners[0]].name}</div>
+        </div>
+      }
       feedback={
         <div className="space-y-1">
           <p>
@@ -55,7 +61,7 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
     >
       <div>
         <Label>Mesa</Label>
-        <CardRow cards={drill.board} />
+        <CardRow cards={drill.board} deal={0} />
       </div>
 
       <div className="space-y-2">
@@ -82,7 +88,7 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
                 </span>
                 {answered && <span className="text-xs text-muted-foreground">{hand.name}</span>}
               </div>
-              <CardRow cards={hole} size={holeSize} used={answered ? hand.fromHole : undefined} />
+              <CardRow cards={hole} size={holeSize} used={answered ? hand.fromHole : undefined} deal={400 + i * 180} />
               {answered && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-[10px] uppercase text-muted-foreground">Juega</span>

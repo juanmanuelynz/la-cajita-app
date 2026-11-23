@@ -4,7 +4,7 @@ import { useState } from "react"
 import { handTraits, makeCompare, type CompareDrill as CompareData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, pct, useDrill, type DrillProps } from "./drill-shell"
+import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const NAMES = ["Mano A", "Mano B"] as const
 
@@ -28,6 +28,15 @@ export function CompareDrill(props: DrillProps<CompareData>) {
         setPicked(null)
         next()
       }}
+      headline={
+        <Stats
+          items={drill.hands.map((_, i) => ({
+            label: NAMES[i],
+            value: pct(drill.equity[i], 0),
+            tone: drill.better === i ? ("good" as const) : ("neutral" as const),
+          }))}
+        />
+      }
       feedback={
         <div className="space-y-2">
           <p>
@@ -64,7 +73,7 @@ export function CompareDrill(props: DrillProps<CompareData>) {
                 <span className="text-sm font-medium">{NAMES[i]}</span>
                 {answered && <span className="text-sm font-bold tabular-nums">{pct(drill.equity[i], 0)}</span>}
               </div>
-              <CardRow cards={hand} size={size} />
+              <CardRow cards={hand} size={size} deal={i * 350} />
               {answered && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {handTraits(hand).map((t) => (

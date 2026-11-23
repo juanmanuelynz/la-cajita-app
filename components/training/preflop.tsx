@@ -19,7 +19,7 @@ import { BETA_VALIDATION, betaThreshold, shortOpens } from "@/lib/poker/preflop-
 import { GAMES, type Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, pct, useDrill, type DrillProps } from "./drill-shell"
+import { DrillShell, Label, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const TABLE_SIZES = [4, 5, 6] as const
 const POSITIONS: Position[] = ["UTG", "MP", "CO", "BU", "SB"]
@@ -100,6 +100,8 @@ function seatLabel(table: 4 | 5 | 6, s: Position | "BB"): string {
   if (s === "BB") return "Ciega grande"
   return `${POSITIONS_BY_TABLE[table].indexOf(s) + 1}º`
 }
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** Para la frase "Estás …" / "subir …". */
 function seatPhrase(table: 4 | 5 | 6, pos: Position): string {
@@ -191,6 +193,23 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
           setPicked(null)
           next()
         }}
+        headline={
+          drill.hand ? (
+            <div className="text-2xl font-black leading-tight">
+              {drill.open ? "Subo" : "Fold"}
+              <div className="text-base font-semibold text-muted-foreground">
+                {cap(seatPhrase(drill.table, drill.pos))} se juega el {pct(openPercent(drill.pos), 0)} de las manos
+              </div>
+            </div>
+          ) : (
+            <Stats
+              items={[
+                { label: "mínimo para subir", value: pct(drill.threshold!, 0) },
+                { label: "tu mano", value: pct(drill.equity!, 0), tone: drill.open ? "good" : "bad" },
+              ]}
+            />
+          )
+        }
         feedback={
           <div className="space-y-2">
             {drill.hand ? (
@@ -216,7 +235,7 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
         <SeatsLegend />
         <div>
           <Label>Tu mano</Label>
-          <CardRow cards={drill.cards} size={variant.game === "holdem" ? "md" : "sm"} />
+          <CardRow cards={drill.cards} size={variant.game === "holdem" ? "md" : "sm"} deal={0} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           {[false, true].map((open) => (

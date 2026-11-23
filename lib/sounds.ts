@@ -24,6 +24,8 @@ export const SOUNDS = {
   chipsPush: { files: ["chip-push"], volume: 0.9 },
   /** Mazo mezclándose: crear partida nueva. */
   cardShuffle: { files: ["card-shuffle"], volume: 0.7 },
+  /** Una carta que cae en la mesa (recortada del mazo): repartir en Entrenar. */
+  cardDeal: { files: ["card-deal-1", "card-deal-2"], volume: 0.55 },
   /** Trabas del maletín. */
   latch: { files: ["metal-latch"], volume: 0.8 },
   latchClick: { files: ["metal-click"], volume: 0.6 },

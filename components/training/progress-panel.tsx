@@ -100,14 +100,10 @@ export function ProgressPanel({
 
   if (!playerId) {
     return (
-      <div className="rounded-lg border border-dashed p-3 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <UserRound className="w-4 h-4" /> Guardá tu progreso
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Elegí tu nombre para guardar tus aciertos y jugar el Desafío del día. Queda recordado en este celular.
-        </p>
-        <PlayerSelect players={players} value={null} onChange={onPlayerChange} className="w-full" />
+      <div className="flex items-center gap-2 rounded-lg border border-dashed px-3 py-2">
+        <UserRound className="w-5 h-5 shrink-0 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground leading-tight">Para guardar tu progreso</span>
+        <PlayerSelect players={players} value={null} onChange={onPlayerChange} className="ml-auto min-w-0 flex-1" />
       </div>
     )
   }

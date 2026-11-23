@@ -20,6 +20,9 @@ https://freesound.org/s/217503/
 License: Creative Commons 0 -- http://creativecommons.org/publicdomain/zero/1.0/
 card-shuffle.mp3: archivo completo (5,25 s), pasa-altos de 70 Hz, fade final,
 MP3 mono 112 kbps, normalizado a -1 dBFS de pico.
+card-deal-1.mp3 / card-deal-2.mp3: golpes sueltos recortados de card-shuffle.mp3
+(desde 3,72 s y 3,97 s, ~0,26 s cada uno), pasa-altos de 70 Hz, fades cortos,
+MP3 mono 112 kbps, normalizados a -1 dBFS de pico.
 
 == Resto: Kenney (www.kenney.nl), licencia CC0 1.0 (dominio público) ==
 Packs: "Casino sounds", "RPG sounds" y "Jingle sounds".

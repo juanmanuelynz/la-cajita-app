@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { makePotOdds, type PotOddsDrill as PotOddsData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
-import { DrillShell, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 import { OutsMath, SpotView } from "./outs-drill"
 
 export function PotOddsDrill(props: DrillProps<PotOddsData>) {
@@ -50,6 +50,14 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
         setPicked(null)
         next()
       }}
+      headline={
+        <Stats
+          items={[
+            { label: "necesitás ganar", value: pct(needed, 0) },
+            { label: "ganás", value: pct(equity, 0), tone: equity >= needed ? "good" : "bad" },
+          ]}
+        />
+      }
       feedback={
         <div className="space-y-2">
           <p>

@@ -109,6 +109,7 @@ export function DailyChallenge({
   // la pantalla a medio dibujar. Mientras tanto se muestra un "cargando".
   const [questions, setQuestions] = useState<DailyQuestion[] | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [showBoard, setShowBoard] = useState(false)
   useEffect(() => {
     if (!running || questions) return
     const t = setTimeout(() => setQuestions(dailyChallenge(today)), 50)
@@ -184,7 +185,8 @@ export function DailyChallenge({
           // El resultado lo guarda el efecto de "terminado sin guardar".
           setRunning(false)
           setShowResult(true)
-          playSound("jingleMatch")
+          // 10/10: el jingle grande (el del cierre de torneo).
+          playSound(answers.length >= DAILY_LENGTH && answers.every(Boolean) ? "jingleTournament" : "jingleMatch")
         }}
         onExit={() => setRunning(false)}
       />
@@ -204,69 +206,68 @@ export function DailyChallenge({
       />
     ) : null
 
-  // ── Tarjeta ────────────────────────────────────────────────────────────
-  return (
-    <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-3">
-      {result}
-      <div className="flex items-center gap-2">
-        <CalendarCheck className="w-4 h-4 text-amber-500" />
-        <span className="font-semibold text-sm flex-1">Desafío del día</span>
-        {(submitted || finished) && (
-          <span className="text-sm tabular-nums font-semibold">
-            {mine ? mine.score : score}/{DAILY_LENGTH}
-          </span>
-        )}
-      </div>
+  // ── Tarjeta (una línea: el ejercicio tiene que quedar a la vista) ──────
+  const done = submitted || finished
+  const myPos = board ? board.findIndex((r) => r.player_id === playerId) : -1
+  const status = !playerId
+    ? "Elegí quién sos para jugar"
+    : done
+      ? `Sacaste ${mine ? mine.score : score}/${DAILY_LENGTH}${myPos >= 0 && board ? ` · vas ${myPos + 1}º de ${board.length}` : ""}`
+      : answers.length > 0
+        ? `Vas por la ${answers.length + 1} de ${DAILY_LENGTH}`
+        : board && board.length > 0
+          ? `${DAILY_LENGTH} preguntas · ya jugaron ${board.length}`
+          : `${DAILY_LENGTH} preguntas, iguales para todos`
 
-      {submitted || finished ? (
-        <>
-          {submitError && (
-            <p className="text-xs text-rose-500">
-              No se pudo guardar tu resultado.{" "}
-              <button type="button" className="underline" onClick={() => submit(answers)}>
-                Reintentar
-              </button>
-            </p>
-          )}
-          <Leaderboard rows={board} playerId={playerId} />
-          {/* Las respuestas pregunta por pregunta quedan en este celular. */}
-          {finished && (
+  return (
+    <div className="rounded-lg border border-amber-500/40 bg-amber-500/5">
+      {result}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <CalendarCheck className="w-5 h-5 shrink-0 text-amber-500" />
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold leading-tight">Desafío del día</div>
+          <div className="truncate text-xs text-muted-foreground">{status}</div>
+        </div>
+        {done ? (
+          finished ? (
             <Button
-              variant="outline"
               size="sm"
-              className="w-full"
+              variant="outline"
               onClick={() => {
                 setQuestions((q) => q ?? dailyChallenge(today))
                 setShowResult(true)
               }}
             >
-              Ver resultado
+              Ver
             </Button>
-          )}
-        </>
-      ) : (
-        <>
-          <p className="text-xs text-muted-foreground">
-            {DAILY_LENGTH} preguntas mezcladas de todos los juegos. Son las mismas para todo el grupo y hay un solo
-            intento por día.
-          </p>
-          {board && board.length > 0 && (
-            <p className="text-xs">
-              Ya lo jugaron {board.length}. Mejor: {board[0].name} con {board[0].score}/{board[0].total}.
-            </p>
-          )}
-          <Button className="w-full" disabled={!playerId} onClick={() => setRunning(true)}>
-            {!playerId
-              ? "Elegí quién sos para jugar"
-              : answers.length > 0
-                ? `Seguir (${answers.length}/${DAILY_LENGTH})`
-                : "Empezar"}
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setShowBoard((b) => !b)}>
+              Ranking
+            </Button>
+          )
+        ) : (
+          <Button size="sm" disabled={!playerId} onClick={() => setRunning(true)}>
+            {answers.length > 0 ? "Seguir" : "Jugar"}
           </Button>
-        </>
+        )}
+      </div>
+      {submitError && (
+        <p className="px-3 pb-2 text-xs text-rose-500">
+          No se pudo guardar tu resultado.{" "}
+          <button type="button" className="underline" onClick={() => submit(answers)}>
+            Reintentar
+          </button>
+        </p>
+      )}
+      {showBoard && (
+        <div className="border-t border-amber-500/20 px-3 py-2">
+          <Leaderboard rows={board} playerId={playerId} />
+        </div>
       )}
     </div>
   )
 }
+
 
 function RunningChallenge({
   questions,

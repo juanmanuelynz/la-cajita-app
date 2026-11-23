@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { DrillShell, Label, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 type Choice = "fold" | "check" | "bet" | "call"
 
@@ -105,6 +105,18 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         setPicked(null)
         next()
       }}
+      headline={
+        bet ? (
+          <Stats
+            items={[
+              { label: "necesitás ganar", value: pct(bet.needed, 0) },
+              { label: "ganás", value: pct(bet.equity, 0), tone: bet.equity >= bet.needed ? "good" : "bad" },
+            ]}
+          />
+        ) : (
+          <div className="text-xl font-black leading-tight">Fold nunca: el check es gratis</div>
+        )
+      }
       feedback={
         bet ? (
           <div className="space-y-2">
@@ -141,12 +153,12 @@ export function LuzDrill(props: DrillProps<LuzData>) {
       <LuzSeats d={drill} />
       <div>
         <Label>Tu mano</Label>
-        <CardRow cards={drill.hero} size={size} />
+        <CardRow cards={drill.hero} size={size} deal={0} />
       </div>
       {bet && (
         <div>
           <Label>Su mano</Label>
-          <CardRow cards={bet.villain} size={size} />
+          <CardRow cards={bet.villain} size={size} deal={drill.hero.length * 70 + 150} />
         </div>
       )}
       <div className={cn("grid gap-2", bet ? "grid-cols-2" : "grid-cols-3")}>

@@ -38,6 +38,7 @@ export function UsableDrill(props: DrillProps<UsableData>) {
         setPicked(null)
         next()
       }}
+      headline={<div className="text-2xl font-black leading-tight">{hand.name}</div>}
       feedback={
         <div className="space-y-2">
           <p>
@@ -59,11 +60,11 @@ export function UsableDrill(props: DrillProps<UsableData>) {
     >
       <div>
         <Label>Mesa</Label>
-        <CardRow cards={drill.board} />
+        <CardRow cards={drill.board} deal={0} />
       </div>
       <div>
         <Label>Tu mano</Label>
-        <CardRow cards={hole} size={variant.game === "holdem" ? "md" : "sm"} used={answered ? hand.fromHole : undefined} />
+        <CardRow cards={hole} size={variant.game === "holdem" ? "md" : "sm"} used={answered ? hand.fromHole : undefined} deal={400} />
       </div>
       <div className="grid grid-cols-2 gap-2">
         {drill.options.map((c) => (

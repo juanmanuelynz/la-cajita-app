@@ -8,7 +8,7 @@ import { makeOuts, type OutsDrill as OutsData } from "@/lib/poker/drills"
 import type { Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, pct, useDrill, type DrillProps } from "./drill-shell"
+import { DrillShell, Label, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 /** Mesa + tu mano + la del rival (a la vista, para practicar). */
 export function SpotView({
@@ -31,7 +31,7 @@ export function SpotView({
     <div className="space-y-3">
       <div>
         <Label>Mesa ({board.length === 3 ? "flop" : "turn"})</Label>
-        <CardRow cards={board} />
+        <CardRow cards={board} deal={0} />
       </div>
       <div className="grid grid-cols-1 gap-3">
         <div className="rounded-lg border border-emerald-500/40 p-2">
@@ -39,14 +39,14 @@ export function SpotView({
             <span className="text-sm font-medium">Vos</span>
             <span className="text-xs text-muted-foreground">{heroHand.name}</span>
           </div>
-          <CardRow cards={hero} size={size} />
+          <CardRow cards={hero} size={size} deal={300} />
         </div>
         <div className="rounded-lg border p-2">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium">Rival</span>
             <span className="text-xs text-muted-foreground">{villainHand.name}</span>
           </div>
-          <CardRow cards={villain} size={size} />
+          <CardRow cards={villain} size={size} deal={300 + hero.length * 70 + 100} />
         </div>
       </div>
     </div>
@@ -120,6 +120,14 @@ export function OutsDrill(props: DrillProps<OutsData>) {
         setPicked(null)
         next()
       }}
+      headline={
+        <Stats
+          items={[
+            { label: "outs", value: String(correct) },
+            { label: `de ligar en ${nextCard}`, value: pct(drill.nextCardPct, 0) },
+          ]}
+        />
+      }
       feedback={
         <div className="space-y-2">
           <OutsMath variant={variant} outs={drill.outs} ties={drill.ties} unseen={drill.unseen} street={drill.street} />
