@@ -21,6 +21,7 @@ import {
   BarChart3,
   BookOpen,
   RefreshCw,
+  GraduationCap,
 } from "lucide-react"
 import {
   Chart as ChartJS,
@@ -50,6 +51,7 @@ import { RankingTab } from "@/components/tabs/ranking-tab"
 import { PartidasTab } from "@/components/tabs/partidas-tab"
 import { EstadisticasTab } from "@/components/tabs/estadisticas-tab"
 import { ReglasTab } from "@/components/tabs/reglas-tab"
+import { EntrenarTab } from "@/components/tabs/entrenar-tab"
 import { getTodayLocalDate } from "@/lib/formatters"
 import { sortPlayerStats, type SortBy } from "@/lib/stats"
 import type { RankingScope } from "@/components/tabs/ranking-tab"
@@ -65,12 +67,13 @@ ChartJS.register(
   Legend,
 )
 
-type TabId = "ranking" | "partidas" | "estadisticas" | "reglas"
+type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "ranking", label: "Ranking Anual" },
   { id: "partidas", label: "Partidas" },
   { id: "estadisticas", label: "Estadísticas" },
+  { id: "entrenar", label: "Entrenar" },
   { id: "reglas", label: "Reglas" },
 ]
 
@@ -566,6 +569,9 @@ function LaCajitaPoker() {
               />
             </div>
             <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
+              <EntrenarTab />
+            </div>
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
               <ReglasTab
                 tournaments={tournaments}
                 selectedTournamentId={selectedTournamentId}
@@ -601,7 +607,8 @@ function LaCajitaPoker() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center w-32 h-full transition-all duration-200 ${
+              aria-label={tab.label}
+              className={`flex items-center justify-center flex-1 max-w-32 h-full transition-all duration-200 ${
                 activeTab === tab.id
                   ? "bg-primary/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -610,6 +617,7 @@ function LaCajitaPoker() {
               {tab.id === "ranking" && <Trophy className="w-7 h-7" />}
               {tab.id === "partidas" && <NotebookPen className="w-7 h-7" />}
               {tab.id === "estadisticas" && <BarChart3 className="w-7 h-7" />}
+              {tab.id === "entrenar" && <GraduationCap className="w-7 h-7" />}
               {tab.id === "reglas" && <BookOpen className="w-7 h-7" />}
             </button>
           ))}
