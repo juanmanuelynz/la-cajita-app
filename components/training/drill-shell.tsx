@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react"
 import { CheckCircle2, XCircle, Flame, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { playSound } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
@@ -57,50 +56,48 @@ export function DrillShell({
   feedback?: ReactNode
 }) {
   return (
-    <Card>
-      <CardContent className="p-4 space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold">{title}</h3>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-            <span>
-              {score.right}/{score.total} bien
+    <div className="pt-2 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold">{title}</h3>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+          <span>
+            {score.right}/{score.total} bien
+          </span>
+          {score.streak >= 2 && (
+            <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
+              <Flame className="w-3.5 h-3.5" />
+              {score.streak}
             </span>
-            {score.streak >= 2 && (
-              <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
-                <Flame className="w-3.5 h-3.5" />
-                {score.streak}
-              </span>
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        <div className="text-sm">{question}</div>
+      <div className="text-sm">{question}</div>
 
-        {children}
+      {children}
 
-        {verdict && (
-          <div
-            className={cn(
-              "rounded-lg border p-3 space-y-2 text-sm",
-              verdict === "wrong" ? "border-rose-500/50 bg-rose-500/10" : "border-emerald-500/50 bg-emerald-500/10",
+      {verdict && (
+        <div
+          className={cn(
+            "rounded-lg border p-3 space-y-2 text-sm",
+            verdict === "wrong" ? "border-rose-500/50 bg-rose-500/10" : "border-emerald-500/50 bg-emerald-500/10",
+          )}
+        >
+          <div className="flex items-center gap-2 font-semibold">
+            {verdict === "wrong" ? (
+              <XCircle className="w-4 h-4 text-rose-500" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             )}
-          >
-            <div className="flex items-center gap-2 font-semibold">
-              {verdict === "wrong" ? (
-                <XCircle className="w-4 h-4 text-rose-500" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              )}
-              {verdict === "right" ? "¡Bien!" : verdict === "close" ? "Muy justo: las dos valen" : "No era esa"}
-            </div>
-            {feedback}
-            <Button className="w-full mt-1" onClick={onNext}>
-              Siguiente <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
+            {verdict === "right" ? "¡Bien!" : verdict === "close" ? "Muy justo: las dos valen" : "No era esa"}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {feedback}
+          <Button className="w-full mt-1" onClick={onNext}>
+            Siguiente <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
 
