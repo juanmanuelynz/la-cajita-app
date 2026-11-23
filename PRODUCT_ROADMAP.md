@@ -126,7 +126,7 @@ Todo con CSS 3D / SVG / canvas, sin librerías de animación (la PWA sigue livia
 
 ---
 
-## 11. Pestaña Entrenar (aprender a jugar) — etapas 1 a 4 ✅ HECHAS
+## 11. Pestaña Entrenar (aprender a jugar) — etapas 1 a 5 ✅ HECHAS
 
 Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular exacto (sin tablas "GTO" inventadas). Juegos: Hold'em (2 cartas), Omaha (4, usa 2 + 3 de la mesa) y Manhattan (5, usa 2 o 3 de la mano + 3 o 2 de la mesa), cada uno con mazo Long o Short (36 cartas; color > full; A-6-7-8-9 es escalera; en La Cajita la escalera le gana al trío).
 
@@ -134,8 +134,10 @@ Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular ex
 - Etapas 1–3: motor en `lib/poker/` (evaluador verificado contra las 2.598.960 manos de 5 cartas), ejercicios "¿Qué tenés?" (qué cartas podés usar, con la trampa típica de Omaha/Manhattan), "¿Quién gana?", "Contá los outs" y "¿Pagás?" (pot odds en pesos), calculadora de equity y tabla de jugadas.
 - Etapa 4: progreso por jugador (elegís tu nombre una vez por celular; aciertos por ejercicio y por juego, días seguidos) y Desafío del día (10 preguntas iguales para todo el grupo, un intento por día, ranking). Tablas `training_answers` y `training_daily` (script 13).
 
+- Etapa 5: ejercicio "¿Abrís?" y tabla "Qué manos abrir" (13×13) para Hold'em Long, con los rangos de apertura 6-max de PokerStrategy.com (lecciones "No-Limit 6-max Pre-flop Ranges", 12/03/2026). Con 4 o 5 jugadores se sacan las primeras posiciones (adaptación nuestra, no de la fuente).
+
 **Pendiente**:
-- Etapa 5: rangos de apertura para mesas de 4–6 tomados de una fuente pública citada. Bloqueado: desde las sesiones cloud de Claude Code no se llega a los sitios de póker (pokerstrategy, upswing, gtowizard…). Hace falta habilitar esos hosts en la red del entorno o que alguien pegue la tabla de una fuente confiable.
+- Rangos para Omaha, Manhattan o short deck: no hay fuente confiable a mano.
 - Más adelante: explicaciones con IA vía Claude API. El plan Max trae créditos mensuales de API (hay que vincular una organización de la Claude Console); la API key iría como env var en Vercel, nunca `NEXT_PUBLIC_`.
 
 ---

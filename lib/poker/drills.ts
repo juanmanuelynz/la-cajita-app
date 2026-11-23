@@ -1,7 +1,8 @@
 // Generadores de ejercicios. Funciones puras (con rng inyectable) para poder
 // testearlas; la UI solo las muestra.
 
-import type { Card, Rng } from "./cards"
+import { makeCard, type Card, type Rng } from "./cards"
+import { POSITIONS_BY_TABLE, gridClasses, handClass, openRange, type HandClass, type Position } from "./preflop"
 import { bestHand, bestScore, Cat, categoryOf, categoryOrder, combos, eval5, handName, type BestHand } from "./evaluator"
 import { countOuts, deal, equityExact } from "./equity"
 import { BOARD_BY_STREET, GAMES, type Street, type Variant } from "./variants"
@@ -213,4 +214,44 @@ export function makeUsable(v: Variant, rng: Rng = Math.random): UsableDrill {
     for (const c of order) if (opts.size < 4) opts.add(c)
     return { kind: "usable", hole, board, hand, trap, options: order.filter((c) => opts.has(c)) }
   }
+}
+
+// ── ¿Abrís? (rangos de apertura, Hold'em Long) ─────────────────────────────
+
+export interface PreflopDrill {
+  kind: "preflop"
+  /** Jugadores en la mesa. */
+  table: 4 | 5 | 6
+  pos: Position
+  cards: [Card, Card]
+  hand: HandClass
+  /** Lo correcto según la fuente: abrir (subir) o tirar. */
+  open: boolean
+}
+
+/**
+ * Te toca hablar y todos los anteriores tiraron. Mitad de las veces la mano
+ * sale de repartir dos cartas al azar y mitad de elegir una casilla de la
+ * grilla 13×13 al azar (así aparecen más manos de borde y no todo es "tirar").
+ */
+export function makePreflop(_v: Variant, rng: Rng = Math.random, table?: 4 | 5 | 6): PreflopDrill {
+  const t = table ?? ([4, 5, 6] as const)[Math.floor(rng() * 3)]
+  const positions = POSITIONS_BY_TABLE[t]
+  const pos = positions[Math.floor(rng() * positions.length)]
+  let cards: [Card, Card]
+  if (rng() < 0.5) {
+    const { holes } = deal({ game: "holdem", deck: "long" }, 1, 2, 0, rng)
+    cards = [holes[0][0], holes[0][1]]
+  } else {
+    const grid = gridClasses().flat()
+    const cls = grid[Math.floor(rng() * grid.length)]
+    const hi = "23456789TJQKA".indexOf(cls[0]) + 2
+    const lo = "23456789TJQKA".indexOf(cls[1]) + 2
+    const s1 = Math.floor(rng() * 4)
+    let s2 = cls.endsWith("s") ? s1 : Math.floor(rng() * 3)
+    if (!cls.endsWith("s") && s2 >= s1) s2++
+    cards = [makeCard(hi, s1), makeCard(lo, s2)]
+  }
+  const hand = handClass(cards[0], cards[1])
+  return { kind: "preflop", table: t, pos, cards, hand, open: openRange(pos).has(hand) }
 }

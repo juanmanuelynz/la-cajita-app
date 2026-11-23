@@ -283,3 +283,46 @@ describe("progreso y Desafío del día", () => {
     expect(JSON.stringify(dailyChallenge("2026-11-24"))).not.toBe(JSON.stringify(a))
   })
 })
+
+describe("rangos de apertura (PokerStrategy 6-max)", () => {
+  it("cada rango suma exactamente las combinaciones que publica la fuente", async () => {
+    const { OPEN_RANGES, parseRange, comboCount } = await import("../lib/poker/preflop")
+    for (const r of Object.values(OPEN_RANGES)) {
+      const total = [...parseRange(r.range)].reduce((a, h) => a + comboCount(h), 0)
+      expect(total, r.pos).toBe(r.combos)
+    }
+  })
+
+  it("parser y clases de mano", async () => {
+    const { parseRange, handClass, gridClasses, openRange } = await import("../lib/poker/preflop")
+    expect([...parseRange("QQ+")].sort()).toEqual(["AA", "KK", "QQ"])
+    expect([...parseRange("A2s-A4s")].sort()).toEqual(["A2s", "A3s", "A4s"])
+    expect([...parseRange("KQ")].sort()).toEqual(["KQo", "KQs"])
+    expect(handClass(P("Ks")[0], P("Ah")[0])).toBe("AKo")
+    expect(handClass(P("2c")[0], P("7c")[0])).toBe("72s")
+    expect(gridClasses().flat()).toHaveLength(169)
+    expect(new Set(gridClasses().flat()).size).toBe(169)
+    // Ejemplos leídos en la fuente
+    expect(openRange("UTG").has("ATo")).toBe(false)
+    expect(openRange("UTG").has("44")).toBe(false)
+    expect(openRange("BU").has("72o")).toBe(false)
+    expect(openRange("BU").has("K5o")).toBe(true)
+    expect(openRange("SB").has("55")).toBe(false)
+  })
+
+  it("el ejercicio respeta la mesa y la respuesta sale del rango", async () => {
+    const { makePreflop } = await import("../lib/poker/drills")
+    const { POSITIONS_BY_TABLE, openRange } = await import("../lib/poker/preflop")
+    const rng = seededRng(3)
+    let opens = 0
+    for (let i = 0; i < 300; i++) {
+      const d = makePreflop(HE, rng, 4)
+      expect(POSITIONS_BY_TABLE[4]).toContain(d.pos)
+      expect(d.cards[0]).not.toBe(d.cards[1])
+      expect(d.open).toBe(openRange(d.pos).has(d.hand))
+      if (d.open) opens++
+    }
+    expect(opens).toBeGreaterThan(60)
+    expect(opens).toBeLessThan(240)
+  })
+})

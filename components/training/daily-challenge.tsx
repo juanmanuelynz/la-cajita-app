@@ -15,6 +15,7 @@ import { UsableDrill } from "./usable-drill"
 import { WhoWinsDrill } from "./who-wins-drill"
 import { OutsDrill } from "./outs-drill"
 import { PotOddsDrill } from "./pot-odds-drill"
+import { PreflopDrill } from "./preflop"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
 
@@ -46,6 +47,8 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <OutsDrill {...common} preset={q.data} />
     case "potOdds":
       return <PotOddsDrill {...common} preset={q.data} />
+    case "preflop":
+      return <PreflopDrill {...common} preset={q.data} />
   }
 }
 

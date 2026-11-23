@@ -11,6 +11,7 @@ import { DailyChallenge } from "@/components/training/daily-challenge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
 import { UsableDrill } from "@/components/training/usable-drill"
+import { PreflopDrill, PreflopRanges } from "@/components/training/preflop"
 import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
@@ -26,6 +27,7 @@ const DRILLS: { id: DrillId; label: string }[] = [
   { id: "whoWins", label: "¿Quién gana?" },
   { id: "outs", label: "Outs" },
   { id: "potOdds", label: "¿Pagás?" },
+  { id: "preflop", label: "¿Abrís?" },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -160,6 +162,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
               {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
               {drill === "outs" && <OutsDrill variant={variant} />}
               {drill === "potOdds" && <PotOddsDrill variant={variant} />}
+              {drill === "preflop" && <PreflopDrill variant={variant} />}
             </>
           )}
         </TabsContent>
@@ -172,6 +175,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
         <TabsContent value="manos" className="pt-1 pb-8 space-y-3 mt-0">
           {picker}
           <HandRankings variant={variant} />
+          <PreflopRanges variant={variant} />
         </TabsContent>
       </Tabs>
     </TrainingContext.Provider>
