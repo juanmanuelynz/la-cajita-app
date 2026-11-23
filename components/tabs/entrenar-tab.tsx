@@ -44,21 +44,13 @@ function Segmented<T extends string>({
   value,
   options,
   onChange,
-  small,
-  cols,
 }: {
   value: T
   options: { id: T; label: string }[]
   onChange: (v: T) => void
-  small?: boolean
-  /** Si se pasa, las opciones van en una grilla de esas columnas (para cuando no entran en una fila). */
-  cols?: number
 }) {
   return (
-    <div
-      className={cn("rounded-md bg-muted p-0.5", cols ? "grid gap-0.5" : "flex", small ? "text-xs" : "text-sm")}
-      style={cols ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}
-    >
+    <div className="flex rounded-md bg-muted p-0.5 text-sm">
       {options.map((o) => (
         <button
           key={o.id}
@@ -70,6 +62,29 @@ function Segmented<T extends string>({
           )}
         >
           {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Botones grandes para elegir el ejercicio (44px de alto: cómodos de tocar). */
+function DrillPicker({ value, onChange }: { value: DrillChoice; onChange: (d: DrillChoice) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {DRILLS.map((d) => (
+        <button
+          key={d.id}
+          type="button"
+          onClick={() => onChange(d.id)}
+          className={cn(
+            "min-h-11 rounded-lg border px-1 text-[13px] leading-tight transition-colors",
+            value === d.id
+              ? "border-primary bg-primary/20 font-semibold"
+              : "border-transparent bg-muted text-muted-foreground active:bg-muted/60",
+          )}
+        >
+          {d.label}
         </button>
       ))}
     </div>
@@ -184,7 +199,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
             <>
               <div className="pt-2 space-y-2">
                 {picker(true)}
-                <Segmented value={drill} onChange={setDrill} options={DRILLS} small cols={3} />
+                <DrillPicker value={drill} onChange={setDrill} />
               </div>
               {drill === "usable" && <UsableDrill variant={variant} />}
               {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
