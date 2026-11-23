@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { makeWhoWins, type WhoWinsDrill as WhoWinsData } from "@/lib/poker/drills"
 import { GAMES } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, useDrill, type DrillProps } from "./drill-shell"
+import { Felt, PickableHand } from "./table-view"
+import { DrillShell, useDrill, type DrillProps } from "./drill-shell"
 
 const TIE = -1
 
@@ -59,35 +59,21 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
         </div>
       }
     >
-      <div>
-        <Label>Mesa</Label>
-        <CardRow cards={drill.board} deal={0} />
-      </div>
+      <Felt cards={drill.board} />
 
       <div className="space-y-2">
         {drill.holes.map((hole, i) => {
-          const won = drill.winners.includes(i)
           const hand = drill.hands[i]
           return (
-            <button
+            <PickableHand
               key={i}
-              type="button"
-              disabled={answered}
-              onClick={() => choose(i)}
-              className={cn(
-                "w-full text-left rounded-lg border p-2 transition-colors",
-                !answered && "hover:bg-muted active:bg-muted",
-                answered && won && "border-amber-400 bg-amber-400/10",
-                answered && picked === i && !won && "border-rose-500 bg-rose-500/10",
-              )}
+              title={`Jugador ${i + 1}`}
+              detail={answered ? hand.name : undefined}
+              onPick={() => choose(i)}
+              answered={answered}
+              correct={drill.winners.includes(i)}
+              picked={picked === i}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-1">
-                  Jugador {i + 1}
-                  {answered && won && <Trophy className="w-3.5 h-3.5 text-amber-400" />}
-                </span>
-                {answered && <span className="text-xs text-muted-foreground">{hand.name}</span>}
-              </div>
               <CardRow cards={hole} size={holeSize} used={answered ? hand.fromHole : undefined} deal={400 + i * 180} />
               {answered && (
                 <div className="mt-2 flex items-center gap-2">
@@ -95,7 +81,7 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
                   <CardRow cards={hand.cards} size="xs" />
                 </div>
               )}
-            </button>
+            </PickableHand>
           )
         })}
       </div>

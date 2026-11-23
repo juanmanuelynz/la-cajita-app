@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { handTraits, makeCompare, type CompareDrill as CompareData } from "@/lib/poker/drills"
-import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
+import { PickableHand } from "./table-view"
 import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const NAMES = ["Mano A", "Mano B"] as const
@@ -51,41 +51,31 @@ export function CompareDrill(props: DrillProps<CompareData>) {
       }
     >
       <div className="space-y-2">
-        {drill.hands.map((hand, i) => {
-          const isBetter = drill.better === i
-          return (
-            <button
-              key={i}
-              type="button"
-              disabled={answered}
-              onClick={() => {
-                setPicked(i as 0 | 1)
-                answer(isBetter ? "right" : "wrong")
-              }}
-              className={cn(
-                "w-full text-left rounded-lg border p-2 transition-colors",
-                !answered && "hover:bg-muted active:bg-muted",
-                answered && isBetter && "border-emerald-500 bg-emerald-500/10",
-                answered && picked === i && !isBetter && "border-rose-500 bg-rose-500/10",
-              )}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">{NAMES[i]}</span>
-                {answered && <span className="text-sm font-bold tabular-nums">{pct(drill.equity[i], 0)}</span>}
+        {drill.hands.map((hand, i) => (
+          <PickableHand
+            key={i}
+            title={NAMES[i]}
+            detail={answered ? <b className="text-sm text-foreground tabular-nums">{pct(drill.equity[i], 0)}</b> : undefined}
+            onPick={() => {
+              setPicked(i as 0 | 1)
+              answer(drill.better === i ? "right" : "wrong")
+            }}
+            answered={answered}
+            correct={drill.better === i}
+            picked={picked === i}
+          >
+            <CardRow cards={hand} size={size} deal={i * 350} />
+            {answered && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {handTraits(hand).map((t) => (
+                  <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
               </div>
-              <CardRow cards={hand} size={size} deal={i * 350} />
-              {answered && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {handTraits(hand).map((t) => (
-                    <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </button>
-          )
-        })}
+            )}
+          </PickableHand>
+        ))}
       </div>
     </DrillShell>
   )

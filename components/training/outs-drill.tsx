@@ -8,47 +8,30 @@ import { makeOuts, type OutsDrill as OutsData } from "@/lib/poker/drills"
 import type { Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { DrillShell, Label, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
+import { Felt, Seat } from "./table-view"
+import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 /** Mesa + tu mano + la del rival (a la vista, para practicar). */
 export function SpotView({
-  variant,
   board,
   hero,
   villain,
   heroHand,
   villainHand,
 }: {
-  variant: Variant
+  /** Lo reciben todos los ejercicios; acá no cambia nada. */
+  variant?: Variant
   board: readonly Card[]
   hero: readonly Card[]
   villain: readonly Card[]
   heroHand: BestHand
   villainHand: BestHand
 }) {
-  const size = variant.game === "holdem" ? "md" : "sm"
   return (
-    <div className="space-y-3">
-      <div>
-        <Label>Mesa ({board.length === 3 ? "flop" : "turn"})</Label>
-        <CardRow cards={board} deal={0} />
-      </div>
-      <div className="grid grid-cols-1 gap-3">
-        <div className="rounded-lg border border-emerald-500/40 p-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">Vos</span>
-            <span className="text-xs text-muted-foreground">{heroHand.name}</span>
-          </div>
-          <CardRow cards={hero} size={size} deal={300} />
-        </div>
-        <div className="rounded-lg border p-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">Rival</span>
-            <span className="text-xs text-muted-foreground">{villainHand.name}</span>
-          </div>
-          <CardRow cards={villain} size={size} deal={300 + hero.length * 70 + 100} />
-        </div>
-      </div>
+    <div className="space-y-2">
+      <Seat who="rival" cards={villain} detail={villainHand.name} deal={300 + hero.length * 70 + 100} />
+      <Felt cards={board} label={`Mesa · ${board.length === 3 ? "flop" : "turn"}`} />
+      <Seat who="hero" cards={hero} detail={heroHand.name} deal={300} />
     </div>
   )
 }
