@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
+import { UsableDrill } from "@/components/training/usable-drill"
 import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
@@ -12,9 +13,10 @@ import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants
 import { cn } from "@/lib/utils"
 
 type Subtab = "ejercicios" | "calculadora" | "manos"
-type DrillId = "whoWins" | "outs" | "potOdds"
+type DrillId = "usable" | "whoWins" | "outs" | "potOdds"
 
 const DRILLS: { id: DrillId; label: string }[] = [
+  { id: "usable", label: "¿Qué tenés?" },
   { id: "whoWins", label: "¿Quién gana?" },
   { id: "outs", label: "Outs" },
   { id: "potOdds", label: "¿Pagás?" },
@@ -26,20 +28,22 @@ function Segmented<T extends string>({
   value,
   options,
   onChange,
+  small,
 }: {
   value: T
   options: { id: T; label: string }[]
   onChange: (v: T) => void
+  small?: boolean
 }) {
   return (
-    <div className="flex rounded-md bg-muted p-0.5 text-sm">
+    <div className={cn("flex rounded-md bg-muted p-0.5", small ? "text-xs" : "text-sm")}>
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
           onClick={() => onChange(o.id)}
           className={cn(
-            "flex-1 rounded px-2 py-1 transition-colors whitespace-nowrap",
+            "flex-1 rounded px-1.5 py-1 transition-colors whitespace-nowrap",
             value === o.id ? "bg-background shadow-sm font-medium" : "text-muted-foreground",
           )}
         >
@@ -54,7 +58,7 @@ export function EntrenarTab() {
   const [game, setGame] = useState<GameId>("holdem")
   const [deck, setDeck] = useState<DeckType>("long")
   const [subtab, setSubtab] = useState<Subtab>("ejercicios")
-  const [drill, setDrill] = useState<DrillId>("whoWins")
+  const [drill, setDrill] = useState<DrillId>("usable")
 
   // Recordar el último juego elegido en este dispositivo.
   useEffect(() => {
@@ -100,7 +104,8 @@ export function EntrenarTab() {
       </div>
 
       <TabsContent value="ejercicios" className="pt-2 pb-8 space-y-3 mt-0">
-        <Segmented value={drill} onChange={setDrill} options={DRILLS} />
+        <Segmented value={drill} onChange={setDrill} options={DRILLS} small />
+        {drill === "usable" && <UsableDrill variant={variant} />}
         {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
         {drill === "outs" && <OutsDrill variant={variant} />}
         {drill === "potOdds" && <PotOddsDrill variant={variant} />}

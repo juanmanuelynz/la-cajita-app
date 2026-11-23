@@ -2,7 +2,7 @@
 // testearlas; la UI solo las muestra.
 
 import type { Card, Rng } from "./cards"
-import { bestHand, bestScore, type BestHand } from "./evaluator"
+import { bestHand, bestScore, Cat, categoryOf, categoryOrder, combos, eval5, handName, type BestHand } from "./evaluator"
 import { countOuts, deal, equityExact } from "./equity"
 import { BOARD_BY_STREET, GAMES, type Street, type Variant } from "./variants"
 
@@ -157,5 +157,60 @@ export function makePotOdds(v: Variant, rng: Rng = Math.random): PotOddsDrill {
     equity,
     shouldCall: equity >= needed,
     close: Math.abs(equity - needed) < 0.02,
+  }
+}
+
+// ── ¿Qué tenés? (qué cartas podés usar) ───────────────────────────────────
+
+/** Mejor mano usando cualquier combinación de 5 cartas (como si fuera Hold'em sin límite). */
+export function bestAnyFive(cards: readonly Card[], deck: Variant["deck"]): BestHand {
+  let best: BestHand | null = null
+  for (const c of combos(cards.length, 5)) {
+    const five = c.map((i) => cards[i])
+    const s = eval5(five[0], five[1], five[2], five[3], five[4], deck)
+    if (!best || s > best.score) best = { score: s, cat: categoryOf(s, deck), cards: five, fromHole: [], name: handName(s, deck) }
+  }
+  return best!
+}
+
+export interface UsableDrill {
+  kind: "usable"
+  hole: Card[]
+  board: Card[]
+  /** La mejor mano válida según las reglas del juego. */
+  hand: BestHand
+  /** La que "parece" si usaras cualquier carta (la trampa). Solo si es mejor que la válida. */
+  trap: BestHand | null
+  /** Categorías para elegir, de la más alta a la más baja. */
+  options: Cat[]
+}
+
+export function makeUsable(v: Variant, rng: Rng = Math.random): UsableDrill {
+  const holeCount = GAMES[v.game].holeCount
+  // En Omaha y Manhattan, casi siempre buscamos una mano con trampa: es
+  // donde se equivoca el que recién empieza.
+  const wantTrap = v.game !== "holdem" && rng() < 0.75
+  const order = categoryOrder(v.deck)
+  for (let tries = 0; ; tries++) {
+    const { holes, board } = deal(v, 1, holeCount, 5, rng)
+    const hole = holes[0]
+    const hand = bestHand(hole, board, v.game, v.deck)!
+    const any = bestAnyFive([...hole, ...board], v.deck)
+    const trap = any.cat !== hand.cat && any.score > hand.score ? any : null
+    if (wantTrap && !trap && tries < 400) continue
+    // Sin trampa: que al menos haya algo para leer (par o más).
+    if (!trap && hand.cat === Cat.HighCard && tries < 400) continue
+
+    const opts = new Set<Cat>([hand.cat])
+    if (trap) opts.add(trap.cat)
+    // Completar con categorías vecinas a la correcta.
+    const idx = order.indexOf(hand.cat)
+    for (const d of [-1, 1, -2, 2, -3, 3, -4, 4]) {
+      if (opts.size >= 4) break
+      const c = order[idx + d]
+      if (c !== undefined && rng() < 0.85) opts.add(c)
+    }
+    for (const c of order) if (opts.size < 4) opts.add(c)
+    return { kind: "usable", hole, board, hand, trap, options: order.filter((c) => opts.has(c)) }
   }
 }

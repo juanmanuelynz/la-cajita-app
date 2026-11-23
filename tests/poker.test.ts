@@ -232,3 +232,33 @@ describe("tabla de jugadas", () => {
     }
   })
 })
+
+describe("¿Qué tenés?", () => {
+  it.each([
+    { game: "holdem", deck: "long" },
+    { game: "omaha", deck: "long" },
+    { game: "omaha", deck: "short" },
+    { game: "manhattan", deck: "long" },
+    { game: "manhattan", deck: "short" },
+  ] as Variant[])("$game $deck: la respuesta es la mano válida y la trampa es mejor pero ilegal", async (v) => {
+    const { makeUsable } = await import("../lib/poker/drills")
+    const rng = seededRng(7)
+    let traps = 0
+    for (let i = 0; i < 40; i++) {
+      const d = makeUsable(v, rng)
+      expect(d.hand.score).toBe(bestScore(d.hole, d.board, v.game, v.deck))
+      expect(d.options).toContain(d.hand.cat)
+      expect(new Set(d.options).size).toBe(4)
+      if (d.trap) {
+        traps++
+        expect(d.trap.score).toBeGreaterThan(d.hand.score)
+        expect(d.options).toContain(d.trap.cat)
+        const own = d.trap.cards.filter((c) => d.hole.includes(c)).length
+        const allowed = v.game === "omaha" ? [2] : v.game === "manhattan" ? [2, 3] : [0, 1, 2]
+        expect(allowed).not.toContain(own)
+      }
+    }
+    if (v.game === "holdem") expect(traps).toBe(0)
+    else expect(traps).toBeGreaterThan(20)
+  })
+})
