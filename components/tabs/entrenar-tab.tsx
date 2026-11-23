@@ -109,7 +109,9 @@ function DrillPicker({
   progress: TrainingProgress | null
 }) {
   return (
-    <div className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      data-no-swipe
+      className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {DRILLS.map((d) => {
         const t = drillTally(progress, d.id)
         const ratio = t?.total ? t.right / t.total : 0
