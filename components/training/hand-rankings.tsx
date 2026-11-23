@@ -8,7 +8,7 @@ import { CardRow } from "./playing-card"
 const DESCRIPTIONS: Record<Cat, string> = {
   [Cat.StraightFlush]: "Cinco seguidas del mismo palo.",
   [Cat.Quads]: "Cuatro del mismo número.",
-  [Cat.FullHouse]: "Un trío y un par.",
+  [Cat.FullHouse]: "Una pierna y un par.",
   [Cat.Flush]: "Cinco del mismo palo.",
   [Cat.Straight]: "Cinco seguidas, de cualquier palo.",
   [Cat.Trips]: "Tres del mismo número.",
@@ -37,7 +37,7 @@ export function HandRankings({ variant }: { variant: Variant }) {
                 El <b>color le gana al full</b>: con 9 cartas por palo, el color sale menos.
               </li>
               <li>A-6-7-8-9 es escalera (la más baja).</li>
-              <li>En La Cajita la escalera le gana al trío.</li>
+              <li>En La Cajita la escalera le gana a la pierna.</li>
             </ul>
           )}
         </CardContent>

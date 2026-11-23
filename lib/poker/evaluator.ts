@@ -5,7 +5,7 @@
 // donde k1..k5 son los rangos que desempatan, en orden de importancia.
 //
 // Mazo corto (reglas de la casa): el color le gana al full, y la escalera le
-// gana al trío como en el mazo largo. La escalera más baja es A-6-7-8-9.
+// gana a la pierna (trío) como en el mazo largo. La escalera más baja es A-6-7-8-9.
 
 import { rankOf, suitOf, type Card, type DeckType } from "./cards"
 import { GAMES, type GameId } from "./variants"
@@ -38,7 +38,7 @@ export const CATEGORY_NAMES: Record<Cat, string> = {
   [Cat.HighCard]: "Carta alta",
   [Cat.Pair]: "Par",
   [Cat.TwoPair]: "Doble par",
-  [Cat.Trips]: "Trío",
+  [Cat.Trips]: "Pierna",
   [Cat.Straight]: "Escalera",
   [Cat.Flush]: "Color",
   [Cat.FullHouse]: "Full",
@@ -240,7 +240,7 @@ export function handName(score: number, deck: DeckType): string {
     case Cat.Straight:
       return `Escalera al ${R(k(0))}`
     case Cat.Trips:
-      return `Trío de ${R(k(0))}`
+      return `Pierna de ${R(k(0))}`
     case Cat.TwoPair:
       return `Doble par: ${R(k(0))} y ${R(k(1))}`
     case Cat.Pair:

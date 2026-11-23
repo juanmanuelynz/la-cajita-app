@@ -43,7 +43,7 @@ describe("eval5 — categorías en mazo largo", () => {
     expect(cat(hand)).toBe(expected)
   })
 
-  it("orden de categorías: escalera de color > póker > full > color > escalera > trío > doble par > par > carta alta", () => {
+  it("orden de categorías: escalera de color > póker > full > color > escalera > pierna > doble par > par > carta alta", () => {
     const hands = [
       "As Ks Qs Js Ts",
       "9h 9d 9s 9c 2d",
@@ -79,7 +79,7 @@ describe("eval5 — mazo corto (reglas de la casa)", () => {
     expect(e5("Ah 9h 8h 7h 6h".replace("6h", "Jh"), "short")).toBeGreaterThan(e5("Ah Ad As Kc Kd", "short"))
     expect(cat("Ah Jh 8h 7h 6h", "short")).toBe(Cat.Flush)
   })
-  it("la escalera le gana al trío", () => {
+  it("la escalera le gana a la pierna", () => {
     expect(e5("Tc 9d 8h 7s 6c", "short")).toBeGreaterThan(e5("Ah Ad As Kc Qd", "short"))
   })
   it("A-6-7-8-9 es escalera (la más baja)", () => {
@@ -111,7 +111,7 @@ describe("mejor mano según el juego", () => {
   })
 
   it("Manhattan: 2 o 3 de la mano", () => {
-    // Trío en la mano + par en la mesa = full (3 + 2)
+    // Pierna en la mano + par en la mesa = full (3 + 2)
     const hole = P("8h 8d 8s Kc 2d")
     const board = P("Jh Jd 4c 6s 9h")
     expect(categoryOf(bestScore(hole, board, "manhattan", "long"), "long")).toBe(Cat.FullHouse)

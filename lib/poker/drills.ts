@@ -337,7 +337,7 @@ export function handTraits(cards: readonly Card[]): string[] {
   const name = (r: number) => ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[r] ?? String(r)
   for (const [r, n] of [...byRank].sort((a, b) => b[0] - a[0])) {
     if (n === 2) out.push(`par de ${name(r)}`)
-    if (n === 3) out.push(`trío de ${name(r)}`)
+    if (n === 3) out.push(`pierna de ${name(r)}`)
     if (n === 4) out.push(`cuatro ${name(r)}`)
   }
   // Escalerita más larga de rangos distintos (el As también cuenta abajo).

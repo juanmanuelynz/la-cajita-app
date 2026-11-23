@@ -11,7 +11,7 @@ const SECTIONS: { title: string; points: string[] }[] = [
     points: [
       "Hay 16.432 manos iniciales distintas, y lo que pasa después del flop pesa mucho más que en Hold'em.",
       "Las manos están mucho más parejas antes del flop: AAKK, de las mejores, gana el 65,5% contra una mano al azar (en Hold'em, AA gana cerca del 85%).",
-      "Importa tanto la equity como la jugabilidad: buscá manos que puedan ligar a la vez jugadas fuertes y proyectos fuertes (por ejemplo, trío con proyecto de color máximo).",
+      "Importa tanto la equity como la jugabilidad: buscá manos que puedan ligar a la vez jugadas fuertes y proyectos fuertes (por ejemplo, pierna con proyecto de color máximo).",
     ],
   },
   {
@@ -25,9 +25,9 @@ const SECTIONS: { title: string; points: string[] }[] = [
   {
     title: "Pares",
     points: [
-      "Con un par casi nunca ganás solo con el par: la idea es ligar trío en el flop (y aun así no es el monstruo que es en Hold'em).",
-      "Dos pares en la mano es muy fuerte: ligás trío en el flop el 21% de las veces.",
-      "Los pares bajos son peligrosos: es fácil chocar con un trío más alto.",
+      "Con un par casi nunca ganás solo con el par: la idea es ligar pierna en el flop (y aun así no es el monstruo que es en Hold'em).",
+      "Dos pares en la mano es muy fuerte: ligás pierna en el flop el 21% de las veces.",
+      "Los pares bajos son peligrosos: es fácil chocar con una pierna más alta.",
     ],
   },
   {
