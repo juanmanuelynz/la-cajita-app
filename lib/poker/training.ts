@@ -11,7 +11,7 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   usable: "¿Qué tenés?",
   whoWins: "¿Quién gana?",
   outs: "Outs",
-  potOdds: "¿Pagás?",
+  potOdds: "¿Call o fold?",
   compare: "¿Cuál es mejor?",
   preflop: "Antes del flop (ciegas)",
   luz: "Antes del flop (luz)",

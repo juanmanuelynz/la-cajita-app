@@ -168,7 +168,7 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
         question={
           <>
             Mesa de {drill.table}. Estás <b>{info.where}</b> y
-            todos los que hablaron antes tiraron. ¿Subís o tirás?
+            todos los que hablaron antes hicieron fold. ¿Raise o fold?
           </>
         }
         score={inChallenge ? undefined : score}
@@ -182,15 +182,15 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
           <div className="space-y-2">
             {drill.hand ? (
               <p>
-                <b>{describeClass(drill.hand)}</b> {drill.open ? "es" : "no es"} de las manos para subir desde{" "}
+                <b>{describeClass(drill.hand)}</b> {drill.open ? "es" : "no es"} de las manos para hacer raise desde{" "}
                 {drill.pos}
                 {drill.beta ? " (Beta)" : ""}: desde ese lugar se juega el {pct(openPercent(drill.pos), 0)} de las manos
-                {drill.beta ? "." : `, subiendo a ${info.openSize} veces la ciega grande.`}
+                {drill.beta ? "." : `, con un raise de ${info.openSize} veces la ciega grande.`}
               </p>
             ) : (
               <p>
                 Esta mano se lleva el <b>{pct(drill.equity!, 1)}</b> del pozo contra 2 manos al azar. Para estar en el{" "}
-                {pct(openPercent(drill.pos), 0)} mejor y abrir desde {drill.pos} hace falta al menos{" "}
+                {pct(openPercent(drill.pos), 0)} mejor y hacer raise desde {drill.pos} hace falta al menos{" "}
                 <b>{pct(drill.threshold!, 1)}</b> (Beta).
               </p>
             )}
@@ -218,7 +218,7 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
                 answered && picked === open && open !== drill.open && "border-rose-500 bg-rose-500/10",
               )}
             >
-              {open ? "Subo" : "Tiro"}
+              {open ? "Raise" : "Fold"}
             </Button>
           ))}
         </div>
@@ -234,9 +234,9 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
   return (
     <div className="space-y-3">
       <h3 className="font-semibold text-sm flex items-center gap-2">
-        Qué manos abrir {!sourced && <BetaBadge />}
+        Con qué manos hacer raise {!sourced && <BetaBadge />}
       </h3>
-      <p className="text-xs text-muted-foreground">Mesa con ciegas, cuando todos los que hablaron antes tiraron.</p>
+      <p className="text-xs text-muted-foreground">Mesa con ciegas, cuando todos los que hablaron antes hicieron fold.</p>
       <SeatsLegend />
       <div className="flex rounded-md bg-muted p-0.5 text-sm">
         {POSITIONS.map((p) => (
@@ -252,12 +252,12 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
       </div>
       <div className="text-xs">
         {OPEN_RANGES[pos].name}: se abre el {pct(openPercent(pos), 0)} de las manos
-        {sourced ? `, subiendo a ${OPEN_RANGES[pos].openSize} veces la ciega grande.` : "."}
+        {sourced ? `, con un raise de ${OPEN_RANGES[pos].openSize} veces la ciega grande.` : "."}
       </div>
       {variant.game === "holdem" ? (
         <>
           <p className="text-xs text-muted-foreground">
-            En verde, las manos con las que se sube. Arriba a la derecha las del mismo palo («s»), abajo a la izquierda
+            En verde, las manos con las que se hace raise. Arriba a la derecha las del mismo palo («s»), abajo a la izquierda
             las de distinto palo («o»), y en la diagonal los pares.
           </p>
           <RangeGrid variant={variant} pos={pos} />
@@ -266,7 +266,7 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
         <div className="rounded-lg border p-3 text-sm space-y-1">
           <p>
             Con {GAMES[variant.game].holeCount} cartas no entra una grilla: hay demasiadas manos distintas. La regla Beta
-            es abrir desde {pos} si tu mano se lleva al menos el{" "}
+            es hacer raise desde {pos} si tu mano se lleva al menos el{" "}
             <b>{pct(betaThreshold(variant, pos), 1)}</b> del pozo contra 2 manos al azar.
           </p>
           <ul className="text-xs text-muted-foreground grid grid-cols-5 gap-1 pt-1">

@@ -33,7 +33,7 @@ const DRILLS: { id: DrillChoice; label: string }[] = [
   { id: "usable", label: "¿Qué tenés?" },
   { id: "whoWins", label: "¿Quién gana?" },
   { id: "outs", label: "Outs" },
-  { id: "potOdds", label: "¿Pagás?" },
+  { id: "potOdds", label: "¿Call o fold?" },
   { id: "compare", label: "¿Cuál es mejor?" },
   { id: "antes", label: "Antes del flop" },
 ]
@@ -232,11 +232,11 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
             <PreflopRanges variant={variant} />
           ) : (
             <div className="space-y-1 text-sm">
-              <h3 className="font-semibold">Qué manos abrir</h3>
+              <h3 className="font-semibold">Con qué manos hacer bet</h3>
               <p className="text-xs text-muted-foreground">
                 Con luz no hay una tabla publicada de qué manos jugar, así que no mostramos una. Lo seguro: si nadie
-                apostó, nunca tires (podés pasar gratis), y para pagar una apuesta hacé la cuenta con el pozo de luces
-                (ejercicio «Antes del flop»). Elegí «Ciegas» para ver la tabla del juego de casino.
+                hizo bet, nunca hagas fold (podés hacer check gratis), y para hacer call a un bet hacé la cuenta con el
+                pozo de luces (ejercicio «Antes del flop»). Elegí «Ciegas» para ver la tabla del juego de casino.
               </p>
             </div>
           )}

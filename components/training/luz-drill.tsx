@@ -14,10 +14,10 @@ function LuzSeats({ d }: { d: LuzData }) {
   const seats = Array.from({ length: d.players }, (_, i) => i + 1)
   const state = (s: number) => {
     if (s === d.seat) return "vos"
-    if (!d.bet) return s < d.seat ? "pasó" : ""
-    if (s === d.bet.seat) return `apuesta`
-    if (s < d.bet.seat) return "pasó"
-    if (s < d.seat) return "tiró"
+    if (!d.bet) return s < d.seat ? "check" : ""
+    if (s === d.bet.seat) return "bet"
+    if (s < d.bet.seat) return "check"
+    if (s < d.seat) return "fold"
     return ""
   }
   return (
@@ -30,7 +30,7 @@ function LuzSeats({ d }: { d: LuzData }) {
               "flex-1 rounded border py-1 text-center text-[11px] leading-tight",
               s === d.seat && "border-amber-400 bg-amber-400/15 font-semibold",
               d.bet?.seat === s && "border-rose-500 bg-rose-500/10",
-              state(s) === "tiró" && "opacity-50 line-through",
+              state(s) === "fold" && "opacity-50 line-through",
             )}
           >
             {s === d.players ? "Reparte" : `${s}º`}
@@ -62,13 +62,13 @@ export function LuzDrill(props: DrillProps<LuzData>) {
 
   const options: { id: Choice; label: string }[] = bet
     ? [
-        { id: "fold", label: "Tiro" },
-        { id: "call", label: `Pago ${pesos(bet.amount)}` },
+        { id: "fold", label: "Fold" },
+        { id: "call", label: `Call ${pesos(bet.amount)}` },
       ]
     : [
-        { id: "fold", label: "Tiro" },
-        { id: "check", label: "Paso" },
-        { id: "bet", label: "Apuesto" },
+        { id: "fold", label: "Fold" },
+        { id: "check", label: "Check" },
+        { id: "bet", label: "Bet" },
       ]
   const isRight = (c: Choice) => (!bet ? c !== "fold" : bet.close || (c === "call") === bet.shouldCall)
 
@@ -86,15 +86,15 @@ export function LuzDrill(props: DrillProps<LuzData>) {
           {bet ? (
             <>
               <div className="flex justify-between">
-                <span>El {bet.seat}º apuesta</span>
+                <span>Bet del {bet.seat}º</span>
                 <b className="tabular-nums">{pesos(bet.amount)}</b>
               </div>
               <p className="text-xs text-muted-foreground pt-1">
-                Antes del flop. Para practicar ves su mano y el resto tira: queda entre vos y él.
+                Antes del flop. Para practicar ves su mano y el resto hace fold: queda entre vos y él.
               </p>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground pt-1">Antes del flop. Hasta vos, nadie apostó. ¿Qué hacés?</p>
+            <p className="text-xs text-muted-foreground pt-1">Antes del flop. Hasta vos, todos hicieron check. ¿Qué hacés?</p>
           )}
         </div>
       }
@@ -109,7 +109,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         bet ? (
           <div className="space-y-2">
             <p>
-              Pagás {pesos(bet.amount)} para ganar {pesos(drill.pot + bet.amount)} (las luces más su apuesta). Te conviene
+              Con call ponés {pesos(bet.amount)} para ganar {pesos(drill.pot + bet.amount)} (las luces más su bet). Te conviene
               si ganás al menos {pesos(bet.amount)} ÷ {pesos(drill.pot + 2 * bet.amount)} = <b>{pct(bet.needed)}</b> de las
               veces.
             </p>
@@ -119,20 +119,20 @@ export function LuzDrill(props: DrillProps<LuzData>) {
             </p>
             <p className="font-medium">
               {pct(bet.equity)} {bet.equity >= bet.needed ? "≥" : "<"} {pct(bet.needed)} →{" "}
-              {bet.close ? "es casi lo mismo: da igual." : bet.shouldCall ? "conviene pagar." : "conviene tirar."}
+              {bet.close ? "es casi lo mismo: da igual." : bet.shouldCall ? "conviene call." : "conviene fold."}
             </p>
             <p className="text-muted-foreground">
-              Con luz el pozo ya arranca con plata, así que para pagar alcanza con menos chances que si estuviera vacío.
+              Con luz el pozo ya arranca con plata, así que para hacer call alcanza con menos chances que si estuviera vacío.
             </p>
           </div>
         ) : (
           <div className="space-y-2">
             <p>
-              Nadie apostó: podés ver el flop sin poner un peso más. <b>Tirar es regalar tu luz</b> ({pesos(drill.luz)})
+              Nadie hizo bet: con check ves el flop sin poner un peso más. <b>Hacer fold es regalar tu luz</b> ({pesos(drill.luz)})
               sin necesidad.
             </p>
             <p className="text-muted-foreground">
-              Si conviene pasar o apostar depende de tu mano y de la mesa; eso no lo evaluamos acá.
+              Si conviene check o bet depende de tu mano y de la mesa; eso no lo evaluamos acá.
             </p>
           </div>
         )

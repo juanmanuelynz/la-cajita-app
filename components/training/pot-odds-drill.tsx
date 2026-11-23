@@ -25,7 +25,7 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
 
   return (
     <DrillShell
-      title="¿Pagás o te vas?"
+      title="¿Call o fold?"
       question={
         <div className="rounded-lg bg-muted/50 p-3 space-y-1">
           <div className="flex justify-between">
@@ -33,12 +33,12 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
             <b className="tabular-nums">{pesos(pot)}</b>
           </div>
           <div className="flex justify-between">
-            <span>{allIn ? "El rival va all-in por" : "El rival apuesta"}</span>
+            <span>{allIn ? "El rival va all-in por" : "Bet del rival"}</span>
             <b className="tabular-nums">{pesos(bet)}</b>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
             {allIn
-              ? "Si pagás, se ven turn y river sin más apuestas."
+              ? "Si hacés call, se ven turn y river sin más bets."
               : "Falta el river. Para practicar, ves las cartas del rival."}
           </p>
         </div>
@@ -53,7 +53,7 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
       feedback={
         <div className="space-y-2">
           <p>
-            Pagás {pesos(bet)} para ganar {pesos(pot + bet)} (lo que hay en el pozo más la apuesta). Para que te convenga
+            Con call ponés {pesos(bet)} para ganar {pesos(pot + bet)} (lo que hay en el pozo más su bet). Para que te convenga
             tenés que ganar al menos {pesos(bet)} ÷ {pesos(pot + 2 * bet)} = <b>{pct(needed)}</b> de las veces.
           </p>
           {allIn ? (
@@ -65,7 +65,7 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
           )}
           <p className="font-medium">
             {pct(equity)} {equity >= needed ? "≥" : "<"} {pct(needed)} →{" "}
-            {drill.close ? "es casi lo mismo: da igual." : drill.shouldCall ? "conviene pagar." : "conviene irse."}
+            {drill.close ? "es casi lo mismo: da igual." : drill.shouldCall ? "conviene call." : "conviene fold."}
           </p>
         </div>
       }
@@ -82,7 +82,7 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
             answered && picked === "fold" && drill.shouldCall && !drill.close && "border-rose-500 bg-rose-500/10",
           )}
         >
-          Me voy
+          Fold
         </Button>
         <Button
           variant="outline"
@@ -94,7 +94,7 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
             answered && picked === "call" && !drill.shouldCall && !drill.close && "border-rose-500 bg-rose-500/10",
           )}
         >
-          Pago {pesos(bet)}
+          Call {pesos(bet)}
         </Button>
       </div>
     </DrillShell>
