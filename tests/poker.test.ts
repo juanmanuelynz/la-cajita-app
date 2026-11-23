@@ -393,6 +393,7 @@ describe("Con luz", () => {
       const d = makeLuz(v, rng)
       expect(d.players).toBeGreaterThanOrEqual(4)
       expect(d.players).toBeLessThanOrEqual(6)
+      expect(d.luz).toBe(100)
       expect(d.pot).toBe(d.players * d.luz)
       expect(d.seat).toBeGreaterThanOrEqual(1)
       expect(d.seat).toBeLessThanOrEqual(d.players)

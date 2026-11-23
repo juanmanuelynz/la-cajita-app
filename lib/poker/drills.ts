@@ -383,13 +383,14 @@ export interface LuzDrill {
   }
 }
 
-const LUZ_VALUES = [50, 100, 200]
+/** La luz de La Cajita (noviembre 2026). */
+export const LUZ = 100
 const LUZ_BET_FRACTIONS = [1 / 2, 2 / 3, 1, 3 / 2, 2]
 const LUZ_TRIALS: Record<Variant["game"], number> = { holdem: 5000, omaha: 2500, manhattan: 1200 }
 
 export function makeLuz(v: Variant, rng: Rng = Math.random): LuzDrill {
   const players = 4 + Math.floor(rng() * 3)
-  const luz = LUZ_VALUES[Math.floor(rng() * LUZ_VALUES.length)]
+  const luz = LUZ
   const pot = players * luz
   const holeCount = GAMES[v.game].holeCount
 
