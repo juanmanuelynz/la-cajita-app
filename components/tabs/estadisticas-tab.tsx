@@ -4,7 +4,9 @@ import { useState } from "react"
 import type { TooltipItem } from "chart.js"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { IconTabsList } from "@/components/icon-tabs"
+import { ChartLine, ListOrdered, Users } from "lucide-react"
 import {
   Award,
   CalendarDays,
@@ -76,11 +78,13 @@ export function EstadisticasTab({
       className="w-full"
     >
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="jugadores">Jugadores</TabsTrigger>
-          <TabsTrigger value="rankings">Rankings</TabsTrigger>
-          <TabsTrigger value="analisis">Análisis</TabsTrigger>
-        </TabsList>
+        <IconTabsList
+          tabs={[
+            { value: "jugadores", label: "Jugadores", icon: Users },
+            { value: "rankings", label: "Rankings", icon: ListOrdered },
+            { value: "analisis", label: "Análisis", icon: ChartLine },
+          ]}
+        />
       </div>
 
       <TabsContent value="jugadores" className="pt-4 pb-8 space-y-4 mt-0">

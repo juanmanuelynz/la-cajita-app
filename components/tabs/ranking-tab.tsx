@@ -2,7 +2,9 @@
 
 import { useMemo } from "react"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs } from "@/components/ui/tabs"
+import { IconTabsList } from "@/components/icon-tabs"
+import { History, Trophy } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { PokerChip } from "@/components/poker-chip"
 import { formatAmount } from "@/lib/formatters"
@@ -186,10 +188,12 @@ export function RankingTab({
           value={rankingScope}
           onValueChange={(v) => onRankingScopeChange(v as RankingScope)}
         >
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="torneo">Torneo actual</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
-          </TabsList>
+          <IconTabsList
+            tabs={[
+              { value: "torneo", label: "Torneo actual", icon: Trophy },
+              { value: "historico", label: "Histórico", icon: History },
+            ]}
+          />
         </Tabs>
       </div>
     </div>

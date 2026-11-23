@@ -22,7 +22,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { IconTabsList } from "@/components/icon-tabs";
+import { ScrollText, SlidersHorizontal } from "lucide-react";
 import { Plus, LogOut, Trophy } from "lucide-react";
 import { ChipSpinner } from "@/components/poker-chip";
 import { useTheme } from "next-themes";
@@ -184,11 +186,13 @@ export function ReglasTab({
         className="w-full"
       >
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="torneo">Torneo</TabsTrigger>
-            <TabsTrigger value="ajustes">Ajustes</TabsTrigger>
-            <TabsTrigger value="reglas">Reglas</TabsTrigger>
-          </TabsList>
+          <IconTabsList
+            tabs={[
+              { value: "torneo", label: "Torneo", icon: Trophy },
+              { value: "ajustes", label: "Ajustes", icon: SlidersHorizontal },
+              { value: "reglas", label: "Reglas", icon: ScrollText },
+            ]}
+          />
         </div>
 
         <TabsContent value="torneo" className="pt-4 pb-8 space-y-6 mt-0">

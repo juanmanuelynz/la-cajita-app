@@ -3,7 +3,9 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { IconTabsList } from "@/components/icon-tabs"
+import { History, Spade } from "lucide-react"
 import {
   Trash2,
   Plus,
@@ -60,10 +62,12 @@ export function PartidasTab({
       className="w-full"
     >
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="partida">Partida</TabsTrigger>
-          <TabsTrigger value="historial">Historial</TabsTrigger>
-        </TabsList>
+        <IconTabsList
+          tabs={[
+            { value: "partida", label: "Partida", icon: Spade },
+            { value: "historial", label: "Historial", icon: History },
+          ]}
+        />
       </div>
 
       <TabsContent value="partida" className="pt-4 pb-8 mt-0">

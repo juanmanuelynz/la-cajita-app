@@ -8,7 +8,8 @@ import type { DrillId } from "@/lib/poker/training"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
 import { DailyChallenge } from "@/components/training/daily-challenge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { IconTabsList } from "@/components/icon-tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
 import { UsableDrill } from "@/components/training/usable-drill"
 import { PreflopDrill, PreflopRanges } from "@/components/training/preflop"
@@ -256,20 +257,13 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
     <TrainingContext.Provider value={ctx}>
       <Tabs value={subtab} onValueChange={(v) => setSubtab(v as Subtab)} className="w-full">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-          <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl p-1">
-            {(
-              [
-                { id: "ejercicios", label: "Ejercicios", icon: Dumbbell },
-                { id: "calculadora", label: "Calculadora", icon: Calculator },
-                { id: "manos", label: "Jugadas", icon: BookOpen },
-              ] as const
-            ).map(({ id, label, icon: Icon }) => (
-              <TabsTrigger key={id} value={id} className="gap-1.5 rounded-xl py-2 data-[state=active]:shadow">
-                <Icon className="size-4 shrink-0" />
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <IconTabsList
+            tabs={[
+              { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },
+              { value: "calculadora", label: "Calculadora", icon: Calculator },
+              { value: "manos", label: "Jugadas", icon: BookOpen },
+            ]}
+          />
         </div>
 
         <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
