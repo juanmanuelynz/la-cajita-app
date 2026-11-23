@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { handTraits, makeCompare, type CompareDrill as CompareData } from "@/lib/poker/drills"
-import { CardRow } from "./playing-card"
-import { PickableHand } from "./table-view"
+import { PokerTable, type TableSeat } from "./table-view"
 import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const NAMES = ["Mano A", "Mano B"] as const
@@ -15,7 +14,6 @@ export function CompareDrill(props: DrillProps<CompareData>) {
 
   if (!drill) return null
   const answered = verdict !== null
-  const size = variant.game === "holdem" ? "md" : "sm"
 
   return (
     <DrillShell
@@ -50,33 +48,39 @@ export function CompareDrill(props: DrillProps<CompareData>) {
         </div>
       }
     >
-      <div className="space-y-2">
-        {drill.hands.map((hand, i) => (
-          <PickableHand
-            key={i}
-            title={NAMES[i]}
-            detail={answered ? <b className="text-sm text-foreground tabular-nums">{pct(drill.equity[i], 0)}</b> : undefined}
-            onPick={() => {
+      {(() => {
+        const seats: TableSeat[] = drill.hands.map((hand, i) => ({
+          key: i,
+          name: NAMES[i],
+          cards: hand,
+          detail: answered ? pct(drill.equity[i], 0) : undefined,
+          deal: i * 350,
+          pick: {
+            onPick: () => {
               setPicked(i as 0 | 1)
               answer(drill.better === i ? "right" : "wrong")
-            }}
-            answered={answered}
-            correct={drill.better === i}
-            picked={picked === i}
-          >
-            <CardRow cards={hand} size={size} deal={i * 350} />
-            {answered && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {handTraits(hand).map((t) => (
-                  <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </PickableHand>
-        ))}
-      </div>
+            },
+            answered,
+            correct: drill.better === i,
+            picked: picked === i,
+          },
+        }))
+        return <PokerTable top={[seats[0]]} boardLabel="Antes del flop" bottom={[seats[1]]} />
+      })()}
+      {answered && (
+        <div className="space-y-1.5 rounded-xl bg-muted/40 p-2.5">
+          {drill.hands.map((hand, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-1">
+              <span className="w-16 shrink-0 text-xs text-muted-foreground">{NAMES[i]}</span>
+              {handTraits(hand).map((t) => (
+                <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                  {t}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </DrillShell>
   )
 }

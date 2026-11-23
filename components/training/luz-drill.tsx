@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
-import { Seat } from "./table-view"
+import { PokerTable, TableChip } from "./table-view"
 import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 type Choice = "fold" | "check" | "bet" | "call"
@@ -44,7 +44,6 @@ function LuzSeats({ d }: { d: LuzData }) {
 }
 
 export function LuzDrill(props: DrillProps<LuzData>) {
-  const { variant } = props
   const { drill, verdict, score, answer, next, inChallenge } = useDrill("luz", props, makeLuz)
   const [picked, setPicked] = useState<Choice | null>(null)
 
@@ -150,8 +149,11 @@ export function LuzDrill(props: DrillProps<LuzData>) {
       }
     >
       <LuzSeats d={drill} />
-      {bet && <Seat who="rival" title={`Rival · ${bet.seat}º`} cards={bet.villain} deal={drill.hero.length * 70 + 150} />}
-      <Seat who="hero" cards={drill.hero} deal={0} />
+      <PokerTable
+        top={bet ? [{ key: "rival", name: `Rival · ${bet.seat}º`, cards: bet.villain, deal: drill.hero.length * 70 + 150 }] : []}
+        center={<TableChip>Pozo {pesos(drill.pot)}</TableChip>}
+        bottom={[{ key: "vos", name: `Vos · ${drill.seat}º`, hero: true, cards: drill.hero, deal: 0 }]}
+      />
       <div className={cn("grid gap-2", bet ? "grid-cols-2" : "grid-cols-3")}>
         {options.map((o) => (
           <Button

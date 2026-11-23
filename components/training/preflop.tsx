@@ -18,7 +18,7 @@ import {
 import { BETA_VALIDATION, betaThreshold, shortOpens } from "@/lib/poker/preflop-beta"
 import { GAMES, type Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
-import { Seat } from "./table-view"
+import { PokerTable } from "./table-view"
 import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const TABLE_SIZES = [4, 5, 6] as const
@@ -233,7 +233,7 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
       >
         <SeatsRow table={drill.table} pos={drill.pos} />
         <SeatsLegend />
-        <Seat who="hero" cards={drill.cards} deal={0} />
+        <PokerTable boardLabel="Antes del flop" bottom={[{ key: "vos", name: "Vos", hero: true, cards: drill.cards, deal: 0 }]} />
         <div className="grid grid-cols-2 gap-2">
           {[false, true].map((open) => (
             <Button

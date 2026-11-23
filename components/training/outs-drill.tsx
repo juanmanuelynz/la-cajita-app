@@ -8,8 +8,8 @@ import { makeOuts, type OutsDrill as OutsData } from "@/lib/poker/drills"
 import type { Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { Felt, Seat } from "./table-view"
-import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
+import { PokerTable, TableChip } from "./table-view"
+import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 /** Mesa + tu mano + la del rival (a la vista, para practicar). */
 export function SpotView({
@@ -18,6 +18,7 @@ export function SpotView({
   villain,
   heroHand,
   villainHand,
+  pot,
 }: {
   /** Lo reciben todos los ejercicios; acá no cambia nada. */
   variant?: Variant
@@ -26,13 +27,17 @@ export function SpotView({
   villain: readonly Card[]
   heroHand: BestHand
   villainHand: BestHand
+  /** En ¿Call o fold?: el pozo, en el centro de la mesa. */
+  pot?: number
 }) {
   return (
-    <div className="space-y-2">
-      <Seat who="rival" cards={villain} detail={villainHand.name} deal={300 + hero.length * 70 + 100} />
-      <Felt cards={board} label={`Mesa · ${board.length === 3 ? "flop" : "turn"}`} />
-      <Seat who="hero" cards={hero} detail={heroHand.name} deal={300} />
-    </div>
+    <PokerTable
+      top={[{ key: "rival", name: "Rival", cards: villain, detail: villainHand.name, deal: 300 + hero.length * 70 + 100 }]}
+      board={board}
+      boardLabel={board.length === 3 ? "Flop" : "Turn"}
+      center={pot !== undefined && <TableChip>Pozo {pesos(pot)}</TableChip>}
+      bottom={[{ key: "vos", name: "Vos", hero: true, cards: hero, detail: heroHand.name, deal: 300 }]}
+    />
   )
 }
 

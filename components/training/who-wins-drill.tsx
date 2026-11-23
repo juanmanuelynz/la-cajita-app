@@ -6,7 +6,7 @@ import { makeWhoWins, type WhoWinsDrill as WhoWinsData } from "@/lib/poker/drill
 import { GAMES } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { Felt, PickableHand } from "./table-view"
+import { PokerTable, type TableSeat } from "./table-view"
 import { DrillShell, useDrill, type DrillProps } from "./drill-shell"
 
 const TIE = -1
@@ -19,7 +19,6 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
   if (!drill) return null
   const answered = verdict !== null
   const isTie = drill.winners.length > 1
-  const holeSize = variant.game === "holdem" ? "md" : "sm"
 
   const choose = (i: number) => {
     if (answered) return
@@ -55,36 +54,33 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
               : `Gana el Jugador ${drill.winners[0] + 1} con ${drill.hands[drill.winners[0]].name}.`}
           </p>
           {variant.game !== "holdem" && <p className="text-muted-foreground">{GAMES[variant.game].rule}</p>}
-          <p className="text-muted-foreground">Las cartas resaltadas son las 5 que forman cada mano.</p>
+          <p className="text-muted-foreground">Abajo de la mesa, las 5 cartas con las que juega cada uno.</p>
         </div>
       }
     >
-      <Felt cards={drill.board} />
+      {(() => {
+        const seats: TableSeat[] = drill.holes.map((hole, i) => ({
+          key: i,
+          name: `Jugador ${i + 1}`,
+          cards: hole,
+          detail: answered ? drill.hands[i].name : undefined,
+          used: answered ? drill.hands[i].fromHole : undefined,
+          deal: 400 + i * 180,
+          pick: { onPick: () => choose(i), answered, correct: drill.winners.includes(i), picked: picked === i },
+        }))
+        return <PokerTable top={seats.slice(0, 1)} board={drill.board} boardLabel="River" bottom={seats.slice(1)} />
+      })()}
 
-      <div className="space-y-2">
-        {drill.holes.map((hole, i) => {
-          const hand = drill.hands[i]
-          return (
-            <PickableHand
-              key={i}
-              title={`Jugador ${i + 1}`}
-              detail={answered ? hand.name : undefined}
-              onPick={() => choose(i)}
-              answered={answered}
-              correct={drill.winners.includes(i)}
-              picked={picked === i}
-            >
-              <CardRow cards={hole} size={holeSize} used={answered ? hand.fromHole : undefined} deal={400 + i * 180} />
-              {answered && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-[10px] uppercase text-muted-foreground">Juega</span>
-                  <CardRow cards={hand.cards} size="xs" />
-                </div>
-              )}
-            </PickableHand>
-          )
-        })}
-      </div>
+      {answered && (
+        <div className="space-y-1.5 rounded-xl bg-muted/40 p-2.5">
+          {drill.hands.map((hand, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-20 shrink-0 text-xs text-muted-foreground">Jugador {i + 1}</span>
+              <CardRow cards={hand.cards} size="xs" />
+            </div>
+          ))}
+        </div>
+      )}
 
       <Button
         variant="outline"

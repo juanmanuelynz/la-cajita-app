@@ -7,7 +7,7 @@ import { makeUsable, type UsableDrill as UsableData } from "@/lib/poker/drills"
 import { GAMES } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
-import { Felt, Seat } from "./table-view"
+import { PokerTable } from "./table-view"
 import { DrillShell, useDrill, type DrillProps } from "./drill-shell"
 
 const cuantas = (n: number) => (n === 1 ? "1 carta" : `${n} cartas`)
@@ -59,8 +59,11 @@ export function UsableDrill(props: DrillProps<UsableData>) {
         </div>
       }
     >
-      <Felt cards={drill.board} />
-      <Seat who="hero" cards={hole} used={answered ? hand.fromHole : undefined} deal={400} />
+      <PokerTable
+        board={drill.board}
+        boardLabel="River"
+        bottom={[{ key: "vos", name: "Vos", hero: true, cards: hole, used: answered ? hand.fromHole : undefined, deal: 400 }]}
+      />
       <div className="grid grid-cols-2 gap-2">
         {drill.options.map((c) => (
           <Button
