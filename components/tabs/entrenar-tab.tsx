@@ -110,7 +110,6 @@ function DrillPicker({
 }) {
   return (
     <div
-      data-no-swipe
       className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {DRILLS.map((d) => {
         const t = drillTally(progress, d.id)
