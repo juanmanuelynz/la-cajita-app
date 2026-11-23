@@ -203,7 +203,7 @@ export function ShareFooter({
  * Se renderiza en un portal sobre <body>: si queda dentro del carrusel de
  * pestañas, el transform de Embla hace que `position: fixed` se ubique
  * relativo a la tira del carrusel y el overlay queda fuera de pantalla (le
- * pasaba al podio de torneo, que vive dentro de la pestaña Reglas).
+ * pasaba al podio de torneo, que vive dentro de la pestaña Configuración).
  */
 export function CelebrationOverlay({
   label,

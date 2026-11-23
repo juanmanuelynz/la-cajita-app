@@ -19,7 +19,7 @@ import {
   NotebookPen,
   AlertCircle,
   BarChart3,
-  BookOpen,
+  Settings,
   RefreshCw,
   GraduationCap,
 } from "lucide-react"
@@ -74,7 +74,8 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "partidas", label: "Partidas" },
   { id: "estadisticas", label: "Estadísticas" },
   { id: "entrenar", label: "Entrenar" },
-  { id: "reglas", label: "Reglas" },
+  // El id sigue siendo "reglas" para no romper links con ?tab=reglas.
+  { id: "reglas", label: "Configuración" },
 ]
 
 function LaCajitaPoker() {
@@ -618,7 +619,7 @@ function LaCajitaPoker() {
               {tab.id === "partidas" && <NotebookPen className="w-7 h-7" />}
               {tab.id === "estadisticas" && <BarChart3 className="w-7 h-7" />}
               {tab.id === "entrenar" && <GraduationCap className="w-7 h-7" />}
-              {tab.id === "reglas" && <BookOpen className="w-7 h-7" />}
+              {tab.id === "reglas" && <Settings className="w-7 h-7" />}
             </button>
           ))}
         </div>

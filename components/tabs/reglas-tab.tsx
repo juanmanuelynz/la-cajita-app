@@ -186,8 +186,8 @@ export function ReglasTab({
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="torneo">Torneo</TabsTrigger>
-            <TabsTrigger value="reglas">Reglas</TabsTrigger>
             <TabsTrigger value="ajustes">Ajustes</TabsTrigger>
+            <TabsTrigger value="reglas">Reglas</TabsTrigger>
           </TabsList>
         </div>
 
