@@ -15,7 +15,7 @@ function LuzSeats({ d }: { d: LuzData }) {
   const state = (s: number) => {
     if (s === d.seat) return "vos"
     if (!d.bet) return s < d.seat ? "check" : ""
-    if (s === d.bet.seat) return "bet"
+    if (s === d.bet.seat) return "apuesta"
     if (s < d.bet.seat) return "check"
     if (s < d.seat) return "fold"
     return ""
@@ -68,7 +68,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
     : [
         { id: "fold", label: "Fold" },
         { id: "check", label: "Check" },
-        { id: "bet", label: "Bet" },
+        { id: "bet", label: "Apuesto" },
       ]
   const isRight = (c: Choice) => (!bet ? c !== "fold" : bet.close || (c === "call") === bet.shouldCall)
 
@@ -86,7 +86,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
           {bet ? (
             <>
               <div className="flex justify-between">
-                <span>Bet del {bet.seat}º</span>
+                <span>El {bet.seat}º apuesta</span>
                 <b className="tabular-nums">{pesos(bet.amount)}</b>
               </div>
               <p className="text-xs text-muted-foreground pt-1">
@@ -109,7 +109,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         bet ? (
           <div className="space-y-2">
             <p>
-              Con call ponés {pesos(bet.amount)} para ganar {pesos(drill.pot + bet.amount)} (las luces más su bet). Te conviene
+              Con call ponés {pesos(bet.amount)} para ganar {pesos(drill.pot + bet.amount)} (las luces más su apuesta). Te conviene
               si ganás al menos {pesos(bet.amount)} ÷ {pesos(drill.pot + 2 * bet.amount)} = <b>{pct(bet.needed)}</b> de las
               veces.
             </p>
@@ -128,11 +128,11 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         ) : (
           <div className="space-y-2">
             <p>
-              Nadie hizo bet: con check ves el flop sin poner un peso más. <b>Hacer fold es regalar tu luz</b> ({pesos(drill.luz)})
+              Nadie apostó: con check ves el flop sin poner un peso más. <b>Hacer fold es regalar tu luz</b> ({pesos(drill.luz)})
               sin necesidad.
             </p>
             <p className="text-muted-foreground">
-              Si conviene check o bet depende de tu mano y de la mesa; eso no lo evaluamos acá.
+              Si conviene check o apostar depende de tu mano y de la mesa; eso no lo evaluamos acá.
             </p>
           </div>
         )
