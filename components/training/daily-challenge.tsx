@@ -18,6 +18,7 @@ import { OutsDrill } from "./outs-drill"
 import { PotOddsDrill } from "./pot-odds-drill"
 import { PreflopDrill } from "./preflop"
 import { CompareDrill } from "./compare-drill"
+import { ChallengeResult } from "./challenge-result"
 import { LuzDrill } from "./luz-drill"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
@@ -107,6 +108,7 @@ export function DailyChallenge({
   // poco (simulaciones) y, calculadas durante el render, en el celular se veía
   // la pantalla a medio dibujar. Mientras tanto se muestra un "cargando".
   const [questions, setQuestions] = useState<DailyQuestion[] | null>(null)
+  const [showResult, setShowResult] = useState(false)
   useEffect(() => {
     if (!running || questions) return
     const t = setTimeout(() => setQuestions(dailyChallenge(today)), 50)
@@ -181,6 +183,7 @@ export function DailyChallenge({
         onFinish={() => {
           // El resultado lo guarda el efecto de "terminado sin guardar".
           setRunning(false)
+          setShowResult(true)
           playSound("jingleMatch")
         }}
         onExit={() => setRunning(false)}
@@ -188,9 +191,23 @@ export function DailyChallenge({
     )
   }
 
+  // Resultado a pantalla completa (al terminar, o con "Ver resultado").
+  const result =
+    showResult && questions && answers.length >= DAILY_LENGTH ? (
+      <ChallengeResult
+        date={today}
+        questions={questions}
+        answers={answers}
+        board={board}
+        playerId={playerId}
+        onClose={() => setShowResult(false)}
+      />
+    ) : null
+
   // ── Tarjeta ────────────────────────────────────────────────────────────
   return (
     <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-3">
+      {result}
       <div className="flex items-center gap-2">
         <CalendarCheck className="w-4 h-4 text-amber-500" />
         <span className="font-semibold text-sm flex-1">Desafío del día</span>
@@ -212,6 +229,20 @@ export function DailyChallenge({
             </p>
           )}
           <Leaderboard rows={board} playerId={playerId} />
+          {/* Las respuestas pregunta por pregunta quedan en este celular. */}
+          {finished && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                setQuestions((q) => q ?? dailyChallenge(today))
+                setShowResult(true)
+              }}
+            >
+              Ver resultado
+            </Button>
+          )}
         </>
       ) : (
         <>

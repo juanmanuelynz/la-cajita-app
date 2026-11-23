@@ -408,3 +408,18 @@ describe("Con luz", () => {
     expect(withBet).toBeGreaterThan(0)
   }, 60000)
 })
+
+describe("resumen del desafío", () => {
+  it("puntaje, título y ejercicio más flojo", async () => {
+    const { summarizeDaily } = await import("../lib/poker/training")
+    const drills = ["outs", "usable", "outs", "luz"] as const
+    expect(summarizeDaily([...drills], [false, true, false, false])).toEqual({
+      score: 1,
+      total: 4,
+      weakest: "outs",
+      title: "A seguir practicando",
+    })
+    expect(summarizeDaily([...drills], [true, true, true, true]).weakest).toBeNull()
+    expect(summarizeDaily([...drills], [true, true, true, true]).title).toBe("¡Perfecto!")
+  })
+})

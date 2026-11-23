@@ -79,3 +79,51 @@ export function dailyChallenge(date: string): DailyQuestion[] {
   }
   return questions
 }
+
+/** Consejo para el ejercicio en el que más te equivocaste en el desafío. */
+export const DRILL_TIPS: Record<DrillId, string> = {
+  usable:
+    "Antes de responder, fijate cuántas cartas de tu mano podés usar: en Omaha 2 sí o sí, en Manhattan 2 o 3. No todo lo que ves en la mesa se puede armar.",
+  whoWins:
+    "Armá la mejor mano de 5 de cada jugador antes de comparar. Y ojo en Short: el color le gana al full.",
+  outs: "Contá solo las cartas que te ponen adelante del rival: algunas te mejoran la mano pero igual perdés.",
+  potOdds:
+    "Para hacer call tenés que ganar al menos apuesta ÷ (pozo + 2 × apuesta). Contra apuestas chicas alcanza con pocas chances.",
+  compare:
+    "Fijate qué cartas comparten las dos manos: si una domina a la otra (A-K contra A-Q), la de la carta más alta gana mucho más seguido. En Omaha suman los dos palos y las cartas seguidas.",
+  luz: "Si nadie apostó, nunca hagas fold: con check ves el flop gratis. Y como el pozo ya tiene las luces, para hacer call alcanza con menos chances.",
+  preflop:
+    "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
+}
+
+export interface DailySummary {
+  score: number
+  total: number
+  /** Ejercicio con más errores (null si no hubo errores). */
+  weakest: DrillId | null
+  title: string
+}
+
+/** Resumen del desafío: puntaje, título y en qué ejercicio fallaste más. */
+export function summarizeDaily(drills: readonly DrillId[], answers: readonly boolean[]): DailySummary {
+  const score = answers.filter(Boolean).length
+  const total = drills.length
+  const misses = new Map<DrillId, number>()
+  answers.forEach((ok, i) => {
+    if (!ok) misses.set(drills[i], (misses.get(drills[i]) ?? 0) + 1)
+  })
+  let weakest: DrillId | null = null
+  for (const [d, n] of misses) if (weakest === null || n > misses.get(weakest)!) weakest = d
+  const ratio = total ? score / total : 0
+  const title =
+    ratio === 1
+      ? "¡Perfecto!"
+      : ratio >= 0.8
+        ? "¡Muy bien!"
+        : ratio >= 0.6
+          ? "Bien jugado"
+          : ratio >= 0.4
+            ? "Se puede mejorar"
+            : "A seguir practicando"
+  return { score, total, weakest, title }
+}
