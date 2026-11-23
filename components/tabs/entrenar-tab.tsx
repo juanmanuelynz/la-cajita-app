@@ -96,8 +96,8 @@ function drillTally(p: TrainingProgress | null, id: DrillChoice) {
 }
 
 /**
- * Grilla para elegir el ejercicio: ícono, nombre y cómo te va (barra de
- * aciertos). Fija, sin scroll de costado: deslizar de costado cambia de pantalla.
+ * Tarjetas para elegir el ejercicio, en una tira que se desliza de costado:
+ * ícono, nombre y cómo te va (barra de aciertos).
  */
 function DrillPicker({
   value,
@@ -109,7 +109,9 @@ function DrillPicker({
   progress: TrainingProgress | null
 }) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div
+      data-no-swipe
+      className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {DRILLS.map((d) => {
         const t = drillTally(progress, d.id)
         const ratio = t?.total ? t.right / t.total : 0
@@ -121,12 +123,12 @@ function DrillPicker({
             type="button"
             onClick={() => onChange(d.id)}
             className={cn(
-              "relative flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border-2 px-1 pb-2 pt-2.5 text-center transition-all active:scale-[0.97]",
+              "relative flex w-[6.5rem] shrink-0 snap-start flex-col items-start gap-2 rounded-2xl border-2 p-2.5 text-left transition-all active:scale-[0.97]",
               active ? "border-primary bg-primary/10 shadow-[0_3px_0_0] shadow-primary/60" : "border-border bg-card",
             )}
           >
             {d.isNew && (
-              <span className="absolute -right-1 -top-2 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
+              <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
                 Nuevo
               </span>
             )}
@@ -138,12 +140,7 @@ function DrillPicker({
             >
               <Icon className="h-5 w-5" />
             </div>
-            <div
-              className={cn(
-                "flex min-h-7 items-center text-[11px] font-semibold leading-tight",
-                !active && "text-muted-foreground",
-              )}
-            >
+            <div className={cn("min-h-8 text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
               {d.label}
             </div>
             <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
@@ -283,7 +280,10 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
           {!challengeActive && (
             <>
               <div className="pt-3 space-y-3">
-                <h2 className="text-lg font-black tracking-tight">Practicá</h2>
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-lg font-black tracking-tight">Practicá</h2>
+                  <span className="text-xs text-muted-foreground">deslizá para ver más →</span>
+                </div>
                 <DrillPicker value={drill} onChange={setDrill} progress={progress} />
                 {drill !== "gto" && picker}
                 {drill === "antes" && structurePicker}

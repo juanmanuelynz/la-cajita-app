@@ -87,6 +87,8 @@ function LaCajitaPoker() {
     align: "start",
     containScroll: "trimSnaps",
     duration: 20,
+    // Lo que se desliza de costado adentro de una pestaña (data-no-swipe) no cambia de pestaña.
+    watchDrag: (_, evt) => !(evt.target instanceof Element && evt.target.closest("[data-no-swipe]")),
   })
 
   useEffect(() => {
