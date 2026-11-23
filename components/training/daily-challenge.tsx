@@ -3,11 +3,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { CalendarCheck, Trophy, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ChipSpinner } from "@/components/poker-chip"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import { playSound } from "@/lib/sounds"
 import { DAILY_LENGTH, dailyChallenge, type DailyQuestion } from "@/lib/poker/training"
-import { variantName } from "@/lib/poker/variants"
+import { GAMES } from "@/lib/poker/variants"
 import type { DailyResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { TrainingContext } from "./drill-shell"
@@ -102,9 +103,15 @@ export function DailyChallenge({
   const [submitError, setSubmitError] = useState(false)
   const parent = useContext(TrainingContext)
 
-  // Las preguntas se generan recién al empezar (son al azar con semilla; en el
-  // servidor no hace falta calcularlas).
-  const questions = useMemo(() => (running ? dailyChallenge(today) : null), [running, today])
+  // Las preguntas se generan recién al empezar y FUERA del render: tardan un
+  // poco (simulaciones) y, calculadas durante el render, en el celular se veía
+  // la pantalla a medio dibujar. Mientras tanto se muestra un "cargando".
+  const [questions, setQuestions] = useState<DailyQuestion[] | null>(null)
+  useEffect(() => {
+    if (!running || questions) return
+    const t = setTimeout(() => setQuestions(dailyChallenge(today)), 50)
+    return () => clearTimeout(t)
+  }, [running, questions, today])
 
   const refreshBoard = useCallback(() => {
     db.getDailyLeaderboard(today).then(setBoard, () => setBoard((b) => b ?? []))
@@ -156,6 +163,14 @@ export function DailyChallenge({
   const ctx = useMemo(() => ({ onAnswer }), [onAnswer])
 
   // ── Jugando ────────────────────────────────────────────────────────────
+  if (running && !questions) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-muted-foreground">
+        <ChipSpinner className="w-8 h-8" />
+        Mezclando las cartas…
+      </div>
+    )
+  }
   if (running && questions) {
     return (
       <RunningChallenge
@@ -245,24 +260,61 @@ function RunningChallenge({
   const right = answers.filter(Boolean).length
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2">
-        <CalendarCheck className="w-4 h-4 text-amber-500" />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold">
-            Desafío del día · {current + 1}/{questions.length}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {variantName(q.variant)}
-            {q.drill === "luz" ? " · con luz" : q.drill === "preflop" ? " · con ciegas" : ""} · {right} bien
-          </div>
+    <div className="space-y-3">
+      {/* Barra del desafío: progreso y salir */}
+      <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <CalendarCheck className="w-4 h-4 text-amber-500" />
+          <span className="flex-1 text-sm font-semibold">Desafío del día</span>
+          <span className="text-sm tabular-nums">
+            <b>{current + 1}</b>
+            <span className="text-muted-foreground">/{questions.length}</span>
+          </span>
+          <Button size="icon" variant="ghost" className="h-8 w-8 -mr-1" onClick={onExit} aria-label="Salir del desafío">
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onExit} aria-label="Salir del desafío">
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-1" aria-label={`${right} bien de ${answers.length}`}>
+          {questions.map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-1.5 flex-1 rounded-full",
+                i < answers.length ? (answers[i] ? "bg-emerald-500" : "bg-rose-500") : "bg-muted",
+                i === current && i >= answers.length && "bg-amber-400",
+              )}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Qué se juega en esta pregunta */}
+      <div key={`v${current}`} className="animate-fade-in flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <div className="text-lg font-bold leading-tight">{GAMES[q.variant.game].name}</div>
+          <div className="text-xs text-muted-foreground">{GAMES[q.variant.game].short}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-xs font-semibold",
+              q.variant.deck === "short" ? "bg-violet-500/15 text-violet-400" : "bg-sky-500/15 text-sky-400",
+            )}
+          >
+            {q.variant.deck === "short" ? "Short · sin 2 a 5" : "Long · 52 cartas"}
+          </span>
+          {(q.drill === "luz" || q.drill === "preflop") && (
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-500">
+              {q.drill === "luz" ? "Con luz" : "Con ciegas"}
+            </span>
+          )}
+        </div>
+      </div>
+
       <TrainingContext.Provider value={ctx}>
-        <Question key={current} q={q} last={last} onNext={() => (last ? onFinish() : setCurrent((c) => c + 1))} />
+        <div key={current} className="animate-fade-in">
+          <Question q={q} last={last} onNext={() => (last ? onFinish() : setCurrent((c) => c + 1))} />
+        </div>
       </TrainingContext.Provider>
     </div>
   )

@@ -15,6 +15,8 @@ export interface GameDef {
   holeUse: readonly number[]
   /** Regla para armar la mano, en una línea. */
   rule: string
+  /** Resumen corto: cuántas cartas y cuántas se usan. */
+  short: string
 }
 
 export const GAMES: Record<GameId, GameDef> = {
@@ -24,6 +26,7 @@ export const GAMES: Record<GameId, GameDef> = {
     holeCount: 2,
     holeUse: [0, 1, 2],
     rule: "2 cartas propias. La mejor mano de 5 con cualquier combinación de tus cartas y las de la mesa.",
+    short: "2 cartas · usás las que quieras",
   },
   omaha: {
     id: "omaha",
@@ -31,6 +34,7 @@ export const GAMES: Record<GameId, GameDef> = {
     holeCount: 4,
     holeUse: [2],
     rule: "4 cartas propias. Usás SÍ O SÍ 2 de tu mano y 3 de la mesa.",
+    short: "4 cartas · usás 2 sí o sí",
   },
   manhattan: {
     id: "manhattan",
@@ -38,6 +42,7 @@ export const GAMES: Record<GameId, GameDef> = {
     holeCount: 5,
     holeUse: [2, 3],
     rule: "5 cartas propias. Usás 2 de tu mano con 3 de la mesa, o 3 de tu mano con 2 de la mesa.",
+    short: "5 cartas · usás 2 o 3",
   },
 }
 

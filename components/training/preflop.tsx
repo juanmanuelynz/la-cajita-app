@@ -74,8 +74,8 @@ function SourceNote({ variant }: { variant: Variant }) {
       <p className="text-[11px] text-muted-foreground">
         <b>Beta, inferido:</b> no hay una fuente confiable para {GAMES[variant.game].name}
         {variant.deck === "short" ? " short" : ""}. Ordenamos las manos por lo seguido que ganan contra 2 manos al azar
-        y abrimos el mismo % que en Hold&apos;em ({pct(openPercent("UTG"), 0)} en UTG … {pct(openPercent("BU"), 0)} en
-        BU). Probado en Hold&apos;em largo contra la tabla real, coincide en el {pct(Math.min(...Object.values(v)), 0)}–
+        y en cada lugar jugamos el mismo % que en Hold&apos;em (del {pct(openPercent("UTG"), 0)} hablando 1º al{" "}
+        {pct(openPercent("BU"), 0)} repartiendo). Probado en Hold&apos;em largo contra la tabla real, coincide en el {pct(Math.min(...Object.values(v)), 0)}–
         {pct(Math.max(...Object.values(v)), 0)} de las manos, pero se equivoca justo en las de borde: le da poco valor a
         los pares chicos y a las cartas seguidas del mismo palo, y demasiado a ases y reyes de distinto palo.
       </p>
@@ -93,12 +93,25 @@ function SourceNote({ variant }: { variant: Variant }) {
   )
 }
 
-/** Qué quiere decir cada sigla de la mesa. */
+/** Nombre de un lugar de la mesa sin siglas: 1º, 2º, 3º, Reparte, Ciega chica, Ciega grande. */
+function seatLabel(table: 4 | 5 | 6, s: Position | "BB"): string {
+  if (s === "BU") return "Reparte"
+  if (s === "SB") return "Ciega chica"
+  if (s === "BB") return "Ciega grande"
+  return `${POSITIONS_BY_TABLE[table].indexOf(s) + 1}º`
+}
+
+/** Para la frase "Estás …" / "subir …". */
+function seatPhrase(table: 4 | 5 | 6, pos: Position): string {
+  if (pos === "BU") return "repartiendo"
+  if (pos === "SB") return "en la ciega chica"
+  return `hablando ${POSITIONS_BY_TABLE[table].indexOf(pos) + 1}º`
+}
+
 function SeatsLegend() {
   return (
     <p className="text-[11px] text-muted-foreground -mt-2">
-      Hablan en este orden. UTG, MP y CO: 3, 2 y 1 lugar antes del que reparte · BU: el que reparte · SB y BB: ciega
-      chica y ciega grande.
+      Antes del flop se habla en este orden: las ciegas hablan últimas porque ya pusieron plata.
     </p>
   )
 }
@@ -113,12 +126,12 @@ function SeatsRow({ table, pos }: { table: 4 | 5 | 6; pos: Position }) {
         <div
           key={s}
           className={cn(
-            "flex-1 rounded border py-1 text-center text-[11px]",
+            "flex-1 rounded border px-0.5 py-1 text-center text-[11px] leading-tight flex items-center justify-center",
             i < me && "line-through text-muted-foreground opacity-60",
             i === me && "border-amber-400 bg-amber-400/15 font-semibold",
           )}
         >
-          {s}
+          {seatLabel(table, s)}
         </div>
       ))}
     </div>
@@ -167,7 +180,7 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
         title="Antes del flop · con ciegas"
         question={
           <>
-            Mesa de {drill.table}. Estás <b>{info.where}</b> y
+            Mesa de {drill.table}. Estás <b>{seatPhrase(drill.table, drill.pos)}</b> y
             todos los que hablaron antes hicieron fold. ¿Subís o fold?
           </>
         }
@@ -182,15 +195,15 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
           <div className="space-y-2">
             {drill.hand ? (
               <p>
-                <b>{describeClass(drill.hand)}</b> {drill.open ? "es" : "no es"} de las manos para subir desde{" "}
-                {drill.pos}
+                <b>{describeClass(drill.hand)}</b> {drill.open ? "es" : "no es"} de las manos para subir{" "}
+                {seatPhrase(drill.table, drill.pos)}
                 {drill.beta ? " (Beta)" : ""}: desde ese lugar se juega el {pct(openPercent(drill.pos), 0)} de las manos
                 {drill.beta ? "." : `, subiendo a ${info.openSize} veces la ciega grande.`}
               </p>
             ) : (
               <p>
                 Esta mano se lleva el <b>{pct(drill.equity!, 1)}</b> del pozo contra 2 manos al azar. Para estar en el{" "}
-                {pct(openPercent(drill.pos), 0)} mejor y subir desde {drill.pos} hace falta al menos{" "}
+                {pct(openPercent(drill.pos), 0)} mejor y subir {seatPhrase(drill.table, drill.pos)} hace falta al menos{" "}
                 <b>{pct(drill.threshold!, 1)}</b> (Beta).
               </p>
             )}
@@ -244,14 +257,17 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
             key={p}
             type="button"
             onClick={() => setPos(p)}
-            className={cn("flex-1 rounded py-1", pos === p ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}
+            className={cn(
+              "flex-1 rounded px-0.5 py-1 text-xs leading-tight min-h-9",
+              pos === p ? "bg-background shadow-sm font-medium" : "text-muted-foreground",
+            )}
           >
-            {p}
+            {seatLabel(6, p)}
           </button>
         ))}
       </div>
       <div className="text-xs">
-        {OPEN_RANGES[pos].name}: se abre el {pct(openPercent(pos), 0)} de las manos
+        Mesa de 6, {seatPhrase(6, pos)}: se juega el {pct(openPercent(pos), 0)} de las manos
         {sourced ? `, subiendo a ${OPEN_RANGES[pos].openSize} veces la ciega grande.` : "."}
       </div>
       {variant.game === "holdem" ? (
@@ -266,13 +282,13 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
         <div className="rounded-lg border p-3 text-sm space-y-1">
           <p>
             Con {GAMES[variant.game].holeCount} cartas no entra una grilla: hay demasiadas manos distintas. La regla Beta
-            es subir desde {pos} si tu mano se lleva al menos el{" "}
+            es subir {seatPhrase(6, pos)} si tu mano se lleva al menos el{" "}
             <b>{pct(betaThreshold(variant, pos), 1)}</b> del pozo contra 2 manos al azar.
           </p>
           <ul className="text-xs text-muted-foreground grid grid-cols-5 gap-1 pt-1">
             {POSITIONS.map((p) => (
               <li key={p} className={cn("text-center rounded py-1", p === pos && "bg-muted font-medium text-foreground")}>
-                {p}
+                {seatLabel(6, p)}
                 <br />
                 {pct(betaThreshold(variant, p), 0)}
               </li>
