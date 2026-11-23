@@ -3,13 +3,15 @@ import { cn } from "@/lib/utils"
 
 // Mazo de 4 colores (♠ negro, ♥ rojo, ♦ azul, ♣ verde): con cartas chicas se
 // distinguen los palos de un vistazo, que es justo lo que importa para leer
-// colores. Es la opción habitual en las salas online.
-export const SUIT_TEXT = ["text-slate-900", "text-red-600", "text-blue-600", "text-green-700"] as const
+// colores. Es la opción habitual en las salas online. Los tonos siguen la
+// paleta de la app: negro de los grises (zinc), rojo de "mal" (rose), verde del
+// primario (emerald) y un azul frío que convive con ese verde (sky).
+export const SUIT_TEXT = ["text-zinc-900", "text-rose-600", "text-sky-700", "text-emerald-700"] as const
 
 const SIZES = {
-  xs: "w-7 h-10 text-[11px] rounded",
-  sm: "w-9 h-[52px] text-sm rounded-md",
-  md: "w-11 h-16 text-base rounded-md",
+  xs: "w-7 h-10 text-[11px] rounded-[5px]",
+  sm: "w-9 h-[52px] text-sm rounded-[7px]",
+  md: "w-11 h-16 text-base rounded-[8px]",
 } as const
 
 export type CardSize = keyof typeof SIZES
@@ -38,7 +40,7 @@ export function PlayingCard({
       style={dealDelay !== undefined ? { animationDelay: `${dealDelay}ms` } : undefined}
       className={cn(
         dealDelay !== undefined && "card-deal",
-        "relative bg-white border border-slate-300 shadow-sm flex flex-col items-center justify-center font-bold leading-none select-none transition-all",
+        "relative bg-stone-100 border border-black/10 shadow-[0_2px_0_0_rgb(0_0_0/0.35)] flex flex-col items-center justify-center font-bold leading-none select-none transition-all",
         SIZES[size],
         SUIT_TEXT[suit],
         highlight && "ring-2 ring-amber-400 -translate-y-1",

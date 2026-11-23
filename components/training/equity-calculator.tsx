@@ -264,7 +264,7 @@ export function EquityCalculator({ variant }: { variant: Variant }) {
                     disabled={taken || !active}
                     onClick={() => pickCard(c)}
                     className={cn(
-                      "h-9 rounded bg-white border border-slate-300 flex flex-col items-center justify-center leading-none font-bold text-[11px]",
+                      "h-9 rounded-[5px] bg-stone-100 border border-black/10 flex flex-col items-center justify-center leading-none font-bold text-[11px]",
                       SUIT_TEXT[suitOf(c)],
                       taken && "opacity-20",
                     )}
