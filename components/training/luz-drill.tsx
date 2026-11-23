@@ -74,7 +74,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
 
   return (
     <DrillShell
-      title="Con luz"
+      title="Antes del flop · con luz"
       question={
         <div className="rounded-lg bg-muted/50 p-3 space-y-1">
           <div className="flex justify-between">

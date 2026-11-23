@@ -253,7 +253,8 @@ function RunningChallenge({
             Desafío del día · {current + 1}/{questions.length}
           </div>
           <div className="text-xs text-muted-foreground">
-            {variantName(q.variant)} · {right} bien
+            {variantName(q.variant)}
+            {q.drill === "luz" ? " · con luz" : q.drill === "preflop" ? " · con ciegas" : ""} · {right} bien
           </div>
         </div>
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onExit} aria-label="Salir del desafío">

@@ -164,14 +164,11 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
         </div>
       )}
       <DrillShell
-        title="¿Abrís?"
+        title="Antes del flop · con ciegas"
         question={
           <>
             Mesa de {drill.table}. Estás <b>{info.where}</b> y
             todos los que hablaron antes tiraron. ¿Subís o tirás?
-            <span className="block text-xs text-muted-foreground mt-1">
-              Con ciegas, como en los casinos. En La Cajita se juega con luz: practicalo en «Con luz».
-            </span>
           </>
         }
         score={inChallenge ? undefined : score}
@@ -239,10 +236,7 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
       <h3 className="font-semibold text-sm flex items-center gap-2">
         Qué manos abrir {!sourced && <BetaBadge />}
       </h3>
-      <p className="text-xs text-muted-foreground">
-        Cuando todos los que hablaron antes tiraron, en una mesa con ciegas (como en los casinos; en La Cajita se juega
-        con luz).
-      </p>
+      <p className="text-xs text-muted-foreground">Mesa con ciegas, cuando todos los que hablaron antes tiraron.</p>
       <SeatsLegend />
       <div className="flex rounded-md bg-muted p-0.5 text-sm">
         {POSITIONS.map((p) => (

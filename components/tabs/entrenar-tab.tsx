@@ -24,15 +24,18 @@ import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants
 import { cn } from "@/lib/utils"
 
 type Subtab = "ejercicios" | "calculadora" | "manos"
+/** Cómo se pone plata antes de repartir: luz igual para todos (La Cajita) o ciegas (casino). */
+type Structure = "luz" | "ciegas"
+/** "Antes del flop" muestra el ejercicio de luz o el de ciegas según la estructura elegida. */
+type DrillChoice = Exclude<DrillId, "luz" | "preflop"> | "antes"
 
-const DRILLS: { id: DrillId; label: string }[] = [
+const DRILLS: { id: DrillChoice; label: string }[] = [
   { id: "usable", label: "¿Qué tenés?" },
   { id: "whoWins", label: "¿Quién gana?" },
   { id: "outs", label: "Outs" },
   { id: "potOdds", label: "¿Pagás?" },
   { id: "compare", label: "¿Cuál es mejor?" },
-  { id: "luz", label: "Con luz" },
-  { id: "preflop", label: "¿Abrís? (ciegas)" },
+  { id: "antes", label: "Antes del flop" },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -79,7 +82,8 @@ export function EntrenarTab({ players }: { players: Player[] }) {
   const [game, setGame] = useState<GameId>("holdem")
   const [deck, setDeck] = useState<DeckType>("long")
   const [subtab, setSubtab] = useState<Subtab>("ejercicios")
-  const [drill, setDrill] = useState<DrillId>("usable")
+  const [drill, setDrill] = useState<DrillChoice>("usable")
+  const [structure, setStructure] = useState<Structure>("luz")
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [version, setVersion] = useState(0)
   const [challengeActive, setChallengeActive] = useState(false)
@@ -90,6 +94,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null")
       if (saved?.game in GAMES) setGame(saved.game)
       if (saved?.deck === "long" || saved?.deck === "short") setDeck(saved.deck)
+      if (saved?.structure === "luz" || saved?.structure === "ciegas") setStructure(saved.structure)
       setPlayerId(localStorage.getItem(PLAYER_KEY))
     } catch {
       // sin storage: arrancamos con Hold'em Long y sin jugador
@@ -97,11 +102,11 @@ export function EntrenarTab({ players }: { players: Player[] }) {
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure }))
     } catch {
       // ignorar
     }
-  }, [game, deck])
+  }, [game, deck, structure])
 
   // Si el jugador guardado ya no existe (se borró), olvidarlo.
   useEffect(() => {
@@ -133,17 +138,29 @@ export function EntrenarTab({ players }: { players: Player[] }) {
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
 
-  const picker = (
-    <div className="grid grid-cols-[1fr_auto] gap-2">
+  const picker = (withStructure: boolean) => (
+    <div className="space-y-2">
       <Segmented value={game} onChange={setGame} options={GAME_IDS.map((id) => ({ id, label: GAMES[id].name }))} />
-      <Segmented
-        value={deck}
-        onChange={setDeck}
-        options={[
-          { id: "long", label: "Long" },
-          { id: "short", label: "Short" },
-        ]}
-      />
+      <div className={cn("grid gap-2", withStructure ? "grid-cols-2" : "grid-cols-1")}>
+        <Segmented
+          value={deck}
+          onChange={setDeck}
+          options={[
+            { id: "long", label: "Long" },
+            { id: "short", label: "Short" },
+          ]}
+        />
+        {withStructure && (
+          <Segmented
+            value={structure}
+            onChange={setStructure}
+            options={[
+              { id: "luz", label: "Luz" },
+              { id: "ciegas", label: "Ciegas" },
+            ]}
+          />
+        )}
+      </div>
     </div>
   )
 
@@ -166,7 +183,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
           {!challengeActive && (
             <>
               <div className="pt-2 space-y-2">
-                {picker}
+                {picker(true)}
                 <Segmented value={drill} onChange={setDrill} options={DRILLS} small cols={3} />
               </div>
               {drill === "usable" && <UsableDrill variant={variant} />}
@@ -174,22 +191,33 @@ export function EntrenarTab({ players }: { players: Player[] }) {
               {drill === "outs" && <OutsDrill variant={variant} />}
               {drill === "potOdds" && <PotOddsDrill variant={variant} />}
               {drill === "compare" && <CompareDrill variant={variant} />}
-              {drill === "luz" && <LuzDrill variant={variant} />}
-              {drill === "preflop" && <PreflopDrill variant={variant} />}
+              {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
+              {drill === "antes" && structure === "ciegas" && <PreflopDrill variant={variant} />}
             </>
           )}
         </TabsContent>
 
         <TabsContent value="calculadora" className="pt-1 pb-8 space-y-3 mt-0">
-          {picker}
+          {picker(false)}
           <EquityCalculator variant={variant} />
         </TabsContent>
 
         <TabsContent value="manos" className="pt-1 pb-8 space-y-3 mt-0">
-          {picker}
+          {picker(true)}
           <HandRankings variant={variant} />
           <OmahaPrinciples variant={variant} />
-          <PreflopRanges variant={variant} />
+          {structure === "ciegas" ? (
+            <PreflopRanges variant={variant} />
+          ) : (
+            <div className="space-y-1 text-sm">
+              <h3 className="font-semibold">Qué manos abrir</h3>
+              <p className="text-xs text-muted-foreground">
+                Con luz no hay una tabla publicada de qué manos jugar, así que no mostramos una. Lo seguro: si nadie
+                apostó, nunca tires (podés pasar gratis), y para pagar una apuesta hacé la cuenta con el pozo de luces
+                (ejercicio «Antes del flop»). Elegí «Ciegas» para ver la tabla del juego de casino.
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </TrainingContext.Provider>

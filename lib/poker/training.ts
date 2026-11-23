@@ -13,8 +13,8 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   outs: "Outs",
   potOdds: "¿Pagás?",
   compare: "¿Cuál es mejor?",
-  preflop: "¿Abrís? (ciegas)",
-  luz: "Con luz",
+  preflop: "Antes del flop (ciegas)",
+  luz: "Antes del flop (luz)",
 }
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
