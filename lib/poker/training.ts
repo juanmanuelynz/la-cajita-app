@@ -1,10 +1,10 @@
 // Lógica pura del progreso y del Desafío del día (sin base de datos).
 
 import { seededRng } from "./cards"
-import { makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
+import { makeCompare, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "preflop"] as const
+export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
 
 export const DRILL_NAMES: Record<DrillId, string> = {
@@ -12,6 +12,7 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   whoWins: "¿Quién gana?",
   outs: "Outs",
   potOdds: "¿Pagás?",
+  compare: "¿Cuál es mejor?",
   preflop: "¿Abrís?",
 }
 
@@ -47,13 +48,14 @@ function hash(text: string): number {
 
 export const DAILY_LENGTH = 10
 
-const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, preflop: makePreflop }
+const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop }
 
 export type DailyQuestion =
   | { drill: "usable"; variant: Variant; data: ReturnType<typeof makeUsable> }
   | { drill: "whoWins"; variant: Variant; data: ReturnType<typeof makeWhoWins> }
   | { drill: "outs"; variant: Variant; data: ReturnType<typeof makeOuts> }
   | { drill: "potOdds"; variant: Variant; data: ReturnType<typeof makePotOdds> }
+  | { drill: "compare"; variant: Variant; data: ReturnType<typeof makeCompare> }
   | { drill: "preflop"; variant: Variant; data: ReturnType<typeof makePreflop> }
 
 /**
@@ -70,8 +72,6 @@ export function dailyChallenge(date: string): DailyQuestion[] {
       game: games[Math.floor(rng() * games.length)],
       deck: rng() < 0.5 ? "long" : "short",
     }
-    // Los rangos de apertura son solo de Hold'em con mazo largo.
-    if (drill === "preflop") Object.assign(variant, { game: "holdem", deck: "long" })
     const data = MAKERS[drill](variant, rng)
     questions.push({ drill, variant, data } as DailyQuestion)
   }

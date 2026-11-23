@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
 import { UsableDrill } from "@/components/training/usable-drill"
 import { PreflopDrill, PreflopRanges } from "@/components/training/preflop"
+import { CompareDrill } from "@/components/training/compare-drill"
+import { OmahaPrinciples } from "@/components/training/omaha-principles"
 import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
@@ -27,6 +29,7 @@ const DRILLS: { id: DrillId; label: string }[] = [
   { id: "whoWins", label: "¿Quién gana?" },
   { id: "outs", label: "Outs" },
   { id: "potOdds", label: "¿Pagás?" },
+  { id: "compare", label: "¿Cuál es mejor?" },
   { id: "preflop", label: "¿Abrís?" },
 ]
 
@@ -37,14 +40,20 @@ function Segmented<T extends string>({
   options,
   onChange,
   small,
+  cols,
 }: {
   value: T
   options: { id: T; label: string }[]
   onChange: (v: T) => void
   small?: boolean
+  /** Si se pasa, las opciones van en una grilla de esas columnas (para cuando no entran en una fila). */
+  cols?: number
 }) {
   return (
-    <div className={cn("flex rounded-md bg-muted p-0.5", small ? "text-xs" : "text-sm")}>
+    <div
+      className={cn("rounded-md bg-muted p-0.5", cols ? "grid gap-0.5" : "flex", small ? "text-xs" : "text-sm")}
+      style={cols ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}
+    >
       {options.map((o) => (
         <button
           key={o.id}
@@ -156,12 +165,13 @@ export function EntrenarTab({ players }: { players: Player[] }) {
             <>
               <div className="pt-2 space-y-2">
                 {picker}
-                <Segmented value={drill} onChange={setDrill} options={DRILLS} small />
+                <Segmented value={drill} onChange={setDrill} options={DRILLS} small cols={3} />
               </div>
               {drill === "usable" && <UsableDrill variant={variant} />}
               {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
               {drill === "outs" && <OutsDrill variant={variant} />}
               {drill === "potOdds" && <PotOddsDrill variant={variant} />}
+              {drill === "compare" && <CompareDrill variant={variant} />}
               {drill === "preflop" && <PreflopDrill variant={variant} />}
             </>
           )}
@@ -175,6 +185,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
         <TabsContent value="manos" className="pt-1 pb-8 space-y-3 mt-0">
           {picker}
           <HandRankings variant={variant} />
+          <OmahaPrinciples variant={variant} />
           <PreflopRanges variant={variant} />
         </TabsContent>
       </Tabs>

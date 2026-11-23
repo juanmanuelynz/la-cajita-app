@@ -3,8 +3,9 @@
 
 import { makeCard, type Card, type Rng } from "./cards"
 import { POSITIONS_BY_TABLE, gridClasses, handClass, openRange, type HandClass, type Position } from "./preflop"
+import { betaThreshold, equityVsRandom, shortOpens } from "./preflop-beta"
 import { bestHand, bestScore, Cat, categoryOf, categoryOrder, combos, eval5, handName, type BestHand } from "./evaluator"
-import { countOuts, deal, equityExact } from "./equity"
+import { countOuts, deal, equityExact, equityMonteCarlo } from "./equity"
 import { BOARD_BY_STREET, GAMES, type Street, type Variant } from "./variants"
 
 // ── ¿Qué mano gana? ────────────────────────────────────────────────────────
@@ -223,35 +224,133 @@ export interface PreflopDrill {
   /** Jugadores en la mesa. */
   table: 4 | 5 | 6
   pos: Position
-  cards: [Card, Card]
-  hand: HandClass
-  /** Lo correcto según la fuente: abrir (subir) o tirar. */
+  cards: Card[]
+  /** Clase de la mano (solo Hold'em: "AKs", "77"…). */
+  hand: HandClass | null
+  /** Lo correcto: abrir (subir) o tirar. */
   open: boolean
+  /** Beta: inferido (todo menos Hold'em largo). */
+  beta: boolean
+  /** Omaha/Manhattan beta: equity de la mano contra 2 al azar y la mínima para abrir. */
+  equity?: number
+  threshold?: number
 }
 
-/**
- * Te toca hablar y todos los anteriores tiraron. Mitad de las veces la mano
- * sale de repartir dos cartas al azar y mitad de elegir una casilla de la
- * grilla 13×13 al azar (así aparecen más manos de borde y no todo es "tirar").
- */
-export function makePreflop(_v: Variant, rng: Rng = Math.random, table?: 4 | 5 | 6): PreflopDrill {
+const BETA_TRIALS: Record<Variant["game"], number> = { holdem: 0, omaha: 1500, manhattan: 800 }
+/** Omaha/Manhattan: descartar manos tan cerca del umbral que la simulación no alcanza para decidir. */
+const BETA_MARGIN = 0.025
+
+function holdemCards(deck: "long" | "short", rng: Rng): Card[] {
+  // Mitad de las veces reparto al azar y mitad una casilla de la grilla al
+  // azar (así aparecen más manos de borde y no todo es "tirar").
+  if (rng() < 0.5) return deal({ game: "holdem", deck }, 1, 2, 0, rng).holes[0]
+  const grid = gridClasses(deck).flat()
+  const cls = grid[Math.floor(rng() * grid.length)]
+  const hi = "23456789TJQKA".indexOf(cls[0]) + 2
+  const lo = "23456789TJQKA".indexOf(cls[1]) + 2
+  const s1 = Math.floor(rng() * 4)
+  let s2 = cls.endsWith("s") ? s1 : Math.floor(rng() * 3)
+  if (!cls.endsWith("s") && s2 >= s1) s2++
+  return [makeCard(hi, s1), makeCard(lo, s2)]
+}
+
+/** Te toca hablar y todos los anteriores tiraron: ¿abrís? */
+export function makePreflop(v: Variant, rng: Rng = Math.random, table?: 4 | 5 | 6): PreflopDrill {
   const t = table ?? ([4, 5, 6] as const)[Math.floor(rng() * 3)]
   const positions = POSITIONS_BY_TABLE[t]
   const pos = positions[Math.floor(rng() * positions.length)]
-  let cards: [Card, Card]
-  if (rng() < 0.5) {
-    const { holes } = deal({ game: "holdem", deck: "long" }, 1, 2, 0, rng)
-    cards = [holes[0][0], holes[0][1]]
-  } else {
-    const grid = gridClasses().flat()
-    const cls = grid[Math.floor(rng() * grid.length)]
-    const hi = "23456789TJQKA".indexOf(cls[0]) + 2
-    const lo = "23456789TJQKA".indexOf(cls[1]) + 2
-    const s1 = Math.floor(rng() * 4)
-    let s2 = cls.endsWith("s") ? s1 : Math.floor(rng() * 3)
-    if (!cls.endsWith("s") && s2 >= s1) s2++
-    cards = [makeCard(hi, s1), makeCard(lo, s2)]
+  const base = { kind: "preflop" as const, table: t, pos }
+
+  if (v.game === "holdem") {
+    const cards = holdemCards(v.deck, rng)
+    const hand = handClass(cards[0], cards[1])
+    const open = v.deck === "long" ? openRange(pos).has(hand) : shortOpens(hand, pos)
+    return { ...base, cards, hand, open, beta: v.deck === "short" }
   }
-  const hand = handClass(cards[0], cards[1])
-  return { kind: "preflop", table: t, pos, cards, hand, open: openRange(pos).has(hand) }
+
+  const threshold = betaThreshold(v, pos)
+  let fallback: PreflopDrill | null = null
+  for (let tries = 0; tries < 30; tries++) {
+    const cards = deal(v, 1, GAMES[v.game].holeCount, 0, rng).holes[0]
+    const equity = equityVsRandom(cards, v, BETA_TRIALS[v.game], rng)
+    const d: PreflopDrill = { ...base, cards, hand: null, open: equity >= threshold, beta: true, equity, threshold }
+    if (Math.abs(equity - threshold) >= BETA_MARGIN) return d
+    fallback ??= d
+  }
+  return fallback!
+}
+
+// ── ¿Cuál es mejor? (dos manos antes del flop, mano a mano) ────────────────
+
+export interface CompareDrill {
+  kind: "compare"
+  hands: [Card[], Card[]]
+  /** Parte del pozo de cada una mano a mano (empates a medias). */
+  equity: [number, number]
+  /** La que gana más seguido. */
+  better: 0 | 1
+  /** Mesas simuladas. */
+  samples: number
+}
+
+const COMPARE_TRIALS: Record<Variant["game"], number> = { holdem: 6000, omaha: 3000, manhattan: 1500 }
+/** Diferencia mínima entre las dos (en equity) para que la respuesta sea clara. */
+export const COMPARE_MIN_GAP = 0.08
+
+export function makeCompare(v: Variant, rng: Rng = Math.random): CompareDrill {
+  const holeCount = GAMES[v.game].holeCount
+  let best: CompareDrill | null = null
+  for (let tries = 0; tries < 40; tries++) {
+    const { holes } = deal(v, 2, holeCount, 0, rng)
+    // Filtro rápido para no gastar simulaciones en manos parejas.
+    const quick = equityMonteCarlo(holes, [], v, 300, rng)
+    if (Math.abs(quick.equity[0] - quick.equity[1]) < COMPARE_MIN_GAP) continue
+    const trials = COMPARE_TRIALS[v.game]
+    const r = equityMonteCarlo(holes, [], v, trials, rng)
+    const d: CompareDrill = {
+      kind: "compare",
+      hands: [holes[0], holes[1]],
+      equity: [r.equity[0], r.equity[1]],
+      better: r.equity[0] >= r.equity[1] ? 0 : 1,
+      samples: trials,
+    }
+    if (Math.abs(r.equity[0] - r.equity[1]) >= COMPARE_MIN_GAP) return d
+    if (!best || Math.abs(r.equity[0] - r.equity[1]) > Math.abs(best.equity[0] - best.equity[1])) best = d
+  }
+  return best!
+}
+
+/** Rasgos de una mano para explicar por qué es mejor o peor (solo hechos, sin juicio). */
+export function handTraits(cards: readonly Card[]): string[] {
+  const out: string[] = []
+  const bySuit = [0, 0, 0, 0]
+  for (const c of cards) bySuit[c & 3]++
+  const suited = bySuit.filter((n) => n >= 2)
+  if (cards.length === 2) out.push(suited.length ? "mismo palo" : "distinto palo")
+  else if (bySuit.some((n) => n === cards.length)) out.push("todas del mismo palo")
+  else if (suited.length >= 2) out.push("dos palos")
+  else if (suited.length === 1) out.push(suited[0] >= 3 ? `${suited[0]} del mismo palo` : "un palo")
+  else out.push("sin palo repetido")
+
+  const byRank = new Map<number, number>()
+  for (const c of cards) byRank.set((c >> 2) + 2, (byRank.get((c >> 2) + 2) ?? 0) + 1)
+  const name = (r: number) => ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[r] ?? String(r)
+  for (const [r, n] of [...byRank].sort((a, b) => b[0] - a[0])) {
+    if (n === 2) out.push(`par de ${name(r)}`)
+    if (n === 3) out.push(`trío de ${name(r)}`)
+    if (n === 4) out.push(`cuatro ${name(r)}`)
+  }
+  // Escalerita más larga de rangos distintos (el As también cuenta abajo).
+  const ranks = new Set(byRank.keys())
+  if (ranks.has(14)) ranks.add(1)
+  let run = 0
+  let longest = 0
+  for (let r = 1; r <= 14; r++) {
+    run = ranks.has(r) ? run + 1 : 0
+    longest = Math.max(longest, run)
+  }
+  if (longest >= 2) out.push(longest === 2 ? "2 seguidas" : `${longest} seguidas`)
+  const high = cards.filter((c) => (c >> 2) + 2 >= 10).length
+  out.push(high === 0 ? "ninguna alta (10 o más)" : high === 1 ? "1 carta alta" : `${high} cartas altas`)
+  return out
 }

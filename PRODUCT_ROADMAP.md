@@ -136,8 +136,12 @@ Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular ex
 
 - Etapa 5: ejercicio "¿Abrís?" y tabla "Qué manos abrir" (13×13) para Hold'em Long, con los rangos de apertura 6-max de PokerStrategy.com (lecciones "No-Limit 6-max Pre-flop Ranges", 12/03/2026). Con 4 o 5 jugadores se sacan las primeras posiciones (adaptación nuestra, no de la fuente).
 
+- "¿Cuál es mejor?": dos manos antes del flop, mano a mano, para los 6 juegos (respuesta calculada, diferencia mínima de 8 puntos).
+- Principios para elegir manos de Omaha en Jugadas (PokerStrategy.com, "PLO for Beginners (2) – Preflop Play").
+- "¿Abrís?" Beta para Hold'em short, Omaha y Manhattan: inferido (equity contra 2 manos al azar + mismo % por posición que Hold'em). Validado contra la fuente en Hold'em largo: coincide en 85–94% pero falla en manos de borde. Datos en `lib/poker/preflop-beta-data.ts`, generados por `scripts/gen-preflop-beta.ts`.
+
 **Pendiente**:
-- Rangos para Omaha, Manhattan o short deck: no hay fuente confiable a mano.
+- Modo "con luz" (ante igual para todos, sin ciegas), que es como se juega en La Cajita.
 - Más adelante: explicaciones con IA vía Claude API. El plan Max trae créditos mensuales de API (hay que vincular una organización de la Claude Console); la API key iría como env var en Vercel, nunca `NEXT_PUBLIC_`.
 
 ---

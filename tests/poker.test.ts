@@ -319,10 +319,67 @@ describe("rangos de apertura (PokerStrategy 6-max)", () => {
       const d = makePreflop(HE, rng, 4)
       expect(POSITIONS_BY_TABLE[4]).toContain(d.pos)
       expect(d.cards[0]).not.toBe(d.cards[1])
-      expect(d.open).toBe(openRange(d.pos).has(d.hand))
+      expect(d.open).toBe(openRange(d.pos).has(d.hand!))
       if (d.open) opens++
     }
     expect(opens).toBeGreaterThan(60)
     expect(opens).toBeLessThan(240)
   })
+})
+
+describe("¿Cuál es mejor?", () => {
+  it.each([HE, HE_SHORT, OMAHA, MANHATTAN])("$game $deck: la mejor es la de más equity y la diferencia es clara", async (v) => {
+    const { makeCompare, COMPARE_MIN_GAP } = await import("../lib/poker/drills")
+    const rng = seededRng(11)
+    for (let i = 0; i < 3; i++) {
+      const d = makeCompare(v, rng)
+      expect(d.equity[d.better]).toBeGreaterThanOrEqual(d.equity[1 - d.better])
+      expect(d.equity[0] + d.equity[1]).toBeCloseTo(1, 6)
+      expect(Math.abs(d.equity[0] - d.equity[1])).toBeGreaterThanOrEqual(COMPARE_MIN_GAP)
+    }
+  }, 60000)
+
+  it("rasgos de la mano", async () => {
+    const { handTraits } = await import("../lib/poker/drills")
+    expect(handTraits(P("As Ks Qd Jd"))).toEqual(["dos palos", "4 seguidas", "4 cartas altas"])
+    expect(handTraits(P("9h 9c 4s 2d"))).toEqual(["sin palo repetido", "par de 9", "ninguna alta (10 o más)"])
+    expect(handTraits(P("Ah 2h 3h 4h"))).toEqual(["todas del mismo palo", "4 seguidas", "1 carta alta"])
+    expect(handTraits(P("Kd Qd"))).toEqual(["mismo palo", "2 seguidas", "2 cartas altas"])
+  })
+})
+
+describe("¿Abrís? Beta", () => {
+  it("datos generados completos y coherentes", async () => {
+    const { BETA_DATA } = await import("../lib/poker/preflop-beta-data")
+    const { gridClasses } = await import("../lib/poker/preflop")
+    expect(Object.keys(BETA_DATA.shortGrid).sort()).toEqual(gridClasses("short").flat().sort())
+    for (const key of ["holdem:short", "omaha:long", "omaha:short", "manhattan:long", "manhattan:short"]) {
+      const t = BETA_DATA.thresholds[key]
+      // Se abre más cuanto más tarde: UTG 13% < MP 17% < SB 31% < CO 32% < BU 62%.
+      expect(t.UTG, key).toBeGreaterThanOrEqual(t.MP)
+      expect(t.MP, key).toBeGreaterThanOrEqual(t.SB)
+      expect(t.SB, key).toBeGreaterThanOrEqual(t.CO)
+      expect(t.CO, key).toBeGreaterThanOrEqual(t.BU)
+    }
+    for (const x of Object.values(BETA_DATA.validation)) expect(x).toBeGreaterThan(0.8)
+  })
+
+  it("Hold'em short: AA abre siempre y las peores no abren ni en el botón", async () => {
+    const { shortOpens } = await import("../lib/poker/preflop-beta")
+    for (const pos of ["UTG", "MP", "CO", "BU", "SB"] as const) expect(shortOpens("AA", pos)).toBe(true)
+    expect(shortOpens("76o", "UTG")).toBe(false)
+    expect(shortOpens("76o", "BU") && shortOpens("86o", "BU") && shortOpens("96o", "BU")).toBe(false)
+  })
+
+  it.each([OMAHA, MANHATTAN, HE_SHORT])("$game $deck: la respuesta sale de la regla Beta", async (v) => {
+    const { makePreflop } = await import("../lib/poker/drills")
+    const { shortOpens } = await import("../lib/poker/preflop-beta")
+    const rng = seededRng(5)
+    for (let i = 0; i < 4; i++) {
+      const d = makePreflop(v, rng, 6)
+      expect(d.beta).toBe(true)
+      if (v.game === "holdem") expect(d.open).toBe(shortOpens(d.hand!, d.pos))
+      else expect(d.open).toBe(d.equity! >= d.threshold!)
+    }
+  }, 60000)
 })
