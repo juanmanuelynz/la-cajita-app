@@ -354,3 +354,77 @@ export function handTraits(cards: readonly Card[]): string[] {
   out.push(high === 0 ? "ninguna alta (10 o más)" : high === 1 ? "1 carta alta" : `${high} cartas altas`)
   return out
 }
+
+// ── Con luz (como se juega en La Cajita) ───────────────────────────────────
+// Sin ciegas: todos ponen la misma luz, habla primero el de la izquierda del
+// que reparte y el que reparte habla último. Si nadie apostó, se puede pasar.
+
+export interface LuzDrill {
+  kind: "luz"
+  players: number
+  /** Orden en que hablás (1 = primero; `players` = el que reparte). */
+  seat: number
+  luz: number
+  /** Pozo antes de la apuesta: la luz de todos. */
+  pot: number
+  hero: Card[]
+  /** null: nadie apostó antes que vos. */
+  bet: null | {
+    seat: number
+    amount: number
+    villain: Card[]
+    /** Tu parte del pozo mano a mano contra su mano (empates a medias). */
+    equity: number
+    /** Lo mínimo que necesitás ganar para que pagar convenga. */
+    needed: number
+    shouldCall: boolean
+    close: boolean
+    samples: number
+  }
+}
+
+const LUZ_VALUES = [50, 100, 200]
+const LUZ_BET_FRACTIONS = [1 / 2, 2 / 3, 1, 3 / 2, 2]
+const LUZ_TRIALS: Record<Variant["game"], number> = { holdem: 5000, omaha: 2500, manhattan: 1200 }
+
+export function makeLuz(v: Variant, rng: Rng = Math.random): LuzDrill {
+  const players = 4 + Math.floor(rng() * 3)
+  const luz = LUZ_VALUES[Math.floor(rng() * LUZ_VALUES.length)]
+  const pot = players * luz
+  const holeCount = GAMES[v.game].holeCount
+
+  // 1 de cada 5: nadie apostó (la lección es no tirar gratis).
+  if (rng() < 0.2) {
+    const seat = 1 + Math.floor(rng() * players)
+    const hero = deal(v, 1, holeCount, 0, rng).holes[0]
+    return { kind: "luz", players, seat, luz, pot, hero, bet: null }
+  }
+
+  const seat = 2 + Math.floor(rng() * (players - 1))
+  const betSeat = 1 + Math.floor(rng() * (seat - 1))
+  const { holes } = deal(v, 2, holeCount, 0, rng)
+  const frac = LUZ_BET_FRACTIONS[Math.floor(rng() * LUZ_BET_FRACTIONS.length)]
+  const amount = Math.max(luz, Math.round((pot * frac) / 50) * 50)
+  const trials = LUZ_TRIALS[v.game]
+  const equity = equityMonteCarlo(holes, [], v, trials, rng).equity[0]
+  const needed = amount / (pot + 2 * amount)
+  return {
+    kind: "luz",
+    players,
+    seat,
+    luz,
+    pot,
+    hero: holes[0],
+    bet: {
+      seat: betSeat,
+      amount,
+      villain: holes[1],
+      equity,
+      needed,
+      shouldCall: equity >= needed,
+      // Margen por la simulación: si están a menos de 3 puntos, las dos valen.
+      close: Math.abs(equity - needed) < 0.03,
+      samples: trials,
+    },
+  }
+}

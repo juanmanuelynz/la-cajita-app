@@ -113,7 +113,7 @@ export type UpdateActiveMatchInput = z.infer<typeof UpdateActiveMatchSchema>
 
 export const TrainingAnswerSchema = z.object({
   playerId: z.string().uuid(),
-  drill: z.enum(["usable", "whoWins", "outs", "potOdds", "compare", "preflop"]),
+  drill: z.enum(["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz"]),
   game: z.enum(["holdem", "omaha", "manhattan"]),
   deck: z.enum(["long", "short"]),
   correct: z.boolean(),

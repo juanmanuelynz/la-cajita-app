@@ -13,6 +13,7 @@ import { WhoWinsDrill } from "@/components/training/who-wins-drill"
 import { UsableDrill } from "@/components/training/usable-drill"
 import { PreflopDrill, PreflopRanges } from "@/components/training/preflop"
 import { CompareDrill } from "@/components/training/compare-drill"
+import { LuzDrill } from "@/components/training/luz-drill"
 import { OmahaPrinciples } from "@/components/training/omaha-principles"
 import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
@@ -30,7 +31,8 @@ const DRILLS: { id: DrillId; label: string }[] = [
   { id: "outs", label: "Outs" },
   { id: "potOdds", label: "¿Pagás?" },
   { id: "compare", label: "¿Cuál es mejor?" },
-  { id: "preflop", label: "¿Abrís?" },
+  { id: "luz", label: "Con luz" },
+  { id: "preflop", label: "¿Abrís? (ciegas)" },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -172,6 +174,7 @@ export function EntrenarTab({ players }: { players: Player[] }) {
               {drill === "outs" && <OutsDrill variant={variant} />}
               {drill === "potOdds" && <PotOddsDrill variant={variant} />}
               {drill === "compare" && <CompareDrill variant={variant} />}
+              {drill === "luz" && <LuzDrill variant={variant} />}
               {drill === "preflop" && <PreflopDrill variant={variant} />}
             </>
           )}

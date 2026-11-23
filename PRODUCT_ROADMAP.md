@@ -140,8 +140,10 @@ Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular ex
 - Principios para elegir manos de Omaha en Jugadas (PokerStrategy.com, "PLO for Beginners (2) – Preflop Play").
 - "¿Abrís?" Beta para Hold'em short, Omaha y Manhattan: inferido (equity contra 2 manos al azar + mismo % por posición que Hold'em). Validado contra la fuente en Hold'em largo: coincide en 85–94% pero falla en manos de borde. Datos en `lib/poker/preflop-beta-data.ts`, generados por `scripts/gen-preflop-beta.ts`.
 
+- "Con luz", como se juega en La Cajita (luz igual para todos, sin ciegas, se puede pasar antes del flop, habla primero el de la izquierda del que reparte, apuestas libres): orden de la mesa, "nunca tirar si podés pasar" y ¿Pagás antes del flop? con el pozo de luces (respuesta calculada). "¿Abrís?" queda como "(ciegas)", para practicar el juego de casino.
+
 **Pendiente**:
-- Modo "con luz" (ante igual para todos, sin ciegas), que es como se juega en La Cajita.
+- Cuándo apostar o pasar con luz si nadie apostó: no hay fuente y no se puede validar una inferencia; se decidió no hacerlo por ahora.
 - Más adelante: explicaciones con IA vía Claude API. El plan Max trae créditos mensuales de API (hay que vincular una organización de la Claude Console); la API key iría como env var en Vercel, nunca `NEXT_PUBLIC_`.
 
 ---

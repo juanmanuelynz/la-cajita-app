@@ -1,10 +1,10 @@
 // Lógica pura del progreso y del Desafío del día (sin base de datos).
 
 import { seededRng } from "./cards"
-import { makeCompare, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
+import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop"] as const
+export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
 
 export const DRILL_NAMES: Record<DrillId, string> = {
@@ -13,7 +13,8 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   outs: "Outs",
   potOdds: "¿Pagás?",
   compare: "¿Cuál es mejor?",
-  preflop: "¿Abrís?",
+  preflop: "¿Abrís? (ciegas)",
+  luz: "Con luz",
 }
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
@@ -48,7 +49,7 @@ function hash(text: string): number {
 
 export const DAILY_LENGTH = 10
 
-const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop }
+const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop, luz: makeLuz }
 
 export type DailyQuestion =
   | { drill: "usable"; variant: Variant; data: ReturnType<typeof makeUsable> }
@@ -57,6 +58,7 @@ export type DailyQuestion =
   | { drill: "potOdds"; variant: Variant; data: ReturnType<typeof makePotOdds> }
   | { drill: "compare"; variant: Variant; data: ReturnType<typeof makeCompare> }
   | { drill: "preflop"; variant: Variant; data: ReturnType<typeof makePreflop> }
+  | { drill: "luz"; variant: Variant; data: ReturnType<typeof makeLuz> }
 
 /**
  * Las preguntas del Desafío del día. Salen de una semilla armada con la

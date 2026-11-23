@@ -383,3 +383,27 @@ describe("¿Abrís? Beta", () => {
     }
   }, 60000)
 })
+
+describe("Con luz", () => {
+  it.each([HE, HE_SHORT, OMAHA, MANHATTAN])("$game $deck: pozo, orden y cuentas", async (v) => {
+    const { makeLuz } = await import("../lib/poker/drills")
+    const rng = seededRng(21)
+    let withBet = 0
+    for (let i = 0; i < 6; i++) {
+      const d = makeLuz(v, rng)
+      expect(d.players).toBeGreaterThanOrEqual(4)
+      expect(d.players).toBeLessThanOrEqual(6)
+      expect(d.pot).toBe(d.players * d.luz)
+      expect(d.seat).toBeGreaterThanOrEqual(1)
+      expect(d.seat).toBeLessThanOrEqual(d.players)
+      if (d.bet) {
+        withBet++
+        expect(d.bet.seat).toBeLessThan(d.seat) // apostó alguien que habla antes
+        expect(d.bet.needed).toBeCloseTo(d.bet.amount / (d.pot + 2 * d.bet.amount), 10)
+        expect(d.bet.shouldCall).toBe(d.bet.equity >= d.bet.needed)
+        expect(new Set([...d.hero, ...d.bet.villain]).size).toBe(d.hero.length * 2)
+      }
+    }
+    expect(withBet).toBeGreaterThan(0)
+  }, 60000)
+})
