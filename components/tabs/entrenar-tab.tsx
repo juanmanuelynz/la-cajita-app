@@ -6,7 +6,7 @@ import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
 import type { DrillId } from "@/lib/poker/training"
 import { TrainingContext } from "@/components/training/drill-shell"
-import { ProgressPanel } from "@/components/training/progress-panel"
+import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
 import { DailyChallenge } from "@/components/training/daily-challenge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
@@ -19,9 +19,24 @@ import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
 import { HandRankings } from "@/components/training/hand-rankings"
+import { GtoDrill } from "@/components/training/gto-drill"
 import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
+import type { TrainingProgress } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import {
+  BookOpen,
+  Brain,
+  Calculator,
+  Coins,
+  Dumbbell,
+  GitCompareArrows,
+  Layers,
+  Scale,
+  Swords,
+  Target,
+  type LucideIcon,
+} from "lucide-react"
 
 type Subtab = "ejercicios" | "calculadora" | "manos"
 /** Cómo se pone plata antes de repartir: luz igual para todos (La Cajita) o ciegas (casino). */
@@ -29,13 +44,14 @@ type Structure = "luz" | "ciegas"
 /** "Antes del flop" muestra el ejercicio de luz o el de ciegas según la estructura elegida. */
 type DrillChoice = Exclude<DrillId, "luz" | "preflop"> | "antes"
 
-const DRILLS: { id: DrillChoice; label: string }[] = [
-  { id: "usable", label: "¿Qué tenés?" },
-  { id: "whoWins", label: "¿Quién gana?" },
-  { id: "outs", label: "Outs" },
-  { id: "potOdds", label: "¿Call o fold?" },
-  { id: "compare", label: "¿Cuál es mejor?" },
-  { id: "antes", label: "Antes del flop" },
+const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; color: string; isNew?: boolean }[] = [
+  { id: "usable", label: "¿Qué tenés?", icon: Layers, color: "text-sky-400 bg-sky-500/15" },
+  { id: "whoWins", label: "¿Quién gana?", icon: Swords, color: "text-rose-400 bg-rose-500/15" },
+  { id: "outs", label: "Outs", icon: Target, color: "text-emerald-400 bg-emerald-500/15" },
+  { id: "potOdds", label: "¿Call o fold?", icon: Scale, color: "text-amber-400 bg-amber-500/15" },
+  { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows, color: "text-violet-400 bg-violet-500/15" },
+  { id: "antes", label: "Antes del flop", icon: Coins, color: "text-orange-400 bg-orange-500/15" },
+  { id: "gto", label: "GTO river", icon: Brain, color: "text-fuchsia-400 bg-fuchsia-500/15", isNew: true },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -50,15 +66,15 @@ function Segmented<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex rounded-md bg-muted p-0.5 text-sm">
+    <div className="flex rounded-full bg-muted/70 p-1 text-sm">
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
           onClick={() => onChange(o.id)}
           className={cn(
-            "flex-1 rounded px-1.5 py-1 transition-colors whitespace-nowrap",
-            value === o.id ? "bg-background shadow-sm font-medium" : "text-muted-foreground",
+            "flex-1 rounded-full px-2 py-1.5 transition-all whitespace-nowrap",
+            value === o.id ? "bg-background shadow font-semibold text-foreground" : "text-muted-foreground",
           )}
         >
           {o.label}
@@ -68,25 +84,68 @@ function Segmented<T extends string>({
   )
 }
 
-/** Botones grandes para elegir el ejercicio (44px de alto: cómodos de tocar). */
-function DrillPicker({ value, onChange }: { value: DrillChoice; onChange: (d: DrillChoice) => void }) {
+/** Aciertos de un ejercicio (Antes del flop junta luz y ciegas). */
+function drillTally(p: TrainingProgress | null, id: DrillChoice) {
+  if (!p) return null
+  const ids: DrillId[] = id === "antes" ? ["luz", "preflop"] : [id]
+  return ids.reduce(
+    (a, d) => ({ right: a.right + (p.byDrill[d]?.right ?? 0), total: a.total + (p.byDrill[d]?.total ?? 0) }),
+    { right: 0, total: 0 },
+  )
+}
+
+/**
+ * Tarjetas para elegir el ejercicio, en una tira que se desliza de costado:
+ * ícono, nombre y cómo te va (barra de aciertos).
+ */
+function DrillPicker({
+  value,
+  onChange,
+  progress,
+}: {
+  value: DrillChoice
+  onChange: (d: DrillChoice) => void
+  progress: TrainingProgress | null
+}) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {DRILLS.map((d) => (
-        <button
-          key={d.id}
-          type="button"
-          onClick={() => onChange(d.id)}
-          className={cn(
-            "min-h-11 rounded-lg border px-1 text-[13px] leading-tight transition-colors",
-            value === d.id
-              ? "border-primary bg-primary/20 font-semibold"
-              : "border-transparent bg-muted text-muted-foreground active:bg-muted/60",
-          )}
-        >
-          {d.label}
-        </button>
-      ))}
+    <div className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {DRILLS.map((d) => {
+        const t = drillTally(progress, d.id)
+        const ratio = t?.total ? t.right / t.total : 0
+        const active = value === d.id
+        const Icon = d.icon
+        return (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => onChange(d.id)}
+            className={cn(
+              "relative flex w-[6.5rem] shrink-0 snap-start flex-col items-start gap-2 rounded-2xl border-2 p-2.5 text-left transition-all active:scale-[0.97]",
+              active ? "border-primary bg-primary/10 shadow-[0_3px_0_0] shadow-primary/60" : "border-border bg-card",
+            )}
+          >
+            {d.isNew && (
+              <span className="absolute right-1.5 top-1.5 rounded-full bg-fuchsia-500 px-1.5 text-[9px] font-black uppercase leading-4 text-white">
+                Nuevo
+              </span>
+            )}
+            <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", d.color)}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className={cn("min-h-8 text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
+              {d.label}
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+              {t && t.total > 0 && (
+                <div
+                  className={cn("h-full", ratio >= 0.8 ? "bg-emerald-500" : ratio >= 0.5 ? "bg-amber-500" : "bg-rose-500")}
+                  style={{ width: `${ratio * 100}%` }}
+                />
+              )}
+            </div>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -157,32 +216,39 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
     [playerId],
   )
   const ctx = useMemo(() => ({ onAnswer }), [onAnswer])
+  const progress = useTrainingProgress(playerId, version)
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
 
-  const picker = (withStructure: boolean) => (
-    <div className="space-y-2">
-      <Segmented value={game} onChange={setGame} options={GAME_IDS.map((id) => ({ id, label: GAMES[id].name }))} />
-      <div className={cn("grid gap-2", withStructure ? "grid-cols-2" : "grid-cols-1")}>
-        <Segmented
-          value={deck}
-          onChange={setDeck}
-          options={[
-            { id: "long", label: "Long" },
-            { id: "short", label: "Short" },
-          ]}
-        />
-        {withStructure && (
-          <Segmented
-            value={structure}
-            onChange={setStructure}
-            options={[
-              { id: "luz", label: "Luz" },
-              { id: "ciegas", label: "Ciegas" },
-            ]}
-          />
-        )}
+  const structurePicker = (
+    <Segmented
+      value={structure}
+      onChange={setStructure}
+      options={[
+        { id: "luz", label: "Con luz" },
+        { id: "ciegas", label: "Con ciegas" },
+      ]}
+    />
+  )
+
+  /** Juego y mazo en una sola fila; el mazo es una pastilla que alterna. */
+  const picker = (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <Segmented value={game} onChange={setGame} options={GAME_IDS.map((id) => ({ id, label: GAMES[id].name }))} />
       </div>
+      <button
+        type="button"
+        onClick={() => setDeck((d) => (d === "long" ? "short" : "long"))}
+        aria-label={`Mazo ${deck === "long" ? "Long" : "Short"}: tocá para cambiar`}
+        className={cn(
+          "flex shrink-0 flex-col items-center rounded-2xl border px-2.5 py-1 leading-tight transition-colors active:scale-95",
+          deck === "short" ? "border-violet-500/50 bg-violet-500/15 text-violet-300" : "border-sky-500/50 bg-sky-500/15 text-sky-300",
+        )}
+      >
+        <span className="text-sm font-bold">{deck === "long" ? "Long" : "Short"}</span>
+        <span className="text-[10px] opacity-80">{deck === "long" ? "52 cartas" : "sin 2 a 5"}</span>
+      </button>
     </div>
   )
 
@@ -190,23 +256,37 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
     <TrainingContext.Provider value={ctx}>
       <Tabs value={subtab} onValueChange={(v) => setSubtab(v as Subtab)} className="w-full">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
-            <TabsTrigger value="calculadora">Calculadora</TabsTrigger>
-            <TabsTrigger value="manos">Jugadas</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl p-1">
+            {(
+              [
+                { id: "ejercicios", label: "Ejercicios", icon: Dumbbell },
+                { id: "calculadora", label: "Calculadora", icon: Calculator },
+                { id: "manos", label: "Jugadas", icon: BookOpen },
+              ] as const
+            ).map(({ id, label, icon: Icon }) => (
+              <TabsTrigger key={id} value={id} className="gap-1.5 rounded-xl py-2 data-[state=active]:shadow">
+                <Icon className="size-4 shrink-0" />
+                {label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
         <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
           {!challengeActive && (
-            <ProgressPanel players={players} playerId={playerId} onPlayerChange={changePlayer} version={version} />
+            <TrainerCard players={players} playerId={playerId} onPlayerChange={changePlayer} progress={progress} />
           )}
           <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
           {!challengeActive && (
             <>
-              <div className="pt-2 space-y-2">
-                {picker(true)}
-                <DrillPicker value={drill} onChange={setDrill} />
+              <div className="pt-3 space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-lg font-black tracking-tight">Practicá</h2>
+                  <span className="text-xs text-muted-foreground">deslizá para ver más →</span>
+                </div>
+                <DrillPicker value={drill} onChange={setDrill} progress={progress} />
+                {drill !== "gto" && picker}
+                {drill === "antes" && structurePicker}
               </div>
               {drill === "usable" && <UsableDrill variant={variant} />}
               {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
@@ -215,17 +295,19 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
               {drill === "compare" && <CompareDrill variant={variant} />}
               {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
               {drill === "antes" && structure === "ciegas" && <PreflopDrill variant={variant} />}
+              {drill === "gto" && <GtoDrill variant={variant} />}
             </>
           )}
         </TabsContent>
 
         <TabsContent value="calculadora" className="pt-1 pb-8 space-y-3 mt-0">
-          {picker(false)}
+          {picker}
           <EquityCalculator variant={variant} />
         </TabsContent>
 
         <TabsContent value="manos" className="pt-1 pb-8 space-y-3 mt-0">
-          {picker(true)}
+          {picker}
+          {structurePicker}
           <HandRankings variant={variant} />
           <OmahaPrinciples variant={variant} />
           {structure === "ciegas" ? (

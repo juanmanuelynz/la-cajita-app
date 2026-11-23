@@ -1,10 +1,11 @@
 // Lógica pura del progreso y del Desafío del día (sin base de datos).
 
 import { seededRng } from "./cards"
+import { makeGto } from "./gto"
 import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz"] as const
+export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
 
 export const DRILL_NAMES: Record<DrillId, string> = {
@@ -15,6 +16,7 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   compare: "¿Cuál es mejor?",
   preflop: "Antes del flop (ciegas)",
   luz: "Antes del flop (luz)",
+  gto: "GTO en el river",
 }
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
@@ -49,7 +51,7 @@ function hash(text: string): number {
 
 export const DAILY_LENGTH = 10
 
-const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop, luz: makeLuz }
+const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop, luz: makeLuz, gto: makeGto }
 
 export type DailyQuestion =
   | { drill: "usable"; variant: Variant; data: ReturnType<typeof makeUsable> }
@@ -59,6 +61,17 @@ export type DailyQuestion =
   | { drill: "compare"; variant: Variant; data: ReturnType<typeof makeCompare> }
   | { drill: "preflop"; variant: Variant; data: ReturnType<typeof makePreflop> }
   | { drill: "luz"; variant: Variant; data: ReturnType<typeof makeLuz> }
+  | { drill: "gto"; variant: Variant; data: ReturnType<typeof makeGto> }
+
+/**
+ * Ejercicios que entran en el desafío de una fecha. GTO se sumó después: los
+ * días anteriores tienen que seguir dando las mismas preguntas (el resultado
+ * se vuelve a generar desde la semilla al tocar "Ver").
+ */
+export const GTO_IN_DAILY_FROM = "2026-11-25"
+export function dailyDrills(date: string): readonly DrillId[] {
+  return date < GTO_IN_DAILY_FROM ? DRILL_IDS.filter((d) => d !== "gto") : DRILL_IDS
+}
 
 /**
  * Las preguntas del Desafío del día. Salen de una semilla armada con la
@@ -68,8 +81,9 @@ export function dailyChallenge(date: string): DailyQuestion[] {
   const rng = seededRng(hash(`la-cajita:${date}`))
   const games = ["holdem", "omaha", "manhattan"] as const
   const questions: DailyQuestion[] = []
+  const drills = dailyDrills(date)
   for (let i = 0; i < DAILY_LENGTH; i++) {
-    const drill = DRILL_IDS[Math.floor(rng() * DRILL_IDS.length)]
+    const drill = drills[Math.floor(rng() * drills.length)]
     const variant: Variant = {
       game: games[Math.floor(rng() * games.length)],
       deck: rng() < 0.5 ? "long" : "short",
@@ -92,6 +106,7 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   compare:
     "Fijate qué cartas comparten las dos manos: si una domina a la otra (A-K contra A-Q), la de la carta más alta gana mucho más seguido. En Omaha suman los dos palos y las cartas seguidas.",
   luz: "Si nadie apostó, nunca hagas fold: con check ves el flop gratis. Y como el pozo ya tiene las luces, para hacer call alcanza con menos chances.",
+  gto: "Si el rival apuesta B con pozo P, tenés que seguir con al menos P ÷ (P + B) de tus manos. Y al apostar, cuanto más grande la apuesta, más faroles podés tener.",
   preflop:
     "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
 }
@@ -126,4 +141,39 @@ export function summarizeDaily(drills: readonly DrillId[], answers: readonly boo
             ? "Se puede mejorar"
             : "A seguir practicando"
   return { score, total, weakest, title }
+}
+
+// ── Gamificación: nivel y meta del día ─────────────────────────────────────
+
+/** Respuestas por día que completan la meta (el anillo de "Hoy"). */
+export const DAILY_GOAL = 20
+
+/** Aciertos acumulados para llegar a cada nivel (nivel 1 = 0). Después, +300 por nivel. */
+const LEVEL_AT = [0, 20, 50, 100, 175, 275, 400, 550, 750, 1000]
+const LEVEL_TITLES: [number, string][] = [
+  [1, "Pez"],
+  [3, "Aficionado"],
+  [5, "Regular"],
+  [7, "Tiburón"],
+  [9, "Leyenda"],
+]
+
+const levelStart = (level: number) =>
+  level <= LEVEL_AT.length ? LEVEL_AT[level - 1] : LEVEL_AT[LEVEL_AT.length - 1] + (level - LEVEL_AT.length) * 300
+
+export interface LevelInfo {
+  level: number
+  title: string
+  /** Aciertos dentro del nivel actual y cuántos hacen falta para pasar al siguiente. */
+  into: number
+  span: number
+}
+
+/** Nivel según los aciertos acumulados (cada acierto suma 1). */
+export function levelFor(right: number): LevelInfo {
+  let level = 1
+  while (levelStart(level + 1) <= right) level++
+  const start = levelStart(level)
+  const title = LEVEL_TITLES.filter(([from]) => from <= level).at(-1)![1]
+  return { level, title, into: right - start, span: levelStart(level + 1) - start }
 }

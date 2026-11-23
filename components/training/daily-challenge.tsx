@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { CalendarCheck, Trophy, X } from "lucide-react"
+import { CalendarCheck, ChevronDown, ChevronUp, Trophy, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChipSpinner } from "@/components/poker-chip"
 import * as db from "@/lib/database"
@@ -20,6 +20,7 @@ import { PreflopDrill } from "./preflop"
 import { CompareDrill } from "./compare-drill"
 import { ChallengeResult } from "./challenge-result"
 import { LuzDrill } from "./luz-drill"
+import { GtoDrill } from "./gto-drill"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
 
@@ -57,6 +58,8 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <LuzDrill {...common} preset={q.data} />
     case "preflop":
       return <PreflopDrill {...common} preset={q.data} />
+    case "gto":
+      return <GtoDrill {...common} preset={q.data} />
   }
 }
 
@@ -219,37 +222,65 @@ export function DailyChallenge({
           ? `${DAILY_LENGTH} preguntas · ya jugaron ${board.length}`
           : `${DAILY_LENGTH} preguntas, iguales para todos`
 
+  const cta = done ? (
+    finished ? (
+      <Button
+        size="sm"
+        variant="outline"
+        className="rounded-full border-amber-500/50"
+        onClick={() => {
+          setQuestions((q) => q ?? dailyChallenge(today))
+          setShowResult(true)
+        }}
+      >
+        Ver
+      </Button>
+    ) : null
+  ) : (
+    <Button
+      size="sm"
+      disabled={!playerId}
+      className="rounded-full bg-amber-400 px-5 font-bold text-black shadow-[0_3px_0_0] shadow-amber-700 hover:bg-amber-300 active:translate-y-0.5 active:shadow-none"
+      onClick={() => setRunning(true)}
+    >
+      {answers.length > 0 ? "Seguir" : "Jugar"}
+    </Button>
+  )
+
   return (
-    <div className="rounded-lg border border-amber-500/40 bg-amber-500/5">
+    <div className="overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/20 via-amber-500/5 to-card">
       {result}
-      <div className="flex items-center gap-2 px-3 py-2">
-        <CalendarCheck className="w-5 h-5 shrink-0 text-amber-500" />
+      <div className="flex items-center gap-3 px-3 pt-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-[0_3px_0_0] shadow-amber-700">
+          <CalendarCheck className="h-6 w-6" />
+        </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold leading-tight">Desafío del día</div>
+          <div className="font-bold leading-tight">Desafío del día</div>
           <div className="truncate text-xs text-muted-foreground">{status}</div>
         </div>
-        {done ? (
-          finished ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setQuestions((q) => q ?? dailyChallenge(today))
-                setShowResult(true)
-              }}
-            >
-              Ver
-            </Button>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => setShowBoard((b) => !b)}>
-              Ranking
-            </Button>
-          )
-        ) : (
-          <Button size="sm" disabled={!playerId} onClick={() => setRunning(true)}>
-            {answers.length > 0 ? "Seguir" : "Jugar"}
-          </Button>
-        )}
+        {cta}
+      </div>
+      <div className="flex items-center gap-2 px-3 pb-2.5 pt-2.5">
+        <div className="flex flex-1 gap-1" aria-hidden>
+          {Array.from({ length: DAILY_LENGTH }, (_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-1.5 flex-1 rounded-full",
+                i < answers.length ? (answers[i] ? "bg-emerald-500" : "bg-rose-500") : "bg-amber-500/20",
+              )}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowBoard((b) => !b)}
+          className="flex items-center gap-1 text-xs font-medium text-amber-500"
+        >
+          <Trophy className="h-3.5 w-3.5" />
+          {board && board.length > 0 ? board.length : ""}
+          {showBoard ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
       </div>
       {submitError && (
         <p className="px-3 pb-2 text-xs text-rose-500">
@@ -267,7 +298,6 @@ export function DailyChallenge({
     </div>
   )
 }
-
 
 function RunningChallenge({
   questions,
@@ -323,10 +353,14 @@ function RunningChallenge({
       {/* Qué se juega en esta pregunta */}
       <div key={`v${current}`} className="animate-fade-in flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
         <div className="min-w-0 flex-1">
-          <div className="text-lg font-bold leading-tight">{GAMES[q.variant.game].name}</div>
-          <div className="text-xs text-muted-foreground">{GAMES[q.variant.game].short}</div>
+          <div className="text-lg font-bold leading-tight">
+            {q.drill === "gto" ? "GTO en el river" : GAMES[q.variant.game].name}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {q.drill === "gto" ? "Vale igual para todos los juegos" : GAMES[q.variant.game].short}
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className={cn("flex flex-col items-end gap-1", q.drill === "gto" && "hidden")}>
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",

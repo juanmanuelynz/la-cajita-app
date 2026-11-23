@@ -284,6 +284,44 @@ describe("progreso y Desafío del día", () => {
   })
 })
 
+describe("GTO en el river", () => {
+  it("las fórmulas dan los números de libro", async () => {
+    const { alpha, mdf, bluffShare } = await import("../lib/poker/gto")
+    // Apuesta del pozo: el farol necesita 50% de folds, hay que defender 50%, 1 de cada 3 apuestas es farol.
+    expect(alpha(100, 100)).toBeCloseTo(0.5)
+    expect(mdf(100, 100)).toBeCloseTo(0.5)
+    expect(bluffShare(100, 100)).toBeCloseTo(1 / 3)
+    // Medio pozo: 33% / 67% / 25%.
+    expect(alpha(100, 50)).toBeCloseTo(1 / 3)
+    expect(mdf(100, 50)).toBeCloseTo(2 / 3)
+    expect(bluffShare(100, 50)).toBeCloseTo(0.25)
+  })
+
+  it("cada pregunta trae 4 opciones distintas y la respuesta entre ellas", async () => {
+    const { makeGto, GTO_QUESTIONS } = await import("../lib/poker/gto")
+    const rng = seededRng(7)
+    for (let i = 0; i < 400; i++) {
+      const q = GTO_QUESTIONS[i % GTO_QUESTIONS.length]
+      const d = makeGto({ game: "holdem", deck: "long" }, rng, q)
+      expect(d.options).toHaveLength(4)
+      expect(new Set(d.options).size).toBe(4)
+      expect(d.options).toContain(d.answer)
+      expect(Number.isInteger(d.bet)).toBe(true)
+      if (q === "bluffCombos") expect(d.value! * (d.bet / (d.pot + d.bet))).toBeCloseTo(d.answer)
+    }
+  })
+
+  it("el desafío de días anteriores no cambia al sumar GTO", async () => {
+    const { dailyChallenge } = await import("../lib/poker/training")
+    expect(dailyChallenge("2026-11-23").map((q) => q.drill)).toEqual([
+      "usable", "preflop", "potOdds", "usable", "usable", "preflop", "preflop", "outs", "whoWins", "outs",
+    ])
+    expect(dailyChallenge("2026-11-24").map((q) => q.drill)).toEqual([
+      "potOdds", "whoWins", "potOdds", "preflop", "compare", "whoWins", "luz", "outs", "outs", "preflop",
+    ])
+  })
+})
+
 describe("rangos de apertura (PokerStrategy 6-max)", () => {
   it("cada rango suma exactamente las combinaciones que publica la fuente", async () => {
     const { OPEN_RANGES, parseRange, comboCount } = await import("../lib/poker/preflop")
@@ -421,5 +459,17 @@ describe("resumen del desafío", () => {
     })
     expect(summarizeDaily([...drills], [true, true, true, true]).weakest).toBeNull()
     expect(summarizeDaily([...drills], [true, true, true, true]).title).toBe("¡Perfecto!")
+  })
+})
+
+describe("niveles de Entrenar", () => {
+  it("sube de nivel con los aciertos y sigue después de la tabla", async () => {
+    const { levelFor } = await import("../lib/poker/training")
+    expect(levelFor(0)).toEqual({ level: 1, title: "Pez", into: 0, span: 20 })
+    expect(levelFor(19).level).toBe(1)
+    expect(levelFor(20)).toEqual({ level: 2, title: "Pez", into: 0, span: 30 })
+    expect(levelFor(120)).toMatchObject({ level: 4, title: "Aficionado", into: 20, span: 75 })
+    expect(levelFor(1000)).toMatchObject({ level: 10, title: "Leyenda", into: 0, span: 300 })
+    expect(levelFor(1650)).toMatchObject({ level: 12, into: 50, span: 300 })
   })
 })
