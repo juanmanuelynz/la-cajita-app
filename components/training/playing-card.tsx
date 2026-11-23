@@ -1,12 +1,10 @@
 import { RANK_LABELS, SUITS, rankOf, suitOf, type Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
 
-// Mazo de 4 colores (♠ negro, ♥ rojo, ♦ azul, ♣ verde): con cartas chicas se
-// distinguen los palos de un vistazo, que es justo lo que importa para leer
-// colores. Es la opción habitual en las salas online. Los tonos siguen la
-// paleta de la app: negro de los grises (zinc), rojo de "mal" (rose), verde del
-// primario (emerald) y un azul frío que convive con ese verde (sky).
-export const SUIT_TEXT = ["text-zinc-900", "text-rose-600", "text-sky-700", "text-emerald-700"] as const
+// Mazo de 2 colores, como el de la mesa: ♠ y ♣ negros, ♥ y ♦ coral (el mismo
+// coral que usan las cartas del resto de la app, SUIT_RED).
+export const SUIT_RED = "text-[#e0564b]"
+export const SUIT_TEXT = ["text-zinc-900", SUIT_RED, SUIT_RED, "text-zinc-900"] as const
 
 const SIZES = {
   xs: "w-7 h-10 text-[11px] rounded-[5px]",

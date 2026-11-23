@@ -125,8 +125,8 @@ export function ChipCase({ open }: { open: boolean }) {
                 <span className="case-corner bottom-0 right-0" />
                 <div className="case-emblem">
                   <span>♠</span>
-                  <span className="text-rose-600">♥</span>
-                  <span className="text-rose-600">♦</span>
+                  <span className="text-[#e0564b]">♥</span>
+                  <span className="text-[#e0564b]">♦</span>
                   <span>♣</span>
                 </div>
               </Face>

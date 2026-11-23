@@ -44,7 +44,7 @@ function CardBack() {
 
 function CardFace({ card }: { card: Card }) {
   return (
-    <div className={`hole-card-face ${isRed(card.suit) ? "text-rose-600" : "text-slate-900"}`} style={{ height: CARD_H }}>
+    <div className={`hole-card-face ${isRed(card.suit) ? "text-[#e0564b]" : "text-zinc-900"}`} style={{ height: CARD_H }}>
       <span className="hole-card-corner">
         <span>{card.rank}</span>
         <span>{card.suit}</span>
