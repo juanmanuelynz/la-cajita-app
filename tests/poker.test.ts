@@ -287,7 +287,7 @@ describe("progreso y Desafío del día", () => {
 describe("GTO en el river", () => {
   it("las fórmulas dan los números de libro", async () => {
     const { alpha, mdf, bluffShare } = await import("../lib/poker/gto")
-    // Apuesta del pozo: el farol necesita 50% de folds, hay que defender 50%, 1 de cada 3 apuestas es farol.
+    // Apuesta del pozo: el bluff necesita 50% de folds, hay que defender 50%, 1 de cada 3 apuestas es bluff.
     expect(alpha(100, 100)).toBeCloseTo(0.5)
     expect(mdf(100, 100)).toBeCloseTo(0.5)
     expect(bluffShare(100, 100)).toBeCloseTo(1 / 3)

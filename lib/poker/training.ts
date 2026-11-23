@@ -106,7 +106,7 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   compare:
     "Fijate qué cartas comparten las dos manos: si una domina a la otra (A-K contra A-Q), la de la carta más alta gana mucho más seguido. En Omaha suman los dos palos y las cartas seguidas.",
   luz: "Si nadie apostó, nunca hagas fold: con check ves el flop gratis. Y como el pozo ya tiene las luces, para hacer call alcanza con menos chances.",
-  gto: "Si el rival apuesta B con pozo P, tenés que seguir con al menos P ÷ (P + B) de tus manos. Y al apostar, cuanto más grande la apuesta, más faroles podés tener.",
+  gto: "Si el rival apuesta B con pozo P, tenés que seguir con al menos P ÷ (P + B) de tus manos. Y al apostar, cuanto más grande la apuesta, más bluffs podés tener.",
   preflop:
     "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
 }

@@ -1,13 +1,13 @@
 // Cuentas de equilibrio (GTO) en el river. Son fórmulas exactas del juego
 // simplificado "river, apuesta única": quien apuesta tiene manos que ganan
-// siempre (valor) o que pierden siempre (farol), y quien paga no puede subir.
+// siempre (valor) o que pierden siempre (bluff), y quien paga no puede subir.
 // No dependen del juego ni del mazo: valen igual en Hold'em, Omaha y Manhattan.
 //
 //   P = pozo antes de la apuesta, B = apuesta
-//   - Fold que necesita un farol para no perder:   B / (P + B)        ("alfa")
+//   - Fold que necesita un bluff para no perder:   B / (P + B)        ("alfa")
 //   - Defensa mínima (MDF):                        P / (P + B) = 1 - alfa
-//   - Parte de las apuestas que pueden ser farol:  B / (P + 2B)       (= las pot odds del que paga)
-//   - Faroles por cada mano de valor:              B / (P + B)
+//   - Parte de las apuestas que pueden ser bluff:  B / (P + 2B)       (= las pot odds del que paga)
+//   - Bluffs por cada mano de valor:              B / (P + B)
 
 import type { Rng } from "./cards"
 import type { Variant } from "./variants"
@@ -39,7 +39,7 @@ export interface GtoDrill {
   sizeName: string
   /** Solo en "bluffCombos": cuántas manos de valor tenés. */
   value?: number
-  /** Opciones ordenadas: porcentajes enteros (0–100) o cantidad de faroles. */
+  /** Opciones ordenadas: porcentajes enteros (0–100) o cantidad de bluffs. */
   options: number[]
   answer: number
 }

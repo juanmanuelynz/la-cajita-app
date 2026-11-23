@@ -7,8 +7,8 @@ import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./dril
 
 const TITLES: Record<GtoData["question"], string> = {
   defend: "¿Cuánto defender?",
-  foldNeeded: "¿Cuándo rinde el farol?",
-  bluffShare: "¿Cuántos faroles?",
+  foldNeeded: "¿Cuándo rinde el bluff?",
+  bluffShare: "¿Cuántos bluffs?",
   bluffCombos: "Armá el equilibrio",
 }
 
@@ -51,25 +51,25 @@ export function GtoDrill(props: DrillProps<GtoData>) {
   const questions: Record<GtoData["question"], ReactNode> = {
     defend: (
       <>
-        El rival te apuesta. Para que no le convenga ir de farol con cualquier cosa, ¿con qué parte de tus manos tenés que
+        El rival te apuesta. Para que no le convenga hacer bluff con cualquier cosa, ¿con qué parte de tus manos tenés que
         seguir (call o raise) <b>como mínimo</b>?
       </>
     ),
     foldNeeded: (
       <>
-        Vas de farol con una mano que pierde si te pagan. ¿Qué % de las veces tiene que hacer fold el rival para que{" "}
+        Hacés bluff con una mano que pierde si te pagan. ¿Qué % de las veces tiene que hacer fold el rival para que{" "}
         <b>no pierdas plata</b>?
       </>
     ),
     bluffShare: (
       <>
         Tus manos o ganan seguro o pierden seguro. Para que al rival le dé lo mismo pagar o tirar, ¿qué % de tus apuestas
-        pueden ser <b>faroles</b>?
+        pueden ser <b>bluffs</b>?
       </>
     ),
     bluffCombos: (
       <>
-        Tenés <b>{drill.value} manos</b> que ganan seguro. ¿Cuántos faroles podés sumar para que al rival le dé lo mismo
+        Tenés <b>{drill.value} manos</b> que ganan seguro. ¿Cuántos bluffs podés sumar para que al rival le dé lo mismo
         pagar o tirar?
       </>
     ),
@@ -79,7 +79,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
   const explanation: Record<GtoData["question"], ReactNode> = {
     defend: (
       <p>
-        Un farol arriesga {pesos(bet)} para ganar {pesos(pot)}: le alcanza con que tires {pesos(bet)} ÷ {pesos(pot + bet)} ={" "}
+        Un bluff arriesga {pesos(bet)} para ganar {pesos(pot)}: le alcanza con que tires {pesos(bet)} ÷ {pesos(pot + bet)} ={" "}
         {pct(a, 0)} de las veces. Para que no gane solo, seguí con al menos pozo ÷ (pozo + apuesta) = {pesos(pot)} ÷{" "}
         {pesos(pot + bet)} = <b>{pct(m, 0)}</b> de tus manos.
       </p>
@@ -87,21 +87,21 @@ export function GtoDrill(props: DrillProps<GtoData>) {
     foldNeeded: (
       <p>
         Arriesgás {pesos(bet)} para ganar {pesos(pot)}. Empata cuando apuesta ÷ (pozo + apuesta) = {pesos(bet)} ÷{" "}
-        {pesos(pot + bet)} = <b>{pct(a, 0)}</b>. Si el rival tira más seguido que eso, el farol gana plata.
+        {pesos(pot + bet)} = <b>{pct(a, 0)}</b>. Si el rival tira más seguido que eso, el bluff gana plata.
       </p>
     ),
     bluffShare: (
       <p>
         El rival paga {pesos(bet)} para ganar {pesos(pot + bet)}: le da lo mismo cuando acierta {pesos(bet)} ÷{" "}
-        {pesos(pot + 2 * bet)} = <b>{pct(bs, 0)}</b> de las veces. Esa es la parte de tus apuestas que puede ser farol
+        {pesos(pot + 2 * bet)} = <b>{pct(bs, 0)}</b> de las veces. Esa es la parte de tus apuestas que puede ser bluff
         (son las mismas pot odds del ejercicio ¿Call o fold?).
       </p>
     ),
     bluffCombos: (
       <p>
-        Por cada mano de valor van apuesta ÷ (pozo + apuesta) = {pesos(bet)} ÷ {pesos(pot + bet)} = {pct(a, 0)} faroles.{" "}
+        Por cada mano de valor van apuesta ÷ (pozo + apuesta) = {pesos(bet)} ÷ {pesos(pot + bet)} = {pct(a, 0)} bluffs.{" "}
         {drill.value} × {pct(a, 0)} = <b>{drill.answer}</b>. Así, de {drill.value! + drill.answer} apuestas,{" "}
-        {drill.answer} son farol ({pct(bs, 0)}).
+        {drill.answer} son bluff ({pct(bs, 0)}).
       </p>
     ),
   }
@@ -137,9 +137,9 @@ export function GtoDrill(props: DrillProps<GtoData>) {
           <Stats
             items={[
               { label: "defensa mínima", value: pct(m, 0), tone: q === "defend" ? "good" : "neutral" },
-              { label: "fold para el farol", value: pct(a, 0), tone: q === "foldNeeded" ? "good" : "neutral" },
+              { label: "fold para el bluff", value: pct(a, 0), tone: q === "foldNeeded" ? "good" : "neutral" },
               {
-                label: "apuestas de farol",
+                label: "apuestas de bluff",
                 value: pct(bs, 0),
                 tone: q === "bluffShare" || q === "bluffCombos" ? "good" : "neutral",
               },
@@ -159,7 +159,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
               left={1 - bs}
               right={bs}
               leftLabel={`Valor ${pct(1 - bs, 0)}`}
-              rightLabel={`Farol ${pct(bs, 0)}`}
+              rightLabel={`Bluff ${pct(bs, 0)}`}
               leftClass="bg-sky-500"
               rightClass="bg-amber-500"
             />
@@ -170,7 +170,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
         <div className="space-y-2">
           {explanation[q]}
           <p className="text-muted-foreground">
-            Regla: cuanto más grande la apuesta, menos tenés que defender y más faroles puede tener quien apuesta. Vale
+            Regla: cuanto más grande la apuesta, menos tenés que defender y más bluffs puede tener quien apuesta. Vale
             igual en Hold&apos;em, Omaha y Manhattan.
           </p>
         </div>
