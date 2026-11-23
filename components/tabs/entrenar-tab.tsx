@@ -93,7 +93,14 @@ function DrillPicker({ value, onChange }: { value: DrillChoice; onChange: (d: Dr
 
 const PLAYER_KEY = "la-cajita:entrenar:jugador"
 
-export function EntrenarTab({ players }: { players: Player[] }) {
+/** Jugadores que no aparecen en "¿Quién sos?" de Entrenar (por nombre, sin importar mayúsculas). */
+const HIDDEN_IN_ENTRENAR = ["nano", "tito"]
+
+export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
+  const players = useMemo(
+    () => allPlayers.filter((p) => !HIDDEN_IN_ENTRENAR.includes(p.name.trim().toLowerCase())),
+    [allPlayers],
+  )
   const [game, setGame] = useState<GameId>("holdem")
   const [deck, setDeck] = useState<DeckType>("long")
   const [subtab, setSubtab] = useState<Subtab>("ejercicios")
