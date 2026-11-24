@@ -261,7 +261,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
   return (
     <TrainingContext.Provider value={ctx}>
       <Tabs value={subtab} onValueChange={(v) => setSubtab(v as Subtab)} className="w-full">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
           <IconTabsList
             tabs={[
               { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },

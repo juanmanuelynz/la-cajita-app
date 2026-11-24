@@ -144,7 +144,7 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 - En ¿Call o fold? y Antes del flop (luz, con apuesta) arriba de cada botón va
   cuánto deja la opción en promedio (`callEv` en `lib/poker/drills.ts`; fold = $0),
   redondeado a $100.
-- La respuesta sube desde abajo (`AnswerSheet`, portal sobre `<body>`): veredicto,
+- La respuesta sube desde abajo (`AnswerSheet`, sticky dentro de la pestaña, arriba de la barra): veredicto,
   el dato clave y la explicación plegada en "Ver por qué"; botón blanco "Siguiente".
 - Montos de los ejercicios en múltiplos de $100 (la ficha más chica); en GTO los
   pozos pasan a múltiplos de $1200 para que todos los tamaños den redondo.

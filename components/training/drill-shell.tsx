@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from "react"
-import { createPortal } from "react-dom"
 import { Check, X, Equal, Flame, ChevronDown } from "lucide-react"
 import { playSequence, playSound, type SoundName } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
@@ -145,9 +144,10 @@ export function DrillShell({
     scrolled.current = true
     const end = endRef.current
     if (!end) return
-    const delta = end.getBoundingClientRect().bottom - (window.innerHeight - sheetH - 12)
-    if (delta <= 0) return
     const parent = scrollParent(end)
+    const viewBottom = parent ? parent.getBoundingClientRect().bottom : window.innerHeight
+    const delta = end.getBoundingClientRect().bottom - (viewBottom - sheetH - 12)
+    if (delta <= 0) return
     if (parent) parent.scrollBy({ top: delta, behavior: "smooth" })
     else window.scrollBy({ top: delta, behavior: "smooth" })
   }, [verdict, sheetH])
@@ -190,21 +190,16 @@ export function DrillShell({
       {children}
 
       <div ref={endRef} />
-      {/* Lugar para poder scrollear lo de arriba por encima del panel. */}
-      {verdict && <div aria-hidden style={{ height: sheetH }} />}
-
-      {verdict &&
-        createPortal(
-          <AnswerSheet
-            ref={sheetRef}
-            verdict={verdict}
-            headline={headline}
-            feedback={feedback}
-            nextLabel={nextLabel}
-            onNext={onNext}
-          />,
-          document.body,
-        )}
+      {verdict && (
+        <AnswerSheet
+          ref={sheetRef}
+          verdict={verdict}
+          headline={headline}
+          feedback={feedback}
+          nextLabel={nextLabel}
+          onNext={onNext}
+        />
+      )}
     </div>
   )
 }
@@ -221,9 +216,10 @@ function scrollParent(el: HTMLElement): HTMLElement | null {
 const VERDICT_TEXT: Record<Verdict, string> = { right: "¡Bien!", wrong: "No era", close: "Muy justo: las dos valen" }
 
 /**
- * La respuesta, en un panel que sube desde abajo: veredicto, el dato clave y la
- * explicación plegada en "Ver por qué". Va en un portal sobre <body> porque el
- * carrusel de pestañas tiene transform (ver CelebrationOverlay).
+ * La respuesta, en un panel pegado abajo de la pestaña (sticky, arriba de la
+ * barra de pestañas, que queda a mano): veredicto, el dato clave y la
+ * explicación plegada en "Ver por qué". Al ir dentro de la pestaña, si cambiás
+ * de pestaña no queda flotando encima de otra.
  */
 function AnswerSheet({
   ref,
@@ -247,7 +243,7 @@ function AnswerSheet({
       ref={ref}
       role="dialog"
       aria-label={VERDICT_TEXT[verdict]}
-      className="answer-sheet fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[80dvh] max-w-lg flex-col rounded-t-3xl border-t bg-background shadow-[0_-12px_32px_rgba(0,0,0,0.55)]"
+      className="answer-sheet sticky bottom-0 z-30 -mx-1 flex max-h-[65dvh] flex-col rounded-t-3xl border-x border-t bg-background shadow-[0_-12px_32px_rgba(0,0,0,0.55)]"
     >
       <div className="overflow-y-auto px-4 pt-2 space-y-3 text-sm">
         <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/40" />
@@ -278,7 +274,7 @@ function AnswerSheet({
           </>
         )}
       </div>
-      <div className="px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)]">
+      <div className="px-4 pt-3 pb-3">
         <button
           type="button"
           onClick={onNext}
