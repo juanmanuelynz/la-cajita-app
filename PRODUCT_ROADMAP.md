@@ -4,7 +4,7 @@ Mejoras de producto pendientes, en orden de ROI / esfuerzo. Cada bloque es indep
 
 Estado al momento de escribir esto: ya están hechos el split de `page.tsx` en tabs + `lib/stats.ts`, `tie_break` persistido, validación Zod, `createMatch` atómico, y auth con PIN compartido (ver últimos commits del `main`).
 
-**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 2 (points_config por torneo), 3 (podio final animado y compartible, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (swipe entre tabs con embla, parcial), 8 (plata como fuente de verdad del ranking), 9 (animaciones y resumen de partida) y 10 (ESLint).
+**Hecho desde la primera versión del roadmap**: items 1 (auto-completar + balance live), 2 (points_config por torneo), 3 (podio final animado y compartible, parcial), 4 (rachas, némesis, día favorito, killer move y ROI por partida), 7 (bottom nav con nombres y transición entre tabs, parcial; el swipe se sacó), 8 (plata como fuente de verdad del ranking), 9 (animaciones y resumen de partida) y 10 (ESLint).
 
 **Descartado**: item 5 (recompras como columna nueva) — ver el item.
 
@@ -90,13 +90,15 @@ Si tres personas abren la app en la misma partida activa, todas pueden editar al
 
 ---
 
-## 7. Mobile-first: bottom nav nativo y swipe entre tabs ✅ PARCIAL
+## 7. Mobile-first: bottom nav nativo y transición entre tabs ✅ PARCIAL
 
-Swipe entre tabs implementado en commit `e61834f` con `embla-carousel-react`. Sincronización bidireccional entre el carousel y la bottom nav (tap → scrollTo, swipe → setActiveTab). `touch-pan-y` permite que el scroll vertical de cada tab siga funcionando.
+- El swipe entre tabs se hizo en el commit `e61834f` con `embla-carousel-react`, y **se sacó el 23/11/2026** (commit `fbca344`): chocaba con lo que se desliza de costado adentro de las pestañas (la tira de ejercicios de Entrenar, tablas). Ahora solo se cambia de pestaña con la barra de abajo. Embla sigue en `app/page.tsx` con `watchDrag: false`, solo para la animación al tocar la barra.
+- Barra de abajo con ícono y nombre (Ranking, Partidas, Estadísticas, Entrenar, Ajustes) y la activa en color, desde el 24/11/2026. Las pestañas internas de cada pantalla (`IconTabsList`) van arriba, todas iguales.
 
 **Pendiente del item original**:
 - Migración a `vaul` (bottom-sheets en lugar de Dialog centrado en mobile) — toca cada diálogo del proyecto, mejor como item aparte.
 - Transición con `framer-motion` — opcional, embla ya da una animación fluida.
+- Volver a deslizar entre tabs: solo si se resuelve el choque con lo que se desliza adentro de las pestañas.
 
 ---
 
@@ -126,7 +128,7 @@ Todo con CSS 3D / SVG / canvas, sin librerías de animación (la PWA sigue livia
 
 ---
 
-## 11. Pestaña Entrenar (aprender a jugar) — etapas 1 a 5 ✅ HECHAS
+## 11. Pestaña Entrenar (aprender a jugar) — etapas 1 a 5 y plan Runout ✅ HECHOS
 
 Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular exacto (sin tablas "GTO" inventadas). Juegos: Hold'em (2 cartas), Omaha (4, usa 2 + 3 de la mesa) y Manhattan (5, usa 2 o 3 de la mano + 3 o 2 de la mesa), cada uno con mazo Long o Short (36 cartas; color > full; A-6-7-8-9 es escalera; en La Cajita la escalera le gana al trío).
 
@@ -140,7 +142,9 @@ Inspirada en apps tipo "Runout Poker", pero solo con lo que se puede calcular ex
 - Principios para elegir manos de Omaha en Jugadas (PokerStrategy.com, "PLO for Beginners (2) – Preflop Play").
 - "¿Abrís?" Beta para Hold'em short, Omaha y Manhattan: inferido (equity contra 2 manos al azar + mismo % por posición que Hold'em). Validado contra la fuente en Hold'em largo: coincide en 85–94% pero falla en manos de borde. Datos en `lib/poker/preflop-beta-data.ts`, generados por `scripts/gen-preflop-beta.ts`.
 
-- "Con luz", como se juega en La Cajita (luz igual para todos, sin ciegas, se puede pasar antes del flop, habla primero el de la izquierda del que reparte, apuestas libres): orden de la mesa, "nunca tirar si podés pasar" y ¿Pagás antes del flop? con el pozo de luces (respuesta calculada). Arriba hay un selector Luz | Ciegas (por defecto Luz): el ejercicio "Antes del flop" y la tabla de Jugadas se adaptan; con Ciegas se practica el juego de casino.
+- "Con luz", como se juega en La Cajita (luz igual para todos, sin ciegas, se puede pasar antes del flop, habla primero el de la izquierda del que reparte, apuestas libres): orden de la mesa, "nunca hacer fold si podés pasar" y ¿Pagás antes del flop? con el pozo de luces (respuesta calculada). Arriba hay un selector Luz | Ciegas (por defecto Luz): el ejercicio "Antes del flop" y la tabla de Jugadas se adaptan; con Ciegas se practica el juego de casino.
+
+- Plan "Runout" (24/11/2026, fases 0–6, detalle en `docs/plan-entrenar-runout.md`): botones de respuesta con brillo y monto promedio, respuesta en panel desde abajo; mesa con todos los lugares, fichas y botón D; tus puntos débiles + "Practicar lo que más fallo"; dificultad automática según el nivel; aciertos por calle, por lugar y por semana (columnas `street` y `seat`, script 14); "Te suben / Te resuben" con los rangos de pagar y resubir de PokerStrategy (solo Hold'em Long, 6 jugadores).
 
 **Pendiente**:
 - Cuándo apostar o pasar con luz si nadie apostó: no hay fuente y no se puede validar una inferencia; se decidió no hacerlo por ahora.
