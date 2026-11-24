@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { CalendarCheck, ChevronDown, ChevronUp, Trophy, X } from "lucide-react"
+import { CalendarCheck, Trophy, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChipSpinner } from "@/components/poker-chip"
 import * as db from "@/lib/database"
@@ -250,37 +250,39 @@ export function DailyChallenge({
   return (
     <div className="overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/20 via-amber-500/5 to-card">
       {result}
-      <div className="flex items-center gap-3 px-3 pt-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-[0_3px_0_0] shadow-amber-700">
-          <CalendarCheck className="h-6 w-6" />
+      {/* Una sola línea: el ejercicio tiene que quedar a la vista. */}
+      <div className="flex items-center gap-3 px-3 py-2">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-[0_2px_0_0] shadow-amber-700">
+          <CalendarCheck className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-bold leading-tight">Desafío del día</div>
           <div className="truncate text-xs text-muted-foreground">{status}</div>
-        </div>
-        {cta}
-      </div>
-      <div className="flex items-center gap-2 px-3 pb-2.5 pt-2.5">
-        <div className="flex flex-1 gap-1" aria-hidden>
-          {Array.from({ length: DAILY_LENGTH }, (_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "h-1.5 flex-1 rounded-full",
-                i < answers.length ? (answers[i] ? "bg-emerald-500" : "bg-rose-500") : "bg-amber-500/20",
-              )}
-            />
-          ))}
+          {/* Cómo vas: solo con el desafío empezado. */}
+          {answers.length > 0 && (
+            <div className="mt-1 flex gap-0.5" aria-hidden>
+              {Array.from({ length: DAILY_LENGTH }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1 flex-1 rounded-full",
+                    i < answers.length ? (answers[i] ? "bg-emerald-500" : "bg-rose-500") : "bg-amber-500/20",
+                  )}
+                />
+              ))}
+            </div>
+          )}
         </div>
         <button
           type="button"
           onClick={() => setShowBoard((b) => !b)}
-          className="flex items-center gap-1 text-xs font-medium text-amber-500"
+          aria-label="Ranking del desafío"
+          className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-amber-500"
         >
-          <Trophy className="h-3.5 w-3.5" />
+          <Trophy className="h-4 w-4" />
           {board && board.length > 0 ? board.length : ""}
-          {showBoard ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
+        {cta}
       </div>
       {submitError && (
         <p className="px-3 pb-2 text-xs text-rose-500">

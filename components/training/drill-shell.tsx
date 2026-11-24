@@ -278,7 +278,7 @@ function AnswerSheet({
         <button
           type="button"
           onClick={onNext}
-          className="h-12 w-full rounded-2xl bg-foreground text-base font-semibold text-background active:scale-[0.98] transition-transform"
+          className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground active:scale-[0.98] transition-transform"
         >
           {nextLabel}
         </button>

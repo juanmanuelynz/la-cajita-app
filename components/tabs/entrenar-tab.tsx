@@ -122,27 +122,28 @@ function DrillPicker({
             type="button"
             onClick={() => onChange(d.id)}
             className={cn(
-              "relative flex w-[6.5rem] shrink-0 snap-start flex-col items-start gap-2 rounded-2xl border-2 p-2.5 text-left transition-all active:scale-[0.97]",
-              active ? "border-primary bg-primary/10 shadow-[0_3px_0_0] shadow-primary/60" : "border-border bg-card",
+              "relative flex shrink-0 snap-start items-center gap-2 overflow-hidden rounded-2xl border-2 py-2 pl-2 pr-3 text-left transition-all active:scale-[0.97]",
+              active ? "border-primary bg-primary/10" : "border-border bg-card",
             )}
           >
             {d.isNew && (
-              <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
+              <span className="absolute right-1 top-0.5 rounded-full bg-primary px-1 text-[8px] font-black uppercase leading-3 text-primary-foreground">
                 Nuevo
               </span>
             )}
             <div
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-xl transition-colors",
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
                 active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
             </div>
-            <div className={cn("min-h-8 text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
+            <div className={cn("whitespace-nowrap text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
               {d.label}
             </div>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+            {/* Cómo te va: una línea fina abajo de la tarjeta. */}
+            <div className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-muted">
               {t && t.total > 0 && (
                 <div
                   className={cn("h-full", ratio >= 0.8 ? "bg-emerald-500" : ratio >= 0.5 ? "bg-amber-500" : "bg-rose-500")}
@@ -278,11 +279,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
           <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
           {!challengeActive && (
             <>
-              <div className="pt-3 space-y-3">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-lg font-black tracking-tight">Practicá</h2>
-                  <span className="text-xs text-muted-foreground">deslizá para ver más →</span>
-                </div>
+              <div className="pt-1 space-y-3">
                 <DrillPicker value={drill} onChange={setDrill} progress={progress} />
                 {drill !== "gto" && picker}
                 {drill === "antes" && structurePicker}

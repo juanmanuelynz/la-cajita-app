@@ -69,6 +69,18 @@ export function RankingTab({
 
   return (
     <div className="space-y-6">
+      {/* Arriba, como las pestañas de las demás pantallas. */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
+        <Tabs value={rankingScope} onValueChange={(v) => onRankingScopeChange(v as RankingScope)}>
+          <IconTabsList
+            tabs={[
+              { value: "torneo", label: "Torneo actual", icon: Trophy },
+              { value: "historico", label: "Histórico", icon: History },
+            ]}
+          />
+        </Tabs>
+      </div>
+
       {activeMatches.length > 0 && (
         <div className="space-y-4 pb-6">
           {activeMatches.map((match) => (
@@ -183,19 +195,6 @@ export function RankingTab({
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm pt-2 pb-3 -mx-1 px-1">
-        <Tabs
-          value={rankingScope}
-          onValueChange={(v) => onRankingScopeChange(v as RankingScope)}
-        >
-          <IconTabsList
-            tabs={[
-              { value: "torneo", label: "Torneo actual", icon: Trophy },
-              { value: "historico", label: "Histórico", icon: History },
-            ]}
-          />
-        </Tabs>
-      </div>
     </div>
   )
 }

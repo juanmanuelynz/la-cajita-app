@@ -22,6 +22,7 @@ import {
   Settings,
   RefreshCw,
   GraduationCap,
+  type LucideIcon,
 } from "lucide-react"
 import {
   Chart as ChartJS,
@@ -69,13 +70,13 @@ ChartJS.register(
 
 type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "ranking", label: "Ranking Anual" },
-  { id: "partidas", label: "Partidas" },
-  { id: "estadisticas", label: "Estadísticas" },
-  { id: "entrenar", label: "Entrenar" },
+const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
+  { id: "ranking", label: "Ranking Anual", short: "Ranking", icon: Trophy },
+  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
+  { id: "estadisticas", label: "Estadísticas", short: "Estadísticas", icon: BarChart3 },
+  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
   // El id sigue siendo "reglas" para no romper links con ?tab=reglas.
-  { id: "reglas", label: "Configuración" },
+  { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
 function LaCajitaPoker() {
@@ -530,7 +531,7 @@ function LaCajitaPoker() {
 
         <div className="overflow-hidden flex-1 min-h-0" ref={emblaRef}>
           <div className="flex h-full touch-pan-y">
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pt-8">
+            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
               <RankingTab
                 activeMatches={activeMatches}
                 matches={tournamentMatches}
@@ -605,28 +606,35 @@ function LaCajitaPoker() {
         </div>
       </div>
 
-      <div className="p-0 h-20 backdrop-blur-sm border-t flex-shrink-0">
-        <div className="flex justify-around items-center h-full p-0">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              aria-label={tab.label}
-              className={`flex items-center justify-center flex-1 max-w-32 h-full transition-all duration-200 ${
-                activeTab === tab.id
-                  ? "bg-primary/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {tab.id === "ranking" && <Trophy className="w-7 h-7" />}
-              {tab.id === "partidas" && <NotebookPen className="w-7 h-7" />}
-              {tab.id === "estadisticas" && <BarChart3 className="w-7 h-7" />}
-              {tab.id === "entrenar" && <GraduationCap className="w-7 h-7" />}
-              {tab.id === "reglas" && <Settings className="w-7 h-7" />}
-            </button>
-          ))}
+      {/* Barra de secciones: ícono + nombre; la activa en color, con una pastilla detrás del ícono. */}
+      <nav className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+        <div className="flex h-16 items-stretch justify-around">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                aria-label={tab.label}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-1 max-w-32 flex-col items-center justify-center gap-0.5 transition-colors duration-200 ${
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+                    active ? "bg-primary/15" : ""
+                  }`}
+                >
+                  <Icon className="h-6 w-6" />
+                </span>
+                <span className={`text-[11px] leading-none ${active ? "font-semibold" : ""}`}>{tab.short}</span>
+              </button>
+            )
+          })}
         </div>
-      </div>
+      </nav>
 
       <AlertDialog
         open={!!activeMatchToDelete}

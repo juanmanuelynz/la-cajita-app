@@ -64,8 +64,8 @@ function GoalRing({ done, goal }: { done: number; goal: number }) {
   const ratio = Math.min(1, done / goal)
   const complete = done >= goal
   return (
-    <div className="relative h-12 w-12">
-      <svg viewBox="0 0 48 48" className="h-12 w-12 -rotate-90">
+    <div className="relative h-10 w-10">
+      <svg viewBox="0 0 48 48" className="h-10 w-10 -rotate-90">
         <circle cx="24" cy="24" r={r} fill="none" strokeWidth="5" className="stroke-muted" />
         <circle
           cx="24"
@@ -286,7 +286,7 @@ export function TrainerCard({
     <>
       {drawer}
       <StatsDrawer open={statsOpen} onOpenChange={setStatsOpen} progress={progress} streak={streak} />
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/20 via-card to-card p-3">
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/20 via-card to-card px-3 py-2">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -295,18 +295,18 @@ export function TrainerCard({
             aria-label="Cambiar quién entrena"
           >
             <div className="relative">
-              <Avatar name={player.name} className="h-12 w-12 text-lg" />
+              <Avatar name={player.name} className="h-10 w-10" />
               <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-card bg-amber-400 px-1.5 text-[10px] font-black leading-4 text-black tabular-nums">
                 {lvl.level}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
+              <div className="flex items-baseline gap-1.5">
                 <span className="truncate font-bold leading-tight">{player.name}</span>
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Nivel {lvl.level} · {lvl.title}
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  Nv {lvl.level} · {lvl.title}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 self-center text-muted-foreground" />
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
@@ -322,12 +322,12 @@ export function TrainerCard({
             className="flex shrink-0 items-center gap-2 rounded-xl px-1 py-0.5 active:bg-muted/50"
             aria-label="Ver progreso"
           >
-            <div className="flex flex-col items-center leading-none">
+            <div className="flex items-center gap-0.5 leading-none">
               <Flame
-                className={cn("h-6 w-6", streak > 0 ? "fill-amber-500/30 text-amber-500" : "text-muted-foreground")}
+                className={cn("h-5 w-5", streak > 0 ? "fill-amber-500/30 text-amber-500" : "text-muted-foreground")}
               />
               <span
-                className={cn("mt-0.5 text-sm font-black tabular-nums", streak > 0 ? "text-amber-500" : "text-muted-foreground")}
+                className={cn("text-sm font-black tabular-nums", streak > 0 ? "text-amber-500" : "text-muted-foreground")}
               >
                 {streak}
               </span>
