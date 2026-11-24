@@ -21,7 +21,6 @@ const BURST = Array.from({ length: 9 }, (_, i) => {
     br: `${(i % 2 ? 1 : -1) * (180 + i * 40)}deg`,
     delay: 450 + (i % 4) * 45,
     color: CHIP_COLORS[i % CHIP_COLORS.length],
-    suit: ["♠", "♥", "♦", "♣"][i % 4],
   }
 })
 
@@ -155,7 +154,7 @@ export function ChipCase({ open }: { open: boolean }) {
               } as React.CSSProperties
             }
           >
-            <PokerChip className="h-full w-full drop-shadow-lg" body={b.color.body} edge={b.color.edge} suit={b.suit} />
+            <PokerChip className="h-full w-full drop-shadow-lg" body={b.color.body} edge={b.color.edge} />
           </span>
         ))}
     </div>

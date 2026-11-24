@@ -716,7 +716,6 @@ export default function EditActiveMatchPage() {
                                             className="h-full w-full drop-shadow"
                                             body={CHIP_COLORS[1].body}
                                             edge={CHIP_COLORS[1].edge}
-                                            suit="♥"
                                           />
                                         )}
                                       </span>

@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react"
 import { RANK_LABELS, SUITS, rankOf, suitOf, type Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
+import { LeafMark } from "@/components/leaf-mark"
+
+export { LeafMark }
 
 // Mazo de 2 colores, como el de la mesa: ♠ y ♣ negros, ♥ y ♦ coral (el mismo
 // coral que usan las cartas del resto de la app, SUIT_RED).
@@ -79,33 +82,6 @@ export function PlayingCard({
 const BACK_SIZES = { mini: "w-4 h-6 rounded-[3px] p-[2px]", ...SIZES } as const
 const BACK_PAD = { mini: "", xs: "p-[3px]", sm: "p-[4px]", md: "p-[5px]" } as const
 const FELT_RADIUS = { mini: "rounded-[1.5px]", xs: "rounded-[3px]", sm: "rounded-[4px]", md: "rounded-[5px]" } as const
-
-// Hoja de 7 folíolos: cada uno es la misma gota girada desde la base del tallo.
-const LEAFLETS = [
-  [0, 1],
-  [-27, 0.86],
-  [27, 0.86],
-  [-56, 0.66],
-  [56, 0.66],
-  [-86, 0.42],
-  [86, 0.42],
-] as const
-
-/** La hojita del dorso (SVG sin ids, así se puede repetir mil veces en la página). */
-export function LeafMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="-0.6 -1.03 1.2 1.35" className={className} fill="currentColor" aria-hidden>
-      {LEAFLETS.map(([deg, len]) => (
-        <path
-          key={deg}
-          transform={`rotate(${deg}) scale(${len})`}
-          d="M0 0 C .13 -.25 .12 -.75 0 -1 C -.12 -.75 -.13 -.25 0 0 Z"
-        />
-      ))}
-      <path d="M-.02 0 L.02 0 L.012 .3 L-.012 .3 Z" />
-    </svg>
-  )
-}
 
 // En los dorsos chicos la hoja ocupa casi todo el paño, si no no se distingue.
 const LEAF_WIDTH = { mini: "w-[96%]", xs: "w-[80%]", sm: "w-[66%]", md: "w-[56%]" } as const

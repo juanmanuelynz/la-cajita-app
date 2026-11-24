@@ -57,7 +57,6 @@ function PodiumSpot({
           className={place === 0 ? "winner-glow h-14 w-14" : "h-10 w-10"}
           body={style.body}
           edge={style.edge}
-          suit={place === 0 ? "♠" : place === 1 ? "♥" : "♦"}
         />
         <div className={`max-w-full truncate px-1 text-center font-bold ${place === 0 ? "text-lg" : "text-sm"}`}>
           {player.name}

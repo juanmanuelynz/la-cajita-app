@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
 import { playSequence } from "@/lib/sounds"
 
-const SUITS = ["♠", "♥", "♦", "♣"]
 
 interface Piece {
   id: number
@@ -16,7 +15,6 @@ interface Piece {
   spinX: number
   spinZ: number
   color: (typeof CHIP_COLORS)[number]
-  suit: string
 }
 
 function makePieces(count: number): Piece[] {
@@ -30,7 +28,6 @@ function makePieces(count: number): Piece[] {
     spinX: 360 + Math.random() * 900,
     spinZ: (Math.random() - 0.5) * 720,
     color: CHIP_COLORS[Math.floor(Math.random() * CHIP_COLORS.length)],
-    suit: SUITS[Math.floor(Math.random() * SUITS.length)],
   }))
 }
 
@@ -83,7 +80,7 @@ export function ChipRain({ trigger, count = 36 }: { trigger: number; count?: num
             } as React.CSSProperties
           }
         >
-          <PokerChip className="h-full w-full drop-shadow-md" body={p.color.body} edge={p.color.edge} suit={p.suit} />
+          <PokerChip className="h-full w-full drop-shadow-md" body={p.color.body} edge={p.color.edge} />
         </div>
       ))}
     </div>

@@ -1,10 +1,11 @@
 import { useId } from "react"
 import { cn } from "@/lib/utils"
+import { LeafPaths, leafTransform } from "@/components/leaf-mark"
 
 // Ficha de poker en SVG. Dos variantes:
 //  - <PokerChip>: a color, para celebraciones y decoración.
 //  - <ChipSpinner>: monocromática (currentColor, con los detalles calados por
-//    máscara) para reemplazar a los spinners — se ve bien sobre cualquier fondo.
+//    máscara, la hojita incluida) para reemplazar a los spinners — se ve bien sobre cualquier fondo.
 
 const EDGE_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
 
@@ -20,8 +21,7 @@ interface PokerChipProps {
   className?: string
   body?: string
   edge?: string
-  suit?: string
-  /** Texto grande y en negrita en el centro (p. ej. el número de puesto) en lugar del palo. */
+  /** Texto grande y en negrita en el centro (p. ej. el número de puesto) en lugar de la hojita. */
   label?: string
   style?: React.CSSProperties
 }
@@ -30,7 +30,6 @@ export function PokerChip({
   className,
   body = CHIP_COLORS[0].body,
   edge = CHIP_COLORS[0].edge,
-  suit = "♠",
   label,
   style,
 }: PokerChipProps) {
@@ -59,17 +58,16 @@ export function PokerChip({
         strokeWidth="2.5"
         strokeDasharray="6 5"
       />
-      <text
-        x="50"
-        y="51"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={label ? 50 : 30}
-        fontWeight={label ? 800 : undefined}
-        fill={edge}
-      >
-        {label ?? suit}
-      </text>
+      {label ? (
+        <text x="50" y="51" textAnchor="middle" dominantBaseline="central" fontSize={50} fontWeight={800} fill={edge}>
+          {label}
+        </text>
+      ) : (
+        // La hojita de La Cajita, como en el dorso de las cartas.
+        <g transform={leafTransform(50, 50, 40)}>
+          <LeafPaths fill={edge} />
+        </g>
+      )}
     </svg>
   )
 }
@@ -95,6 +93,9 @@ export function ChipGlyph({ className }: { className?: string }) {
             />
           ))}
           <circle cx="50" cy="50" r="28" fill="none" stroke="black" strokeWidth="7" />
+          <g transform={leafTransform(50, 50, 34)}>
+            <LeafPaths fill="black" />
+          </g>
         </mask>
       </defs>
       <circle cx="50" cy="50" r="48" fill="currentColor" mask={`url(#${maskId})`} />
