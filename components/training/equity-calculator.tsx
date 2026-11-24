@@ -10,7 +10,7 @@ import { bestHand } from "@/lib/poker/evaluator"
 import { computeEquityAsync, type EquityResult } from "@/lib/poker/equity"
 import { GAMES, maxPlayers, type Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
-import { EmptyCard, PlayingCard, SUIT_TEXT } from "./playing-card"
+import { CARD_FACE, CARD_RANK_FONT, EmptyCard, PlayingCard, SUIT_TEXT } from "./playing-card"
 import { Label, pct } from "./drill-shell"
 
 type Slot = { kind: "player"; p: number; i: number } | { kind: "board"; i: number }
@@ -264,14 +264,16 @@ export function EquityCalculator({ variant }: { variant: Variant }) {
                     disabled={taken || !active}
                     onClick={() => pickCard(c)}
                     className={cn(
-                      "h-9 rounded-[5px] bg-stone-100 border border-black/10 flex flex-col items-center justify-center leading-none font-bold text-[11px]",
+                      "h-10 rounded-[5px] flex flex-col items-center justify-center gap-[2px] leading-none transition-[filter]",
+                      CARD_FACE,
                       SUIT_TEXT[suitOf(c)],
-                      taken && "opacity-20",
+                      // Oscurecer en vez de transparentar, como las cartas que no se usan en Entrenar.
+                      taken && "brightness-[0.35]",
                     )}
                     aria-label={`${RANK_LABELS[r]}${SUITS[suit]}`}
                   >
-                    <span>{RANK_LABELS[r]}</span>
-                    <span>{SUITS[suit]}</span>
+                    <span className={cn(CARD_RANK_FONT, "text-[14px]")}>{RANK_LABELS[r]}</span>
+                    <span className="text-[12px] drop-shadow-[0_1px_0_rgb(0_0_0/0.15)]">{SUITS[suit]}</span>
                   </button>
                 )
               })}

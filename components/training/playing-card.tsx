@@ -25,6 +25,12 @@ const SUIT_STYLE = { xs: "text-[13px]", sm: "text-[18px]", md: "text-[23px]" } a
 
 export type CardSize = keyof typeof SIZES
 
+/** Cara de la carta (blanca con degradé gris, borde fino y relieve): la comparten las cartas y el selector de la calculadora. */
+export const CARD_FACE =
+  "bg-[linear-gradient(135deg,#ffffff_0%,#f4f4f5_55%,#dcdce0_100%)] ring-1 ring-inset ring-black/10 shadow-[0_3px_8px_-2px_rgb(0_0_0/0.55),inset_0_1px_0_rgb(255_255_255/0.9)]"
+/** Tipografía del valor (condensada, la de las cartas). */
+export const CARD_RANK_FONT = "font-semibold tracking-tight [font-family:var(--font-card),sans-serif]"
+
 export function PlayingCard({
   card,
   size = "md",
@@ -50,9 +56,7 @@ export function PlayingCard({
       className={cn(
         dealDelay !== undefined && "card-deal",
         "relative shrink-0 overflow-hidden select-none transition-all leading-none",
-        // Cara blanca con un degradé gris suave, borde fino y sombra con relieve.
-        "bg-[linear-gradient(135deg,#ffffff_0%,#f4f4f5_55%,#dcdce0_100%)] ring-1 ring-inset ring-black/10",
-        "shadow-[0_3px_8px_-2px_rgb(0_0_0/0.55),inset_0_1px_0_rgb(255_255_255/0.9)]",
+        CARD_FACE,
         SIZES[size],
         SUIT_TEXT[suit],
         highlight && "ring-2 ring-amber-400 -translate-y-1",
@@ -63,7 +67,7 @@ export function PlayingCard({
       aria-label={`${RANK_LABELS[rankOf(card)]}${SUITS[suit]}`}
     >
       <div className={cn("absolute flex flex-col items-center", INDEX_STYLE[size])}>
-        <span className={cn("font-semibold tracking-tight [font-family:var(--font-card),sans-serif]", RANK_STYLE[size])}>
+        <span className={cn(CARD_RANK_FONT, RANK_STYLE[size])}>
           {RANK_LABELS[rankOf(card)]}
         </span>
         <span className={cn("drop-shadow-[0_1px_0_rgb(0_0_0/0.15)]", SUIT_STYLE[size])}>{SUITS[suit]}</span>
