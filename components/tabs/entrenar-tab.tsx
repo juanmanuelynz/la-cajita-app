@@ -126,7 +126,7 @@ function DrillPicker({
             type="button"
             onClick={() => onChange(d.id)}
             className={cn(
-              "relative flex shrink-0 snap-start items-center gap-2 overflow-hidden rounded-2xl border-2 py-2 pl-2 pr-3 text-left transition-all active:scale-[0.97]",
+              "relative flex min-h-[3.75rem] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-2xl border-2 py-3 pl-2.5 pr-3.5 text-left transition-all active:scale-[0.97]",
               active ? "border-primary bg-primary/10" : "border-border bg-card",
             )}
           >
@@ -137,13 +137,13 @@ function DrillPicker({
             )}
             <div
               className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
                 active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-[18px] w-[18px]" />
             </div>
-            <div className={cn("whitespace-nowrap text-[13px] font-semibold leading-tight", !active && "text-muted-foreground")}>
+            <div className={cn("whitespace-nowrap text-sm font-semibold leading-tight", !active && "text-muted-foreground")}>
               {d.label}
             </div>
             {/* Cómo te va: una línea fina abajo de la tarjeta. */}
