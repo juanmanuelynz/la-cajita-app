@@ -37,7 +37,7 @@ const isRed = (s: Suit) => s === "♥" || s === "♦"
 function CardBack() {
   return (
     <div className="hole-card-back" style={{ height: CARD_H }}>
-      <span>♠</span>
+      <div className="hole-card-back-stripes" />
     </div>
   )
 }
@@ -45,11 +45,11 @@ function CardBack() {
 function CardFace({ card }: { card: Card }) {
   return (
     <div className={`hole-card-face ${isRed(card.suit) ? "text-[#e0564b]" : "text-zinc-900"}`} style={{ height: CARD_H }}>
+      {/* Misma letra y colores que las cartas de Entrenar. */}
       <span className="hole-card-corner">
-        <span>{card.rank}</span>
+        <span className="hole-card-rank">{card.rank}</span>
         <span>{card.suit}</span>
       </span>
-      <span className="hole-card-pip">{card.suit}</span>
     </div>
   )
 }

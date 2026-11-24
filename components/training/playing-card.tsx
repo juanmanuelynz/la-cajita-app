@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import { RANK_LABELS, SUITS, rankOf, suitOf, type Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
 
@@ -71,6 +72,33 @@ export function PlayingCard({
   )
 }
 
+const BACK_SIZES = { mini: "w-4 h-6 rounded-[3px] p-[2px]", ...SIZES } as const
+const BACK_STRIPES = {
+  mini: "bg-[repeating-linear-gradient(135deg,#18181b_0_1.5px,transparent_1.5px_3.5px)] rounded-[1.5px]",
+  xs: "bg-[repeating-linear-gradient(135deg,#18181b_0_2px,transparent_2px_4.5px)] rounded-[3px]",
+  sm: "bg-[repeating-linear-gradient(135deg,#18181b_0_2.5px,transparent_2.5px_5.5px)] rounded-[4px]",
+  md: "bg-[repeating-linear-gradient(135deg,#18181b_0_3px,transparent_3px_6.5px)] rounded-[5px]",
+} as const
+
+/** Dorso de la carta: cara blanca con un recuadro de rayas negras en diagonal. */
+export function CardBack({ size = "md", className }: { size?: CardSize | "mini"; className?: string }) {
+  const pad = { mini: "", xs: "p-[3px]", sm: "p-[4px]", md: "p-[5px]" }[size]
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "relative shrink-0 select-none bg-[linear-gradient(135deg,#ffffff_0%,#f4f4f5_55%,#dcdce0_100%)] ring-1 ring-inset ring-black/10",
+        "shadow-[0_2px_6px_-2px_rgb(0_0_0/0.6),inset_0_1px_0_rgb(255_255_255/0.9)]",
+        BACK_SIZES[size],
+        pad,
+        className,
+      )}
+    >
+      <div className={cn("h-full w-full", BACK_STRIPES[size])} />
+    </div>
+  )
+}
+
 /** Hueco vacío donde va una carta. */
 export function EmptyCard({ size = "md", active, className }: { size?: CardSize; active?: boolean; className?: string }) {
   return (
@@ -98,6 +126,7 @@ export function CardRow({
   className,
   deal,
   overlap,
+  style,
 }: {
   cards: readonly Card[]
   size?: CardSize
@@ -108,10 +137,11 @@ export function CardRow({
   deal?: number
   /** Abanicar las cartas, cada una tapando el costado derecho de la anterior (manos de 4–5). */
   overlap?: boolean
+  style?: CSSProperties
 }) {
   // La key con las cartas hace que una mano nueva se vuelva a repartir.
   return (
-    <div key={cards.join("-")} className={cn("flex flex-wrap [perspective:600px]", overlap ? "gap-0" : "gap-1", className)}>
+    <div key={cards.join("-")} style={style} className={cn("flex flex-wrap [perspective:600px]", overlap ? "gap-0" : "gap-1", className)}>
       {cards.map((c, i) => (
         <PlayingCard
           key={c}

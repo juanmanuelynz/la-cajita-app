@@ -10,7 +10,7 @@ import { Check } from "lucide-react"
 import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
 import type { Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
-import { CardRow, type CardSize } from "./playing-card"
+import { CardBack, CardRow, type CardSize } from "./playing-card"
 
 export interface TableSeat {
   key: string | number
@@ -190,7 +190,10 @@ export interface RingSeat {
   label: string
   /** Tu lugar: tus cartas boca arriba y cartelito verde. */
   hero?: boolean
+  /** Tus cartas; en otro lugar, sus cartas boca arriba (la mano del que apostó). */
   cards?: readonly Card[]
+  /** Repartir sus cartas con animación a partir de estos ms. */
+  deal?: number
   /** Lo que hizo antes que vos. "fold" lo apaga; "bet" lo marca como el que apostó. */
   action?: { kind: "check" | "fold" | "bet" | "blind"; text: string }
   /** Ficha sobre el paño, delante del lugar (con el monto, si hay). */
@@ -214,11 +217,16 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
     const k = (i - h + n) % n
     return 90 + GAP + ((k - 1) * (360 - 2 * GAP)) / Math.max(1, n - 2)
   }
-  const at = (deg: number, r: number) => {
+  const at = (deg: number, r: number, margin = 13) => {
     const t = (deg * Math.PI) / 180
     // Un poco hacia adentro del borde y sin salirse de los costados (los cartelitos tienen ancho).
-    const x = Math.min(87, Math.max(13, 50 + 41 * r * Math.cos(t)))
+    const x = Math.min(100 - margin, Math.max(margin, 50 + 41 * r * Math.cos(t)))
     return { left: `${x}%`, top: `${50 + 40 * r * Math.sin(t)}%` }
+  }
+  // Un lugar con cartas boca arriba es más ancho: que no se salga de los costados.
+  const cardsMargin = (count: number) => {
+    const width = count >= 4 ? 36 + (count - 1) * 24 : count * 40
+    return Math.max(13, ((width / 2 + 6) / 380) * 100)
   }
   const heroOverlap = (hero?.cards?.length ?? 0) >= 4
 
@@ -246,16 +254,25 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
         return (
           <div key={s.key}>
             <div
-              style={at(deg, 1)}
+              style={at(deg, 1, s.cards ? cardsMargin(s.cards.length) : undefined)}
               className={cn(
                 "absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 transition-opacity",
                 folded && "opacity-40",
               )}
             >
-              {!folded && (
-                <div className="flex -space-x-1.5" aria-hidden>
-                  <span className="h-5 w-3.5 rounded-[3px] border border-primary/50 bg-[repeating-linear-gradient(45deg,color-mix(in_oklch,var(--primary)_45%,transparent)_0_2px,transparent_2px_4px)] bg-card" />
-                  <span className="h-5 w-3.5 rounded-[3px] border border-primary/50 bg-[repeating-linear-gradient(45deg,color-mix(in_oklch,var(--primary)_45%,transparent)_0_2px,transparent_2px_4px)] bg-card" />
+              {s.cards && (
+                <CardRow
+                  cards={s.cards}
+                  size="sm"
+                  overlap={s.cards.length >= 4}
+                  deal={s.deal}
+                  className="flex-nowrap justify-center"
+                />
+              )}
+              {!folded && !s.cards && (
+                <div className="flex -space-x-2">
+                  <CardBack size="mini" className="-rotate-6" />
+                  <CardBack size="mini" className="rotate-6" />
                 </div>
               )}
               <div
@@ -282,7 +299,7 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
               <BetChip
                 amount={s.chip === true ? undefined : s.chip}
                 className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-                style={at(deg, 0.6)}
+                style={at(deg, s.cards ? 0.45 : 0.6)}
               />
             )}
             {s.dealer && <DealerButton style={at(deg + 16, 0.72)} />}

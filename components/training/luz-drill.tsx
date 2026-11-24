@@ -4,7 +4,6 @@ import { useState } from "react"
 import { callEv, makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
 import { PotPill, RingTable, type RingSeat } from "./table-view"
-import { CardRow } from "./playing-card"
 import { AnswerButton, DrillShell, Stats, answerTone, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 type Choice = "fold" | "check" | "bet" | "call"
@@ -21,7 +20,15 @@ function luzSeats(d: LuzData): RingSeat[] {
     if (s === d.seat) return { ...base, hero: true, cards: d.hero }
     if (s > d.seat) return base // todavía no habló
     if (!d.bet || s < d.bet.seat) return { ...base, action: { kind: "check" as const, text: "Check" } }
-    if (s === d.bet.seat) return { ...base, action: { kind: "bet" as const, text: "Apuesta" }, chip: pesos(d.bet.amount) }
+    // Para practicar se ve la mano del que apostó, en su lugar.
+    if (s === d.bet.seat)
+      return {
+        ...base,
+        action: { kind: "bet" as const, text: "Apuesta" },
+        chip: pesos(d.bet.amount),
+        cards: d.bet.villain,
+        deal: d.hero.length * 70 + 150,
+      }
     return { ...base, action: { kind: "fold" as const, text: "Fold" } }
   })
 }
@@ -133,24 +140,7 @@ export function LuzDrill(props: DrillProps<LuzData>) {
     >
       <RingTable
         seats={luzSeats(drill)}
-        center={
-          <>
-            <PotPill>Pozo {pesos(drill.pot)}</PotPill>
-            {bet && (
-              // Para practicar se ve la mano del que apostó.
-              <div className="flex flex-col items-center gap-1">
-                <CardRow
-                  cards={bet.villain}
-                  size="sm"
-                  overlap={bet.villain.length >= 4}
-                  deal={drill.hero.length * 70 + 150}
-                  className="flex-nowrap justify-center"
-                />
-                <span className="text-[10px] text-muted-foreground">Mano del {bet.seat}º</span>
-              </div>
-            )}
-          </>
-        }
+        center={<PotPill>Pozo {pesos(drill.pot)}</PotPill>}
       />
       <p className="-mt-2 text-[11px] text-muted-foreground">
         Se habla hacia la izquierda: arranca el que está a la izquierda del que reparte y el que reparte habla último.
