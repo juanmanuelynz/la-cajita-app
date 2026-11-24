@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { LeafMark } from "@/components/training/playing-card"
 import { playSound } from "@/lib/sounds"
 
 // Dos cartas boca abajo sobre la mesa. Cada tanto se "espían" como en
@@ -37,7 +38,9 @@ const isRed = (s: Suit) => s === "♥" || s === "♦"
 function CardBack() {
   return (
     <div className="hole-card-back" style={{ height: CARD_H }}>
-      <div className="hole-card-back-stripes" />
+      <div className="card-back-felt">
+        <LeafMark className="w-[78%]" />
+      </div>
     </div>
   )
 }

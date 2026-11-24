@@ -73,16 +73,38 @@ export function PlayingCard({
 }
 
 const BACK_SIZES = { mini: "w-4 h-6 rounded-[3px] p-[2px]", ...SIZES } as const
-const BACK_STRIPES = {
-  mini: "bg-[repeating-linear-gradient(135deg,#18181b_0_1.5px,transparent_1.5px_3.5px)] rounded-[1.5px]",
-  xs: "bg-[repeating-linear-gradient(135deg,#18181b_0_2px,transparent_2px_4.5px)] rounded-[3px]",
-  sm: "bg-[repeating-linear-gradient(135deg,#18181b_0_2.5px,transparent_2.5px_5.5px)] rounded-[4px]",
-  md: "bg-[repeating-linear-gradient(135deg,#18181b_0_3px,transparent_3px_6.5px)] rounded-[5px]",
-} as const
+const BACK_PAD = { mini: "", xs: "p-[3px]", sm: "p-[4px]", md: "p-[5px]" } as const
+const FELT_RADIUS = { mini: "rounded-[1.5px]", xs: "rounded-[3px]", sm: "rounded-[4px]", md: "rounded-[5px]" } as const
 
-/** Dorso de la carta: cara blanca con un recuadro de rayas negras en diagonal. */
+// Hoja de 7 folíolos: cada uno es la misma gota girada desde la base del tallo.
+const LEAFLETS = [
+  [0, 1],
+  [-27, 0.86],
+  [27, 0.86],
+  [-56, 0.66],
+  [56, 0.66],
+  [-86, 0.42],
+  [86, 0.42],
+] as const
+
+/** La hojita del dorso (SVG sin ids, así se puede repetir mil veces en la página). */
+export function LeafMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="-1 -1.06 2 1.4" className={className} fill="currentColor" aria-hidden>
+      {LEAFLETS.map(([deg, len]) => (
+        <path
+          key={deg}
+          transform={`rotate(${deg}) scale(${len})`}
+          d="M0 0 C .13 -.25 .12 -.75 0 -1 C -.12 -.75 -.13 -.25 0 0 Z"
+        />
+      ))}
+      <path d="M-.02 0 L.02 0 L.012 .3 L-.012 .3 Z" />
+    </svg>
+  )
+}
+
+/** Dorso de La Cajita: marco blanco, paño verde con tramado fino y la hojita al medio. */
 export function CardBack({ size = "md", className }: { size?: CardSize | "mini"; className?: string }) {
-  const pad = { mini: "", xs: "p-[3px]", sm: "p-[4px]", md: "p-[5px]" }[size]
   return (
     <div
       aria-hidden
@@ -90,11 +112,13 @@ export function CardBack({ size = "md", className }: { size?: CardSize | "mini";
         "relative shrink-0 select-none bg-[linear-gradient(135deg,#ffffff_0%,#f4f4f5_55%,#dcdce0_100%)] ring-1 ring-inset ring-black/10",
         "shadow-[0_2px_6px_-2px_rgb(0_0_0/0.6),inset_0_1px_0_rgb(255_255_255/0.9)]",
         BACK_SIZES[size],
-        pad,
+        BACK_PAD[size],
         className,
       )}
     >
-      <div className={cn("h-full w-full", BACK_STRIPES[size])} />
+      <div className={cn("card-back-felt", size === "mini" && "card-back-felt-mini", FELT_RADIUS[size])}>
+        <LeafMark className="w-[84%]" />
+      </div>
     </div>
   )
 }

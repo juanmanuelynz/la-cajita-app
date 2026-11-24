@@ -712,19 +712,52 @@
   border-radius: 8px;
 }
 /* Mismo diseño que las cartas de Entrenar (components/training/playing-card.tsx):
-   cara blanca con degradé suave; el dorso, con un recuadro de rayas negras. */
+   cara blanca con degradé suave; el dorso, con el paño verde y la hojita. */
 .hole-card-back,
 .hole-card-face {
   background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 55%, #dcdce0 100%);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1);
 }
 .hole-card-back {
-  padding: 7px;
+  padding: 6px;
 }
-.hole-card-back-stripes {
-  height: 100%;
+.hole-card-back .card-back-felt {
   border-radius: 5px;
-  background: repeating-linear-gradient(135deg, #18181b 0 4px, transparent 4px 9px);
+}
+
+/* Dorso de La Cajita (CardBack y las cartas de Nueva partida): paño esmeralda
+   con un brillo detrás de la hojita, tramado fino en diagonal y un filete. */
+.card-back-felt {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #ecfdf5;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 50%, rgb(52 211 153 / 0.45), transparent 70%),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.09) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.09) 0 1px, transparent 1px 5px),
+    linear-gradient(160deg, #059669, #064e3b);
+}
+.card-back-felt::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgb(236 253 245 / 0.35);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.card-back-felt svg {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.3));
+}
+.card-back-felt-mini {
+  background: radial-gradient(ellipse at 50% 50%, rgb(52 211 153 / 0.4), transparent 70%), linear-gradient(160deg, #059669, #064e3b);
+}
+.card-back-felt-mini::after {
+  display: none;
 }
 /* Valor y palo en fila (no apilados como en Entrenar): al espiar se ve solo
    una franja de la cara y tienen que entrar los dos. */
