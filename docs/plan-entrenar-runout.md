@@ -163,13 +163,17 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 - Probado a 390 y 320 px, con Hold'em y Manhattan (5 cartas).
 - Sin stack (pregunta abierta 3): los ejercicios no lo usan.
 
-### Fase 3 — Tus puntos débiles
-- Función pura en `lib/poker/training.ts` (con tests): a partir de
-  `TrainingProgress` (`byDrill`, `byVariant`) ordena ejercicio×juego por tasa de
-  error, con mínimo de respuestas para no sacar conclusiones con 2 datos.
-- Tarjeta "Tus puntos débiles" (en el drawer de progreso y/o arriba de la tira) y
-  botón "Practicar lo que más fallo": sesión de 10 preguntas sesgada a esos
-  ejercicios (sin semilla de fecha; no reemplaza al Desafío del día).
+### Fase 3 — Tus puntos débiles ✅ (24/11/2026)
+- `getTrainingProgress` devuelve también `byDrillVariant` (ejercicio × juego × mazo,
+  de las mismas respuestas guardadas: no hizo falta migración).
+- `weakSpots` en `lib/poker/training.ts` (con tests): los 3 peores, con al menos
+  `WEAK_MIN_ANSWERS` (10) respuestas y algún error, ordenados por % de error.
+- En el panel de progreso (tocando la racha / el anillo): tarjeta "Tus puntos
+  débiles" y botón "Practicar lo que más fallo" → 10 preguntas sorteadas entre
+  esos (`practicePlan` / `practiceSession`, más chances el que más fallás), al azar,
+  sin semilla de fecha. Reusa la pantalla del desafío (`QuestionSession`). Las
+  respuestas suman al progreso como cualquier ejercicio.
+- Decidido con el usuario: el botón va en el panel de progreso, no como entrada principal.
 
 ### Fase 4 — Dificultad según el nivel
 - Parámetro de dificultad en los generadores (`lib/poker/drills.ts`): p. ej. en
@@ -193,7 +197,6 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 
 ## Preguntas abiertas para el usuario
 
-1. ¿La sesión personalizada (fase 3) reemplaza la tira de ejercicios como entrada
-   principal o queda como un botón más?
+1. ~~¿La sesión personalizada reemplaza la tira?~~ Queda como botón en el panel de progreso (24/11).
 2. ~~¿Botones con brillo solo en Entrenar o en toda la app?~~ Solo Entrenar (24/11).
 3. ¿Sumamos "stack" a la mesa usando cajitas, o no tiene sentido en la mesa de La Cajita?

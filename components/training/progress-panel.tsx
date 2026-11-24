@@ -1,10 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Check, ChevronDown, Flame, UserRound } from "lucide-react"
+import { Check, ChevronDown, Flame, Target, UserRound } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
-import { DAILY_GOAL, DRILL_IDS, DRILL_NAMES, dayStreak, levelFor } from "@/lib/poker/training"
+import {
+  DAILY_GOAL,
+  DRILL_IDS,
+  DRILL_NAMES,
+  WEAK_MIN_ANSWERS,
+  dayStreak,
+  levelFor,
+  weakSpots,
+  type WeakSpot,
+} from "@/lib/poker/training"
 import { GAMES, GAME_IDS } from "@/lib/poker/variants"
 import type { Player, TrainingProgress, TrainingTally } from "@/lib/types"
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
@@ -155,16 +165,62 @@ function TallyBar({ label, tally }: { label: string; tally?: TrainingTally }) {
   )
 }
 
+/** "¿Call o fold? · Omaha Short" (GTO vale igual para todos los juegos: sin juego). */
+function spotName(s: WeakSpot) {
+  if (s.drill === "gto") return DRILL_NAMES.gto
+  return `${DRILL_NAMES[s.drill]} · ${GAMES[s.variant.game].name} ${s.variant.deck === "short" ? "Short" : "Long"}`
+}
+
+/** Tus puntos débiles: los 3 ejercicios × juego en que más fallás y el botón para practicarlos. */
+function WeakSpots({ progress, onPractice }: { progress: TrainingProgress; onPractice: (spots: WeakSpot[]) => void }) {
+  // `?? {}`: durante un deploy el servidor viejo todavía no lo manda.
+  const spots = weakSpots(progress.byDrillVariant ?? {})
+  return (
+    <div className="space-y-2 rounded-2xl border border-rose-500/30 bg-rose-500/5 p-3">
+      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+        <Target className="h-3.5 w-3.5" /> Tus puntos débiles
+      </div>
+      {spots.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Todavía no hay datos suficientes: aparecen cuando tenés al menos {WEAK_MIN_ANSWERS} respuestas en un ejercicio
+          con un mismo juego y alguna mal.
+        </p>
+      ) : (
+        <>
+          {spots.map((s) => (
+            <div key={`${s.drill}:${s.variant.game}:${s.variant.deck}`}>
+              <div className="mb-0.5 flex justify-between gap-2 text-xs">
+                <span className="min-w-0 truncate">{spotName(s)}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  fallás {s.total - s.right} de {s.total}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-rose-500" style={{ width: `${s.miss * 100}%` }} />
+              </div>
+            </div>
+          ))}
+          <Button className="mt-1 w-full" onClick={() => onPractice(spots)}>
+            <Target className="mr-1.5 h-4 w-4" /> Practicar lo que más fallo
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
+
 function StatsDrawer({
   open,
   onOpenChange,
   progress,
   streak,
+  onPractice,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   progress: TrainingProgress | null
   streak: number
+  onPractice: (spots: WeakSpot[]) => void
 }) {
   const all = progress
     ? Object.values(progress.byDrill).reduce((a, t) => ({ right: a.right + t.right, total: a.total + t.total }), {
@@ -200,6 +256,13 @@ function StatsDrawer({
                   </div>
                 ))}
               </div>
+              <WeakSpots
+                progress={progress}
+                onPractice={(spots) => {
+                  onOpenChange(false)
+                  onPractice(spots)
+                }}
+              />
               <div className="space-y-2">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Por ejercicio</div>
                 {DRILL_IDS.map((d) => (
@@ -235,11 +298,14 @@ export function TrainerCard({
   playerId,
   onPlayerChange,
   progress,
+  onPractice,
 }: {
   players: Player[]
   playerId: string | null
   onPlayerChange: (id: string | null) => void
   progress: TrainingProgress | null
+  /** "Practicar lo que más fallo" (desde el panel de progreso). */
+  onPractice: (spots: WeakSpot[]) => void
 }) {
   const [pickOpen, setPickOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
@@ -285,7 +351,13 @@ export function TrainerCard({
   return (
     <>
       {drawer}
-      <StatsDrawer open={statsOpen} onOpenChange={setStatsOpen} progress={progress} streak={streak} />
+      <StatsDrawer
+        open={statsOpen}
+        onOpenChange={setStatsOpen}
+        progress={progress}
+        streak={streak}
+        onPractice={onPractice}
+      />
       <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/20 via-card to-card px-3 py-2">
         <div className="flex items-center gap-3">
           <button

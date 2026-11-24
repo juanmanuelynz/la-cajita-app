@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
-import type { DrillId } from "@/lib/poker/training"
+import type { DrillId, WeakSpot } from "@/lib/poker/training"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
+import { PracticeSession } from "@/components/training/practice-session"
 import { DailyChallenge } from "@/components/training/daily-challenge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { IconTabsList } from "@/components/icon-tabs"
@@ -174,6 +175,8 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
   const [drill, setDrill] = useState<DrillChoice>("usable")
   const [structure, setStructure] = useState<Structure>("luz")
   const [playerId, setPlayerId] = useState<string | null>(null)
+  /** Práctica de "lo que más fallo" en curso (reemplaza la pantalla de ejercicios). */
+  const [practice, setPractice] = useState<WeakSpot[] | null>(null)
   const [version, setVersion] = useState(0)
   const [challengeActive, setChallengeActive] = useState(false)
 
@@ -273,25 +276,37 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
         </div>
 
         <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
-          {!challengeActive && (
-            <TrainerCard players={players} playerId={playerId} onPlayerChange={changePlayer} progress={progress} />
-          )}
-          <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
-          {!challengeActive && (
+          {practice ? (
+            <PracticeSession spots={practice} onExit={() => setPractice(null)} />
+          ) : (
             <>
-              <div className="pt-1 space-y-3">
-                <DrillPicker value={drill} onChange={setDrill} progress={progress} />
-                {drill !== "gto" && picker}
-                {drill === "antes" && structurePicker}
-              </div>
-              {drill === "usable" && <UsableDrill variant={variant} />}
-              {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
-              {drill === "outs" && <OutsDrill variant={variant} />}
-              {drill === "potOdds" && <PotOddsDrill variant={variant} />}
-              {drill === "compare" && <CompareDrill variant={variant} />}
-              {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
-              {drill === "antes" && structure === "ciegas" && <PreflopDrill variant={variant} />}
-              {drill === "gto" && <GtoDrill variant={variant} />}
+              {!challengeActive && (
+                <TrainerCard
+                  players={players}
+                  playerId={playerId}
+                  onPlayerChange={changePlayer}
+                  progress={progress}
+                  onPractice={setPractice}
+                />
+              )}
+              <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
+              {!challengeActive && (
+                <>
+                  <div className="pt-1 space-y-3">
+                    <DrillPicker value={drill} onChange={setDrill} progress={progress} />
+                    {drill !== "gto" && picker}
+                    {drill === "antes" && structurePicker}
+                  </div>
+                  {drill === "usable" && <UsableDrill variant={variant} />}
+                  {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
+                  {drill === "outs" && <OutsDrill variant={variant} />}
+                  {drill === "potOdds" && <PotOddsDrill variant={variant} />}
+                  {drill === "compare" && <CompareDrill variant={variant} />}
+                  {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
+                  {drill === "antes" && structure === "ciegas" && <PreflopDrill variant={variant} />}
+                  {drill === "gto" && <GtoDrill variant={variant} />}
+                </>
+              )}
             </>
           )}
         </TabsContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { CalendarCheck, Trophy, X } from "lucide-react"
+import { CalendarCheck, Trophy, X, type LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChipSpinner } from "@/components/poker-chip"
 import * as db from "@/lib/database"
@@ -179,7 +179,10 @@ export function DailyChallenge({
   }
   if (running && questions) {
     return (
-      <RunningChallenge
+      <QuestionSession
+        title="Desafío del día"
+        icon={CalendarCheck}
+        accent="amber"
         questions={questions}
         answers={answers}
         startAt={Math.min(answers.length, DAILY_LENGTH - 1)}
@@ -305,7 +308,14 @@ export function DailyChallenge({
   )
 }
 
-function RunningChallenge({
+/**
+ * Una tanda de preguntas seguidas (Desafío del día, Practicar lo que más
+ * fallo): barra con el progreso y salir, qué juego toca y el ejercicio.
+ */
+export function QuestionSession({
+  title,
+  icon: Icon,
+  accent,
   questions,
   answers,
   startAt,
@@ -313,6 +323,10 @@ function RunningChallenge({
   onFinish,
   onExit,
 }: {
+  title: string
+  icon: LucideIcon
+  /** Dorado para el desafío; verde para la práctica. */
+  accent: "amber" | "primary"
   questions: DailyQuestion[]
   answers: boolean[]
   startAt: number
@@ -330,15 +344,20 @@ function RunningChallenge({
   return (
     <div className="space-y-3">
       {/* Barra del desafío: progreso y salir */}
-      <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 space-y-2">
+      <div
+        className={cn(
+          "rounded-lg border px-3 py-2 space-y-2",
+          accent === "amber" ? "border-amber-500/40 bg-amber-500/5" : "border-primary/40 bg-primary/5",
+        )}
+      >
         <div className="flex items-center gap-2">
-          <CalendarCheck className="w-4 h-4 text-amber-500" />
-          <span className="flex-1 text-sm font-semibold">Desafío del día</span>
+          <Icon className={cn("w-4 h-4", accent === "amber" ? "text-amber-500" : "text-primary")} />
+          <span className="flex-1 text-sm font-semibold">{title}</span>
           <span className="text-sm tabular-nums">
             <b>{current + 1}</b>
             <span className="text-muted-foreground">/{questions.length}</span>
           </span>
-          <Button size="icon" variant="ghost" className="h-8 w-8 -mr-1" onClick={onExit} aria-label="Salir del desafío">
+          <Button size="icon" variant="ghost" className="h-8 w-8 -mr-1" onClick={onExit} aria-label={`Salir: ${title}`}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -349,7 +368,7 @@ function RunningChallenge({
               className={cn(
                 "h-1.5 flex-1 rounded-full",
                 i < answers.length ? (answers[i] ? "bg-emerald-500" : "bg-rose-500") : "bg-muted",
-                i === current && i >= answers.length && "bg-amber-400",
+                i === current && i >= answers.length && (accent === "amber" ? "bg-amber-400" : "bg-primary"),
               )}
             />
           ))}

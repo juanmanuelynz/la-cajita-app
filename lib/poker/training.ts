@@ -177,3 +177,74 @@ export function levelFor(right: number): LevelInfo {
   const title = LEVEL_TITLES.filter(([from]) => from <= level).at(-1)![1]
   return { level, title, into: right - start, span: levelStart(level + 1) - start }
 }
+
+// ── Tus puntos débiles ──────────────────────────────────────────────────────
+
+/** Respuestas mínimas de un ejercicio en un juego para sacar conclusiones. */
+export const WEAK_MIN_ANSWERS = 10
+
+export interface WeakSpot {
+  drill: DrillId
+  variant: Variant
+  right: number
+  total: number
+  /** Parte de las respuestas que fueron error (0–1). */
+  miss: number
+}
+
+/** Clave de ejercicio × juego × mazo, como la arma la base: "potOdds:omaha:short". */
+export const drillVariantKey = (drill: DrillId, v: Variant) => `${drill}:${v.game}:${v.deck}`
+
+const GAME_SET = new Set(["holdem", "omaha", "manhattan"])
+
+/**
+ * Los ejercicios × juego en que más fallás: solo los que tienen al menos
+ * `min` respuestas y algún error, ordenados por % de error (y, a igual %, por
+ * más respuestas).
+ */
+export function weakSpots(
+  byDrillVariant: Record<string, { right: number; total: number }>,
+  { min = WEAK_MIN_ANSWERS, limit = 3 }: { min?: number; limit?: number } = {},
+): WeakSpot[] {
+  const spots: WeakSpot[] = []
+  for (const [key, t] of Object.entries(byDrillVariant)) {
+    const [drill, game, deck] = key.split(":")
+    if (!(DRILL_IDS as readonly string[]).includes(drill) || !GAME_SET.has(game) || (deck !== "long" && deck !== "short"))
+      continue
+    if (t.total < min || t.right >= t.total) continue
+    spots.push({
+      drill: drill as DrillId,
+      variant: { game: game as Variant["game"], deck },
+      right: t.right,
+      total: t.total,
+      miss: 1 - t.right / t.total,
+    })
+  }
+  spots.sort((a, b) => b.miss - a.miss || b.total - a.total)
+  return spots.slice(0, limit)
+}
+
+/**
+ * Qué ejercicio y juego toca en cada pregunta de "Practicar lo que más fallo":
+ * se sortea entre tus puntos débiles, con más chances el que más fallás.
+ */
+export function practicePlan(
+  spots: readonly WeakSpot[],
+  rng: () => number,
+  length = DAILY_LENGTH,
+): { drill: DrillId; variant: Variant }[] {
+  if (spots.length === 0) return []
+  const total = spots.reduce((a, s) => a + s.miss, 0)
+  return Array.from({ length }, () => {
+    let r = rng() * total
+    const s = spots.find((sp) => (r -= sp.miss) < 0) ?? spots[spots.length - 1]
+    return { drill: s.drill, variant: s.variant }
+  })
+}
+
+/** Las preguntas de la práctica (al azar, no es igual para todos como el desafío). */
+export function practiceSession(spots: readonly WeakSpot[], rng: () => number = Math.random): DailyQuestion[] {
+  return practicePlan(spots, rng).map(
+    ({ drill, variant }) => ({ drill, variant, data: MAKERS[drill](variant, rng) }) as DailyQuestion,
+  )
+}

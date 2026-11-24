@@ -555,7 +555,7 @@ export async function recordTrainingAnswer(input: TrainingAnswerInput): Promise<
 export async function getTrainingProgress(playerId: string, today: string): Promise<TrainingProgress> {
   const id = UuidSchema.parse(playerId)
   const day = DateSchema.parse(today)
-  const [drills, variants, days, todayRows] = (await sql.transaction([
+  const [drills, variants, combos, days, todayRows] = (await sql.transaction([
     sql`
       SELECT drill AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
       FROM training_answers WHERE player_id = ${id} GROUP BY drill
@@ -563,6 +563,10 @@ export async function getTrainingProgress(playerId: string, today: string): Prom
     sql`
       SELECT game || ':' || deck AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
       FROM training_answers WHERE player_id = ${id} GROUP BY game, deck
+    `,
+    sql`
+      SELECT drill || ':' || game || ':' || deck AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers WHERE player_id = ${id} GROUP BY drill, game, deck
     `,
     sql`
       SELECT DISTINCT local_date::text AS day FROM training_answers
@@ -579,6 +583,7 @@ export async function getTrainingProgress(playerId: string, today: string): Prom
   return {
     byDrill: toMap(drills),
     byVariant: toMap(variants),
+    byDrillVariant: toMap(combos),
     days: days.map((r) => String(r.day)),
     today: { right: Number(todayRows[0]?.right ?? 0), total: Number(todayRows[0]?.total ?? 0) },
   }

@@ -486,3 +486,46 @@ describe("niveles de Entrenar", () => {
     expect(levelFor(1650)).toMatchObject({ level: 12, into: 50, span: 300 })
   })
 })
+
+describe("Tus puntos débiles", () => {
+  it("ordena por % de error, pide un mínimo de respuestas y descarta lo que no tiene errores", async () => {
+    const { weakSpots } = await import("../lib/poker/training")
+    const spots = weakSpots({
+      "potOdds:omaha:short": { right: 4, total: 10 }, // 60% de error
+      "outs:holdem:long": { right: 15, total: 20 }, // 25%
+      "usable:manhattan:long": { right: 1, total: 5 }, // pocas respuestas
+      "luz:holdem:long": { right: 12, total: 12 }, // sin errores
+      "whoWins:holdem:long": { right: 15, total: 30 }, // 50%
+      "compare:holdem:long": { right: 5, total: 20 }, // 75%
+      "inventado:holdem:long": { right: 0, total: 50 }, // ejercicio que no existe
+      "outs:poker:long": { right: 0, total: 50 }, // juego que no existe
+    })
+    expect(spots.map((s) => `${s.drill}:${s.variant.game}:${s.variant.deck}`)).toEqual([
+      "compare:holdem:long",
+      "potOdds:omaha:short",
+      "whoWins:holdem:long",
+    ])
+    expect(spots[0].miss).toBeCloseTo(0.75)
+  })
+
+  it("a igual % de error, primero el que tiene más respuestas", async () => {
+    const { weakSpots } = await import("../lib/poker/training")
+    const spots = weakSpots({ "outs:holdem:long": { right: 5, total: 10 }, "outs:omaha:long": { right: 10, total: 20 } })
+    expect(spots[0].variant.game).toBe("omaha")
+  })
+
+  it("la práctica sale de los puntos débiles, más seguido del que más fallás", async () => {
+    const { practicePlan, practiceSession, weakSpots } = await import("../lib/poker/training")
+    expect(practicePlan([], seededRng(1))).toEqual([])
+    const spots = weakSpots({ "potOdds:omaha:short": { right: 2, total: 10 }, "outs:holdem:long": { right: 18, total: 20 } })
+    const plan = practicePlan(spots, seededRng(3), 2000)
+    const pot = plan.filter((p) => p.drill === "potOdds").length
+    expect(plan.every((p) => p.drill === "potOdds" || p.drill === "outs")).toBe(true)
+    // 80% de error contra 10%: ~8 de cada 9 preguntas.
+    expect(pot / plan.length).toBeGreaterThan(0.8)
+    expect(pot / plan.length).toBeLessThan(0.95)
+    const session = practiceSession(spots, seededRng(4))
+    expect(session).toHaveLength(10)
+    for (const q of session) expect(q.data.kind).toBe(q.drill)
+  }, 60000)
+})

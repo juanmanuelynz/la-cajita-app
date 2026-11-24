@@ -80,6 +80,8 @@ export interface TrainingProgress {
   byDrill: Record<string, TrainingTally>
   /** Aciertos por juego y mazo (clave: "holdem:long", etc.). */
   byVariant: Record<string, TrainingTally>
+  /** Aciertos por ejercicio, juego y mazo juntos (clave: "potOdds:omaha:short"): para "Tus puntos débiles". */
+  byDrillVariant: Record<string, TrainingTally>
   /** Fechas (YYYY-MM-DD) en que entrenó, de la más nueva a la más vieja. */
   days: string[]
   /** Respuestas de hoy. */
