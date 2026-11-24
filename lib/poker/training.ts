@@ -1,13 +1,15 @@
 // Lógica pura del progreso y del Desafío del día (sin base de datos).
 
-import { seededRng } from "./cards"
+import { seededRng, type Rng } from "./cards"
+import { makePreflopVs } from "./preflop-vs"
 import { makeGto } from "./gto"
 import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 import { withDifficulty, type Difficulty } from "./difficulty"
 import { POSITIONS_BY_TABLE } from "./preflop"
 
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto"] as const
+// Al final siempre: el desafío sortea por índice (ver dailyDrills).
+export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto", "preflopVs"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
 
 export const DRILL_NAMES: Record<DrillId, string> = {
@@ -19,6 +21,7 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   preflop: "Antes del flop (ciegas)",
   luz: "Antes del flop (luz)",
   gto: "GTO en el river",
+  preflopVs: "Antes del flop (te suben)",
 }
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
@@ -53,7 +56,18 @@ function hash(text: string): number {
 
 export const DAILY_LENGTH = 10
 
-const MAKERS = { usable: makeUsable, whoWins: makeWhoWins, outs: makeOuts, potOdds: makePotOdds, compare: makeCompare, preflop: makePreflop, luz: makeLuz, gto: makeGto }
+const MAKERS = {
+  usable: makeUsable,
+  whoWins: makeWhoWins,
+  outs: makeOuts,
+  potOdds: makePotOdds,
+  compare: makeCompare,
+  preflop: makePreflop,
+  luz: makeLuz,
+  gto: makeGto,
+  // Solo Hold'em largo (la fuente): el juego no cambia nada. Mitad "te suben", mitad "te resuben".
+  preflopVs: (_v: Variant, rng: Rng = Math.random) => makePreflopVs(rng() < 0.5 ? "vsOpen" : "vs3bet", rng),
+}
 
 export type DailyQuestion =
   | { drill: "usable"; variant: Variant; data: ReturnType<typeof makeUsable> }
@@ -64,6 +78,7 @@ export type DailyQuestion =
   | { drill: "preflop"; variant: Variant; data: ReturnType<typeof makePreflop> }
   | { drill: "luz"; variant: Variant; data: ReturnType<typeof makeLuz> }
   | { drill: "gto"; variant: Variant; data: ReturnType<typeof makeGto> }
+  | { drill: "preflopVs"; variant: Variant; data: ReturnType<typeof makePreflopVs> }
 
 /**
  * Ejercicios que entran en el desafío de una fecha. GTO se sumó después: los
@@ -72,7 +87,9 @@ export type DailyQuestion =
  */
 export const GTO_IN_DAILY_FROM = "2026-11-25"
 export function dailyDrills(date: string): readonly DrillId[] {
-  return date < GTO_IN_DAILY_FROM ? DRILL_IDS.filter((d) => d !== "gto") : DRILL_IDS
+  // "Te suben" no entra nunca: es solo Hold'em largo y el desafío sortea el juego.
+  const drills = DRILL_IDS.filter((d) => d !== "preflopVs")
+  return date < GTO_IN_DAILY_FROM ? drills.filter((d) => d !== "gto") : drills
 }
 
 /**
@@ -111,6 +128,8 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   gto: "Si el rival apuesta B con pozo P, tenés que seguir con al menos P ÷ (P + B) de tus manos. Y al apostar, cuanto más grande la apuesta, más bluffs podés tener.",
   preflop:
     "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
+  preflopVs:
+    "Contra una subida de los primeros lugares se paga y se resube con poco; contra el que reparte o la ciega chica, con mucho más. Y con algunos ases y reyes se paga a propósito, para disimular.",
 }
 
 export interface DailySummary {
@@ -198,7 +217,7 @@ export const SEAT_NAMES: Record<TrainingSeat, string> = {
   primero: "Hablando primero",
   medio: "En el medio",
   reparte: "Repartiendo",
-  ciega: "En la ciega chica",
+  ciega: "En una ciega",
 }
 
 /**
@@ -213,11 +232,20 @@ export const FIXED_STREET: Partial<Record<DrillId, TrainingStreet>> = {
   compare: "preflop",
   preflop: "preflop",
   luz: "preflop",
+  preflopVs: "preflop",
 }
 
 /** Calle y lugar de una situación ya generada, para guardarlos con la respuesta. */
 export function answerContext(data: unknown): { street: TrainingStreet | null; seat: TrainingSeat | null } {
-  const d = data as { kind?: string; street?: string; seat?: number; players?: number; pos?: string; table?: 4 | 5 | 6 }
+  const d = data as {
+    kind?: string
+    street?: string
+    seat?: number
+    players?: number
+    pos?: string
+    table?: 4 | 5 | 6
+    hero?: unknown
+  }
   const kind = d?.kind as DrillId | undefined
   if (!kind) return { street: null, seat: null }
   if (kind === "outs" || kind === "potOdds") {
@@ -226,6 +254,10 @@ export function answerContext(data: unknown): { street: TrainingStreet | null; s
   const street = FIXED_STREET[kind] ?? null
   if (kind === "luz" && d.seat && d.players) {
     return { street, seat: d.seat === d.players ? "reparte" : d.seat === 1 ? "primero" : "medio" }
+  }
+  if (kind === "preflopVs" && d.hero) {
+    const h = d.hero as string
+    return { street, seat: h === "UTG" ? "primero" : h === "BU" ? "reparte" : h === "SB" || h === "BB" ? "ciega" : "medio" }
   }
   if (kind === "preflop" && d.pos && d.table) {
     const seat: TrainingSeat =

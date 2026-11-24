@@ -92,7 +92,7 @@ export function withDifficulty<T extends { kind: string }>(
   make: (v: Variant, rng?: Rng) => T,
   difficulty: Difficulty,
 ): (v: Variant, rng?: Rng) => T {
-  if (difficulty === "media" || kind === "preflop" || kind === "gto") return make
+  if (difficulty === "media" || kind === "preflop" || kind === "preflopVs" || kind === "gto") return make
   const easy = difficulty === "facil"
   // Los caros: el rango va directo al generador.
   if (kind === "compare")

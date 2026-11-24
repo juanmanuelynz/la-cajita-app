@@ -21,6 +21,7 @@ import { CompareDrill } from "./compare-drill"
 import { ChallengeResult } from "./challenge-result"
 import { LuzDrill } from "./luz-drill"
 import { GtoDrill } from "./gto-drill"
+import { PreflopVsDrill } from "./preflop-vs-drill"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
 
@@ -60,6 +61,8 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <PreflopDrill {...common} preset={q.data} />
     case "gto":
       return <GtoDrill {...common} preset={q.data} />
+    case "preflopVs":
+      return <PreflopVsDrill {...common} preset={q.data} />
   }
 }
 

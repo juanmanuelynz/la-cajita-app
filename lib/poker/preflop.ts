@@ -95,7 +95,8 @@ export const POSITIONS_BY_TABLE: Record<4 | 5 | 6, Position[]> = {
 
 // ── Notación de rangos ─────────────────────────────────────────────────────
 
-const RANKS = "23456789TJQKA"
+export const RANKS_ORDER = "23456789TJQKA"
+const RANKS = RANKS_ORDER
 const rv = (c: string) => {
   const i = RANKS.indexOf(c)
   if (i < 0) throw new Error(`Rango inválido: ${c}`)

@@ -623,3 +623,59 @@ describe("Calle y lugar de cada respuesta", () => {
     expect(weekStart("2026-11-30")).toBe("2026-11-30")
   })
 })
+
+describe("Antes del flop: te suben / te resuben (PokerStrategy)", () => {
+  it("cada línea de la fuente da exactamente las combinaciones que publica", async () => {
+    const { VS_SPOTS } = await import("../lib/poker/preflop-vs-data")
+    const { parseCombos } = await import("../lib/poker/preflop-vs")
+    expect(VS_SPOTS).toHaveLength(30)
+    for (const s of VS_SPOTS)
+      for (const l of s.lines) expect([s.source, s.hero, l.label, parseCombos(l.range).size]).toEqual([s.source, s.hero, l.label, l.combos])
+  })
+
+  it("en cada situación pagar y resubir no se pisan y juntas son el rango que se defiende", async () => {
+    const { vsSpots, parseCombos } = await import("../lib/poker/preflop-vs")
+    for (const s of vsSpots()) {
+      const parts = s.lines.filter((l) => l.action !== "defend").map((l) => parseCombos(l.range))
+      const sum = parts.reduce((a, p) => a + p.size, 0)
+      expect(s.actions.size).toBe(sum) // sin repetidas
+      expect(new Set(s.actions.keys())).toEqual(parseCombos(s.defending.range))
+    }
+  })
+
+  it("15 situaciones de cada tipo, siempre contra alguien que habla antes (subida) o después (resubida)", async () => {
+    const { vsSpots, SEATS6 } = await import("../lib/poker/preflop-vs")
+    const open = vsSpots().filter((s) => s.kind === "vsOpen")
+    const three = vsSpots().filter((s) => s.kind === "vs3bet")
+    expect([open.length, three.length]).toEqual([15, 15])
+    for (const s of open) expect(SEATS6.indexOf(s.villain)).toBeLessThan(SEATS6.indexOf(s.hero))
+    for (const s of three) expect(SEATS6.indexOf(s.villain)).toBeGreaterThan(SEATS6.indexOf(s.hero))
+  })
+
+  it("la misma mano puede ir distinto según los palos (el truco de la fuente)", async () => {
+    const { vsSpots, vsAction, classActions } = await import("../lib/poker/preflop-vs")
+    const bu = vsSpots().find((s) => s.kind === "vsOpen" && s.hero === "BU" && s.villain === "UTG")!
+    expect(vsAction(bu, P("As Ac"))).toBe("call")
+    expect(vsAction(bu, P("Ad Ah"))).toBe("raise")
+    expect(vsAction(bu, P("7c 2d"))).toBe("fold")
+    const aa = classActions(bu, "AA")
+    expect([aa.call.length, aa.raise.length, aa.fold.length]).toEqual([1, 5, 0])
+  })
+
+  it("el ejercicio da la respuesta de la fuente y saca 6 de cada 10 manos del rango", async () => {
+    const { makePreflopVs, findVsSpot, vsAction } = await import("../lib/poker/preflop-vs")
+    const rng = seededRng(17)
+    let defended = 0
+    const N = 400
+    for (let i = 0; i < N; i++) {
+      const d = makePreflopVs(i % 2 ? "vsOpen" : "vs3bet", rng)
+      expect(d.cards).toHaveLength(2)
+      expect(d.cards[0]).not.toBe(d.cards[1])
+      expect(d.answer).toBe(vsAction(findVsSpot(d), d.cards))
+      expect(d.label === null).toBe(d.answer === "fold")
+      if (d.answer !== "fold") defended++
+    }
+    expect(defended / N).toBeGreaterThan(0.55)
+    expect(defended / N).toBeLessThan(0.8)
+  })
+})

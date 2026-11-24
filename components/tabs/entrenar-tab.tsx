@@ -9,6 +9,7 @@ import { difficultyForLevel, type Difficulty } from "@/lib/poker/difficulty"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
 import { PracticeSession } from "@/components/training/practice-session"
+import { PreflopVsDrill } from "@/components/training/preflop-vs-drill"
 import { DailyChallenge } from "@/components/training/daily-challenge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { IconTabsList } from "@/components/icon-tabs"
@@ -44,8 +45,9 @@ import {
 type Subtab = "ejercicios" | "calculadora" | "manos"
 /** Cómo se pone plata antes de repartir: luz igual para todos (La Cajita) o ciegas (casino). */
 type Structure = "luz" | "ciegas"
+type BlindsMode = "abrir" | "vsOpen" | "vs3bet"
 /** "Antes del flop" muestra el ejercicio de luz o el de ciegas según la estructura elegida. */
-type DrillChoice = Exclude<DrillId, "luz" | "preflop"> | "antes"
+type DrillChoice = Exclude<DrillId, "luz" | "preflop" | "preflopVs"> | "antes"
 
 const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; isNew?: boolean }[] = [
   { id: "usable", label: "¿Qué tenés?", icon: Layers },
@@ -90,7 +92,7 @@ function Segmented<T extends string>({
 /** Aciertos de un ejercicio (Antes del flop junta luz y ciegas). */
 function drillTally(p: TrainingProgress | null, id: DrillChoice) {
   if (!p) return null
-  const ids: DrillId[] = id === "antes" ? ["luz", "preflop"] : [id]
+  const ids: DrillId[] = id === "antes" ? ["luz", "preflop", "preflopVs"] : [id]
   return ids.reduce(
     (a, d) => ({ right: a.right + (p.byDrill[d]?.right ?? 0), total: a.total + (p.byDrill[d]?.total ?? 0) }),
     { right: 0, total: 0 },
@@ -175,6 +177,8 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
   const [subtab, setSubtab] = useState<Subtab>("ejercicios")
   const [drill, setDrill] = useState<DrillChoice>("usable")
   const [structure, setStructure] = useState<Structure>("luz")
+  /** Con ciegas: abrir (nadie subió), te suben o te resuben. */
+  const [blindsMode, setBlindsMode] = useState<BlindsMode>("abrir")
   const [playerId, setPlayerId] = useState<string | null>(null)
   /** Práctica de "lo que más fallo" en curso (reemplaza la pantalla de ejercicios). */
   const [practice, setPractice] = useState<WeakSpot[] | null>(null)
@@ -188,6 +192,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
       if (saved?.game in GAMES) setGame(saved.game)
       if (saved?.deck === "long" || saved?.deck === "short") setDeck(saved.deck)
       if (saved?.structure === "luz" || saved?.structure === "ciegas") setStructure(saved.structure)
+      if (["abrir", "vsOpen", "vs3bet"].includes(saved?.blindsMode)) setBlindsMode(saved.blindsMode)
       setPlayerId(localStorage.getItem(PLAYER_KEY))
     } catch {
       // sin storage: arrancamos con Hold'em Long y sin jugador
@@ -195,11 +200,11 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure, blindsMode }))
     } catch {
       // ignorar
     }
-  }, [game, deck, structure])
+  }, [game, deck, structure, blindsMode])
 
   // Si el jugador guardado ya no existe (se borró), olvidarlo.
   useEffect(() => {
@@ -312,6 +317,17 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
                     <DrillPicker value={drill} onChange={setDrill} progress={progress} />
                     {drill !== "gto" && picker}
                     {drill === "antes" && structurePicker}
+                    {drill === "antes" && structure === "ciegas" && (
+                      <Segmented
+                        value={blindsMode}
+                        onChange={setBlindsMode}
+                        options={[
+                          { id: "abrir", label: "Abrir" },
+                          { id: "vsOpen", label: "Te suben" },
+                          { id: "vs3bet", label: "Te resuben" },
+                        ]}
+                      />
+                    )}
                   </div>
                   {drill === "usable" && <UsableDrill variant={variant} />}
                   {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
@@ -319,7 +335,20 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
                   {drill === "potOdds" && <PotOddsDrill variant={variant} />}
                   {drill === "compare" && <CompareDrill variant={variant} />}
                   {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
-                  {drill === "antes" && structure === "ciegas" && <PreflopDrill variant={variant} />}
+                  {drill === "antes" && structure === "ciegas" && blindsMode === "abrir" && <PreflopDrill variant={variant} />}
+                  {drill === "antes" &&
+                    structure === "ciegas" &&
+                    blindsMode !== "abrir" &&
+                    (game === "holdem" && deck === "long" ? (
+                      <PreflopVsDrill variant={variant} situation={blindsMode} />
+                    ) : (
+                      // Sin fuente para otros juegos y no inventamos (ver preflop-vs.ts).
+                      <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                        Pagar y resubir solo está para <b>Hold&apos;em Long</b>: es la única fuente publicada que encontramos
+                        (PokerStrategy.com) y no queremos inventar rangos para {GAMES[game].name}
+                        {deck === "short" ? " Short" : ""}. Cambiá el juego arriba para practicarlo.
+                      </p>
+                    ))}
                   {drill === "gto" && <GtoDrill variant={variant} />}
                 </>
               )}

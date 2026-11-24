@@ -199,10 +199,20 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 - Panel de progreso: barras por semana (últimas 8, lunes a domingo), 4 anillos
   por calle y barras por lugar en Antes del flop.
 
-### Fase 6 — Más preflop (solo con fuente)
-- Rangos de call / 3-bet. **No inventar**: buscar fuente publicada (como hicimos con
-  PokerStrategy para apertura) y testear el conteo de combos. Si no hay fuente
-  para Omaha/Manhattan, Beta etiquetada como ahora.
+### Fase 6 — Más preflop: te suben / te resuben ✅ (24/11/2026)
+- Fuente: las mismas lecciones de PokerStrategy.com (6-max, 12/03/2026). Cada
+  lección por posición publica "Against an open raise from X" y "Against a 3-bet
+  from X" con Call / 3-Bet(4-Bet)/Fold / …/5-Bet(Call) y combinaciones. 30
+  situaciones (15 y 15), copiadas tal cual en `lib/poker/preflop-vs-data.ts`
+  (generado; no editar a mano). Tests: cada línea da exactamente las
+  combinaciones publicadas, y pagar + resubir = el rango que se defiende.
+- La fuente a veces juega distinto la misma mano según los palos (paga con A♠A♣
+  y resube con los otros ases): todo se resuelve por combinación (`parseCombos`).
+  Decidido con el usuario: se respeta tal cual y "Ver por qué" lo explica.
+- Ejercicio `preflopVs` (Fold / Call / Resubo) en "Antes del flop" → Con ciegas →
+  Abrir / Te suben / Te resuben. Solo Hold'em Long y mesa de 6 (no hay fuente
+  para Omaha/Manhattan: no se infiere). Grilla 13×13 con resube / paga / fold
+  (partida cuando depende de los palos). No entra al Desafío del día.
 
 ### Fuera de alcance por ahora
 - Elegir stacks / formato (cash, torneo): en La Cajita se juega con luz y cajitas.
