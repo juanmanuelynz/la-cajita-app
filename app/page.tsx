@@ -35,7 +35,8 @@ import {
   Legend,
 } from "chart.js"
 import * as db from "@/lib/database"
-import { ChipGlyph, ChipSpinner } from "@/components/poker-chip"
+import { ChipSpinner } from "@/components/poker-chip"
+import { SpadeGlyph } from "@/components/spade-glyph"
 import { MatchSummary } from "@/components/match-summary"
 import type {
   MatchWithPlayers,
@@ -73,8 +74,8 @@ type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
 // En el orden de la barra (y del deslizar entre pestañas). Partidas va al centro,
 // como botón grande: es lo que más se usa en una noche de juego.
-// Partidas va con la ficha de La Cajita (la misma del indicador de carga).
-const CENTER_ICON: ComponentType<{ className?: string }> = ChipGlyph
+// Partidas, el botón grande del centro, va con una pica rellena.
+const CENTER_ICON: ComponentType<{ className?: string }> = SpadeGlyph
 const TABS: { id: TabId; label: string; short: string; icon: ComponentType<{ className?: string }> }[] = [
   { id: "ranking", label: "Ranking Anual", short: "Ranking", icon: Trophy },
   { id: "estadisticas", label: "Estadísticas", short: "Estadísticas", icon: BarChart3 },
