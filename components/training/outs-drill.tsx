@@ -17,6 +17,7 @@ export function SpotView({
   heroHand,
   villainHand,
   pot,
+  bet,
 }: {
   /** Lo reciben todos los ejercicios; acá no cambia nada. */
   variant?: Variant
@@ -27,10 +28,21 @@ export function SpotView({
   villainHand: BestHand
   /** En ¿Call o fold?: el pozo, en el centro de la mesa. */
   pot?: number
+  /** En ¿Call o fold?: lo que apuesta el rival (ficha delante suyo). */
+  bet?: number
 }) {
   return (
     <PokerTable
-      top={[{ key: "rival", name: "Rival", cards: villain, detail: villainHand.name, deal: 300 + hero.length * 70 + 100 }]}
+      top={[
+        {
+          key: "rival",
+          name: "Rival",
+          cards: villain,
+          detail: villainHand.name,
+          deal: 300 + hero.length * 70 + 100,
+          bet: bet !== undefined ? pesos(bet) : undefined,
+        },
+      ]}
       board={board}
       boardLabel={board.length === 3 ? "Flop" : "Turn"}
       center={pot !== undefined && <TableChip>Pozo {pesos(pot)}</TableChip>}

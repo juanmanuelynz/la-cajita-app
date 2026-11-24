@@ -151,12 +151,17 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 - Quedó afuera el interruptor "Contexto de la mano": no aparece en las capturas de
   Runout; si se quiere, va aparte.
 
-### Fase 2 — Mesa con contexto
-- En `PokerTable`: botón de dealer, lugar de cada jugador ("3º", "Reparte"),
-  etiqueta de acción ("Apuesta", "Check"), apuesta como fichas sobre el paño y pozo.
-- Unificar el diagrama de lugares de "Antes del flop" (`LuzSeats`, `SeatsRow` en
-  `luz-drill.tsx` / `preflop.tsx`) con la mesa: los asientos alrededor del óvalo.
-- Ojo con el ancho (iPhone SE, 320 px) y con Manhattan (5 cartas).
+### Fase 2 — Mesa con contexto ✅ (24/11/2026)
+- `RingTable` en `components/training/table-view.tsx`: todos los lugares alrededor
+  del óvalo en el orden en que se habla (vos abajo), cartelito con el lugar, lo que
+  hizo cada uno (Check / Fold tachado y apagado / Apuesta en rojo), ficha con el
+  monto sobre el paño, botón "D" del que reparte y pozo en el centro.
+- Reemplaza las filas de lugares de "Antes del flop" (`LuzSeats`, `SeatsRow`). En
+  luz, la mano del que apostó va en el centro del paño ("Mano del 2º"). En ciegas,
+  "C. chica" / "C. grande" en la mesa (en el texto, completos) y su ficha puesta.
+- ¿Call o fold?: la apuesta del rival como ficha con el monto delante suyo.
+- Probado a 390 y 320 px, con Hold'em y Manhattan (5 cartas).
+- Sin stack (pregunta abierta 3): los ejercicios no lo usan.
 
 ### Fase 3 — Tus puntos débiles
 - Función pura en `lib/poker/training.ts` (con tests): a partir de

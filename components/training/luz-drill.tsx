@@ -3,43 +3,27 @@
 import { useState } from "react"
 import { callEv, makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
-import { PokerTable, TableChip } from "./table-view"
+import { PotPill, RingTable, type RingSeat } from "./table-view"
+import { CardRow } from "./playing-card"
 import { AnswerButton, DrillShell, Stats, answerTone, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 type Choice = "fold" | "check" | "bet" | "call"
 
-/** Orden en que se habla en una mesa con luz: 1º, 2º… y el que reparte último. */
-function LuzSeats({ d }: { d: LuzData }) {
-  const seats = Array.from({ length: d.players }, (_, i) => i + 1)
-  const state = (s: number) => {
-    if (s === d.seat) return "vos"
-    if (!d.bet) return s < d.seat ? "check" : ""
-    if (s === d.bet.seat) return "apuesta"
-    if (s < d.bet.seat) return "check"
-    if (s < d.seat) return "fold"
-    return ""
-  }
-  return (
-    <div className="space-y-1">
-      <div className="flex gap-1">
-        {seats.map((s) => (
-          <div
-            key={s}
-            className={cn(
-              "flex-1 rounded border py-1 text-center text-[11px] leading-tight",
-              s === d.seat && "border-amber-400 bg-amber-400/15 font-semibold",
-              d.bet?.seat === s && "border-rose-500 bg-rose-500/10",
-              state(s) === "fold" && "opacity-50 line-through",
-            )}
-          >
-            {s === d.players ? "Reparte" : `${s}º`}
-            <div className="text-[10px] text-muted-foreground no-underline">{state(s) || " "}</div>
-          </div>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted-foreground">Habla primero el de la izquierda del que reparte; el que reparte habla último.</p>
-    </div>
-  )
+/**
+ * Los lugares de la mesa con luz, en el orden en que se habla (1º, 2º… y el que
+ * reparte último): qué hizo cada uno antes que vos y dónde está la apuesta.
+ */
+function luzSeats(d: LuzData): RingSeat[] {
+  return Array.from({ length: d.players }, (_, i) => {
+    const s = i + 1
+    const label = s === d.players ? "Reparte" : `${s}º`
+    const base = { key: s, label, dealer: s === d.players }
+    if (s === d.seat) return { ...base, hero: true, cards: d.hero }
+    if (s > d.seat) return base // todavía no habló
+    if (!d.bet || s < d.bet.seat) return { ...base, action: { kind: "check" as const, text: "Check" } }
+    if (s === d.bet.seat) return { ...base, action: { kind: "bet" as const, text: "Apuesta" }, chip: pesos(d.bet.amount) }
+    return { ...base, action: { kind: "fold" as const, text: "Fold" } }
+  })
 }
 
 export function LuzDrill(props: DrillProps<LuzData>) {
@@ -147,12 +131,29 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         )
       }
     >
-      <LuzSeats d={drill} />
-      <PokerTable
-        top={bet ? [{ key: "rival", name: `Rival · ${bet.seat}º`, cards: bet.villain, deal: drill.hero.length * 70 + 150 }] : []}
-        center={<TableChip>Pozo {pesos(drill.pot)}</TableChip>}
-        bottom={[{ key: "vos", name: `Vos · ${drill.seat}º`, hero: true, cards: drill.hero, deal: 0 }]}
+      <RingTable
+        seats={luzSeats(drill)}
+        center={
+          <>
+            <PotPill>Pozo {pesos(drill.pot)}</PotPill>
+            {bet && (
+              // Para practicar se ve la mano del que apostó.
+              <div className="flex flex-col items-center gap-1">
+                <CardRow
+                  cards={bet.villain}
+                  size={bet.villain.length >= 4 ? "xs" : "sm"}
+                  deal={drill.hero.length * 70 + 150}
+                  className="flex-nowrap justify-center"
+                />
+                <span className="text-[10px] text-muted-foreground">Mano del {bet.seat}º</span>
+              </div>
+            )}
+          </>
+        }
       />
+      <p className="-mt-2 text-[11px] text-muted-foreground">
+        Se habla hacia la izquierda: arranca el que está a la izquierda del que reparte y el que reparte habla último.
+      </p>
       <div className={cn("grid gap-3", bet ? "grid-cols-2" : "grid-cols-3")}>
         {options.map((o) => (
           <AnswerButton

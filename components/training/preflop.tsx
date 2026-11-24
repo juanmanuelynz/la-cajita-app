@@ -15,9 +15,10 @@ import {
   type Position,
 } from "@/lib/poker/preflop"
 import { BETA_VALIDATION, betaThreshold, shortOpens } from "@/lib/poker/preflop-beta"
+import type { Card } from "@/lib/poker/cards"
 import { GAMES, type Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
-import { PokerTable } from "./table-view"
+import { RingTable, type RingSeat } from "./table-view"
 import { AnswerButton, DrillShell, answerTone, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const TABLE_SIZES = [4, 5, 6] as const
@@ -109,34 +110,25 @@ function seatPhrase(table: 4 | 5 | 6, pos: Position): string {
   return `hablando ${POSITIONS_BY_TABLE[table].indexOf(pos) + 1}º`
 }
 
-function SeatsLegend() {
-  return (
-    <p className="text-[11px] text-muted-foreground -mt-2">
-      Antes del flop se habla en este orden: las ciegas hablan últimas porque ya pusieron plata.
-    </p>
-  )
-}
-
-/** Orden en que se habla antes del flop, marcando dónde estás. */
-function SeatsRow({ table, pos }: { table: 4 | 5 | 6; pos: Position }) {
+/**
+ * Los lugares de la mesa con ciegas en el orden en que se habla antes del flop:
+ * los que hablaron antes que vos hicieron fold; las ciegas ya pusieron su ficha.
+ */
+function blindSeats(table: 4 | 5 | 6, pos: Position, cards: readonly Card[]): RingSeat[] {
   const seats = [...POSITIONS_BY_TABLE[table], "BB"] as const
   const me = seats.indexOf(pos)
-  return (
-    <div className="flex gap-1">
-      {seats.map((s, i) => (
-        <div
-          key={s}
-          className={cn(
-            "flex-1 rounded border px-0.5 py-1 text-center text-[11px] leading-tight flex items-center justify-center",
-            i < me && "line-through text-muted-foreground opacity-60",
-            i === me && "border-amber-400 bg-amber-400/15 font-semibold",
-          )}
-        >
-          {seatLabel(table, s)}
-        </div>
-      ))}
-    </div>
-  )
+  return seats.map((s, i) => ({
+    key: s,
+    // En la mesa, corto: "C. chica" / "C. grande" (en el texto van completos).
+    label: seatLabel(table, s).replace("Ciega ", "C. "),
+    dealer: s === "BU",
+    chip: s === "SB" || s === "BB" ? (true as const) : undefined,
+    ...(i === me
+      ? { hero: true, cards }
+      : i < me
+        ? { action: { kind: "fold" as const, text: "Fold" } }
+        : {}),
+  }))
 }
 
 export function PreflopDrill(props: DrillProps<PreflopData>) {
@@ -230,9 +222,15 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
           </div>
         }
       >
-        <SeatsRow table={drill.table} pos={drill.pos} />
-        <SeatsLegend />
-        <PokerTable boardLabel="Antes del flop" bottom={[{ key: "vos", name: "Vos", hero: true, cards: drill.cards, deal: 0 }]} />
+        <RingTable
+          seats={blindSeats(drill.table, drill.pos, drill.cards)}
+          center={
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Antes del flop</span>
+          }
+        />
+        <p className="-mt-2 text-[11px] text-muted-foreground">
+          Antes del flop las ciegas hablan últimas porque ya pusieron plata.
+        </p>
         <div className="grid grid-cols-2 gap-3">
           {[false, true].map((open) => (
             <AnswerButton
@@ -259,7 +257,9 @@ export function PreflopRanges({ variant }: { variant: Variant }) {
         Con qué manos subir {!sourced && <BetaBadge />}
       </h3>
       <p className="text-xs text-muted-foreground">Mesa con ciegas, cuando todos los que hablaron antes hicieron fold.</p>
-      <SeatsLegend />
+      <p className="text-[11px] text-muted-foreground">
+        Antes del flop se habla en este orden: las ciegas hablan últimas porque ya pusieron plata.
+      </p>
       <div className="flex rounded-md bg-muted p-0.5 text-sm">
         {POSITIONS.map((p) => (
           <button

@@ -5,8 +5,9 @@
 // en el centro y cada jugador con su cartelito apoyado sobre el borde. Vos
 // siempre abajo (resaltado); el rival arriba.
 
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 import { Check } from "lucide-react"
+import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
 import type { Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
 import { CardRow, type CardSize } from "./playing-card"
@@ -21,6 +22,8 @@ export interface TableSeat {
   detail?: ReactNode
   used?: readonly Card[]
   deal?: number
+  /** Apuesta de este jugador: ficha con el monto sobre el paño, del lado del centro. */
+  bet?: string
   /** Si se pasa, el lugar es un botón para elegirlo (¿Quién gana?, ¿Cuál es mejor?). */
   pick?: { onPick: () => void; answered: boolean; correct: boolean; picked: boolean }
 }
@@ -49,6 +52,7 @@ function SeatView({ seat, side, compact }: { seat: TableSeat; side: "top" | "bot
   )
   const body = (
     <div className={cn("flex flex-col items-center gap-1.5", side === "top" && "flex-col-reverse")}>
+      {seat.bet && <BetChip amount={seat.bet} className="my-1" />}
       <CardRow cards={seat.cards} size={size} used={seat.used} deal={seat.deal} className="flex-nowrap justify-center" />
       {plate}
     </div>
@@ -131,7 +135,174 @@ export function PokerTable({
   )
 }
 
+/** Pozo en el centro de la mesa redonda: cartelito como los de los lugares. */
+export function PotPill({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-full border bg-background/80 px-2.5 py-0.5 text-xs font-semibold text-amber-300 tabular-nums">
+      {children}
+    </span>
+  )
+}
+
 /** Dato para el centro de la mesa (pozo, etc.). */
 export function TableChip({ children }: { children: ReactNode }) {
   return <span className="font-semibold normal-case tracking-normal text-amber-300">{children}</span>
+}
+
+/** Ficha chiquita con el monto, apoyada en el paño (una apuesta). */
+export function BetChip({ amount, className, style }: { amount?: string; className?: string; style?: CSSProperties }) {
+  return (
+    <span style={style} className={cn("inline-flex items-center gap-1 text-[11px] font-bold tabular-nums text-amber-300", className)}>
+      <PokerChip className="h-4 w-4 drop-shadow" body={CHIP_COLORS[4].body} edge={CHIP_COLORS[4].edge} />
+      {amount}
+    </span>
+  )
+}
+
+/** Botón del que reparte. */
+function DealerButton({ style }: { style?: CSSProperties }) {
+  return (
+    <span
+      style={style}
+      className={cn(
+        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-black shadow",
+        style && "absolute z-10 -translate-x-1/2 -translate-y-1/2",
+      )}
+      aria-label="Reparte"
+    >
+      D
+    </span>
+  )
+}
+
+export interface RingSeat {
+  key: string | number
+  /** "1º", "Reparte", "Ciega chica"… */
+  label: string
+  /** Tu lugar: tus cartas boca arriba y cartelito verde. */
+  hero?: boolean
+  cards?: readonly Card[]
+  /** Lo que hizo antes que vos. "fold" lo apaga; "bet" lo marca como el que apostó. */
+  action?: { kind: "check" | "fold" | "bet" | "blind"; text: string }
+  /** Ficha sobre el paño, delante del lugar (con el monto, si hay). */
+  chip?: string | true
+  dealer?: boolean
+}
+
+/**
+ * Mesa con todos los lugares alrededor del óvalo, en el orden en que se habla
+ * (sentido de las agujas del reloj, hacia la izquierda). Vos siempre abajo; el
+ * resto se reparte por el borde dejando lugar para tus cartas. `center` va en
+ * el medio del paño (pozo, la mano del rival).
+ */
+export function RingTable({ seats, center }: { seats: RingSeat[]; center?: ReactNode }) {
+  const n = seats.length
+  const h = Math.max(0, seats.findIndex((s) => s.hero))
+  const hero = seats[h]
+  // Ángulos (0° = derecha, 90° = abajo). El resto ocupa el arco que deja libre el lugar de abajo.
+  const GAP = 72
+  const angleOf = (i: number) => {
+    const k = (i - h + n) % n
+    return 90 + GAP + ((k - 1) * (360 - 2 * GAP)) / Math.max(1, n - 2)
+  }
+  const at = (deg: number, r: number) => {
+    const t = (deg * Math.PI) / 180
+    // Un poco hacia adentro del borde y sin salirse de los costados (los cartelitos tienen ancho).
+    const x = Math.min(87, Math.max(13, 50 + 41 * r * Math.cos(t)))
+    return { left: `${x}%`, top: `${50 + 40 * r * Math.sin(t)}%` }
+  }
+  const heroSize: CardSize = (hero?.cards?.length ?? 0) >= 5 ? "sm" : "md"
+
+  return (
+    <div className="relative mx-auto h-[340px] w-full max-w-[380px]">
+      {/* El paño */}
+      <div
+        className={cn(
+          "absolute inset-x-[5%] inset-y-[8%] rounded-[50%] border border-primary/45",
+          "bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_14%,var(--background)),var(--background)_75%)]",
+          "outline outline-1 -outline-offset-[10px] outline-primary/15",
+        )}
+      />
+      {center && (
+        <div className="absolute inset-x-[18%] top-[30%] bottom-[34%] z-10 flex flex-col items-center justify-center gap-2">
+          {center}
+        </div>
+      )}
+
+      {seats.map((s, i) => {
+        if (s.hero) return null
+        const deg = angleOf(i)
+        const folded = s.action?.kind === "fold"
+        const bettor = s.action?.kind === "bet"
+        return (
+          <div key={s.key}>
+            <div
+              style={at(deg, 1)}
+              className={cn(
+                "absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 transition-opacity",
+                folded && "opacity-40",
+              )}
+            >
+              {!folded && (
+                <div className="flex -space-x-1.5" aria-hidden>
+                  <span className="h-5 w-3.5 rounded-[3px] border border-primary/50 bg-[repeating-linear-gradient(45deg,color-mix(in_oklch,var(--primary)_45%,transparent)_0_2px,transparent_2px_4px)] bg-card" />
+                  <span className="h-5 w-3.5 rounded-[3px] border border-primary/50 bg-[repeating-linear-gradient(45deg,color-mix(in_oklch,var(--primary)_45%,transparent)_0_2px,transparent_2px_4px)] bg-card" />
+                </div>
+              )}
+              <div
+                className={cn(
+                  "whitespace-nowrap rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium leading-4",
+                  bettor && "border-rose-500 text-rose-400",
+                )}
+              >
+                {s.label}
+              </div>
+              {s.action && (
+                <div
+                  className={cn(
+                    "rounded px-1 text-[10px] font-semibold uppercase leading-3 tracking-wide",
+                    bettor ? "bg-rose-500 text-white" : "text-muted-foreground",
+                    folded && "line-through",
+                  )}
+                >
+                  {s.action.text}
+                </div>
+              )}
+            </div>
+            {s.chip && (
+              <BetChip
+                amount={s.chip === true ? undefined : s.chip}
+                className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                style={at(deg, 0.6)}
+              />
+            )}
+            {s.dealer && <DealerButton style={at(deg + 16, 0.72)} />}
+          </div>
+        )
+      })}
+
+      {hero && (
+        <>
+          <div className="absolute bottom-[1%] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5">
+            {hero.cards && (
+              <CardRow cards={hero.cards} size={heroSize} deal={0} className="flex-nowrap justify-center" />
+            )}
+            <div className="flex items-center gap-1">
+              <div className="whitespace-nowrap rounded-full border border-primary bg-primary px-2 py-0.5 text-[11px] font-semibold leading-4 text-primary-foreground">
+                Vos · {hero.label}
+              </div>
+              {hero.dealer && <DealerButton />}
+            </div>
+          </div>
+          {hero.chip && (
+            <BetChip
+              amount={hero.chip === true ? undefined : hero.chip}
+              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: "68%", top: "66%" }}
+            />
+          )}
+        </>
+      )}
+    </div>
+  )
 }
