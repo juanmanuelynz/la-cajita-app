@@ -1,4 +1,5 @@
 import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
+import { LeafMark } from "@/components/leaf-mark"
 
 // Maletín de aluminio de fichas de poker, en 3D con CSS (sin Three.js).
 // Cerrado flota y se balancea; con `open` se sueltan las trabas, se levanta
@@ -9,7 +10,11 @@ const D = 120 // profundidad
 const H = 36 // alto de la base
 const L = 18 // alto de la tapa
 
-const ROW_COLORS = ["#f8fafc", "#e11d48", "#2563eb", "#10b981", "#1e293b"]
+// Filas de fichas vistas de canto: color del cuerpo y de las incrustaciones.
+const ROW_COLORS = [
+  { body: "#f1f5f9", edge: "#2563eb" },
+  ...[1, 3, 0, 2].map((i) => CHIP_COLORS[i]),
+]
 
 // Fichas que salen disparadas al abrir: un abanico hacia arriba.
 const BURST = Array.from({ length: 9 }, (_, i) => {
@@ -49,14 +54,37 @@ function Face({
   )
 }
 
-function ChipRow({ color }: { color: string }) {
+/** Una fila de fichas de canto: cada ficha con su incrustación al medio, separadas por una línea oscura. */
+function ChipRow({ body, edge }: { body: string; edge: string }) {
   return (
     <div
       className="case-chip-row"
       style={{
-        backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 3.5px, rgba(0,0,0,0.45) 3.5px 4.5px)`,
+        backgroundColor: body,
+        backgroundImage: [
+          // volumen de cilindro: luz arriba, sombra abajo
+          "linear-gradient(180deg, rgb(255 255 255 / 0.4), transparent 45%, rgb(0 0 0 / 0.35))",
+          // separación entre fichas
+          "repeating-linear-gradient(90deg, transparent 0 4px, rgb(0 0 0 / 0.5) 4px 5px)",
+          // incrustaciones del canto, una ficha sí y otra no
+          `repeating-linear-gradient(90deg, ${edge} 0 4px, transparent 4px 10px)`,
+        ].join(","),
+        backgroundSize: "100% 100%, 100% 100%, 100% 34%",
+        backgroundPosition: "0 0, 0 0, 0 50%",
+        backgroundRepeat: "no-repeat",
       }}
     />
+  )
+}
+
+/** Mazo cerrado con el dorso de La Cajita. */
+function Deck() {
+  return (
+    <div className="case-deck">
+      <div className="card-back-felt card-back-felt-mini rounded-[2px]">
+        <LeafMark className="w-[34%]" />
+      </div>
+    </div>
   )
 }
 
@@ -89,12 +117,12 @@ export function ChipCase({ open }: { open: boolean }) {
               <div className="flex h-full gap-1.5 p-1.5">
                 <div className="flex flex-1 flex-col justify-between">
                   {ROW_COLORS.map((c) => (
-                    <ChipRow key={c} color={c} />
+                    <ChipRow key={c.body} body={c.body} edge={c.edge} />
                   ))}
                 </div>
                 <div className="flex w-12 flex-col items-center justify-center gap-1.5">
-                  <div className="case-deck bg-rose-700" />
-                  <div className="case-deck bg-blue-700" />
+                  <Deck />
+                  <Deck />
                   <div className="flex gap-1">
                     <div className="case-die">⚄</div>
                     <div className="case-die">⚂</div>
@@ -123,14 +151,18 @@ export function ChipCase({ open }: { open: boolean }) {
                 <span className="case-corner bottom-0 left-0" />
                 <span className="case-corner bottom-0 right-0" />
                 <div className="case-emblem">
-                  <span>♠</span>
-                  <span className="text-[#e0564b]">♥</span>
-                  <span className="text-[#e0564b]">♦</span>
-                  <span>♣</span>
+                  <LeafMark className="h-[15px] w-[15px] text-emerald-400" />
+                  <span>LA CAJITA</span>
                 </div>
               </Face>
+              {/* Adentro de la tapa: el paño del dorso de las cartas, con la hoja. */}
               <Face w={W} h={D} transform={`translate3d(0, -1px, ${D / 2}px) rotateX(-90deg)`} className="case-foam">
-                <span className="case-foam-label">LA CAJITA</span>
+                <div className="card-back-felt case-felt">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <LeafMark className="w-9" />
+                    <span className="case-foam-label">LA CAJITA</span>
+                  </div>
+                </div>
               </Face>
               <Face w={W} h={L} transform={`translate3d(0, ${-L / 2}px, ${D}px)`} className="case-metal case-wall" />
               <Face w={W} h={L} transform={`translate3d(0, ${-L / 2}px, 0) rotateY(180deg)`} className="case-metal case-wall" />

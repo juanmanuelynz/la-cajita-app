@@ -455,75 +455,128 @@
 .case-tilt[data-state="open"] .case-lid {
   transform: translate3d(0, 0, -60px) rotateX(108deg);
 }
-/* Aluminio cepillado */
+/* Aluminio cepillado: veta fina, reflejo diagonal y un brillo que cruza. */
 .case-metal {
   background:
-    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 3px),
-    linear-gradient(135deg, #e5e7eb 0%, #9ca3af 45%, #d1d5db 70%, #f3f4f6 100%);
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 3px),
+    linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.55) 42%, transparent 54%),
+    linear-gradient(135deg, #eef0f3 0%, #a7adb6 45%, #cfd3d9 70%, #f5f6f8 100%);
 }
+/* Paredes: perfiles de aluminio oscuro arriba y abajo, con un filete de luz. */
 .case-wall {
-  border-top: 3px solid #1f2937;
-  border-bottom: 3px solid #1f2937;
-  box-shadow: inset 0 0 10px rgb(0 0 0 / 0.25);
+  border-top: 2px solid #2b3340;
+  border-bottom: 2px solid #2b3340;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -6px 10px rgb(0 0 0 / 0.18);
 }
+/* Tapa: panel con bisel (borde realzado) en vez de un marco negro. */
 .case-lid-top {
-  border: 4px solid #1f2937;
-  border-radius: 6px;
+  border: 2px solid #2b3340;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 7px rgb(255 255 255 / 0.22),
+    inset 0 0 0 8px rgb(0 0 0 / 0.22),
+    inset 0 0 18px rgb(0 0 0 / 0.15);
 }
+/* Esquineros cromados con un remache. */
 .case-corner {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #111827;
-  border-radius: 3px;
+  width: 18px;
+  height: 18px;
+  margin: -2px;
+  background: linear-gradient(135deg, #f9fafb, #6b7280 55%, #d1d5db);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    0 1px 2px rgb(0 0 0 / 0.5);
 }
+.case-corner.left-0.top-0 {
+  border-radius: 8px 2px 8px 2px;
+}
+.case-corner.right-0.top-0 {
+  border-radius: 2px 8px 2px 8px;
+}
+.case-corner.bottom-0.left-0 {
+  border-radius: 2px 8px 2px 8px;
+}
+.case-corner.bottom-0.right-0 {
+  border-radius: 8px 2px 8px 2px;
+}
+.case-corner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #fff, #4b5563 70%);
+}
+/* Placa de la tapa: la hoja y el nombre, grabados sobre negro. */
 .case-emblem {
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 92px;
-  height: 30px;
+  width: 108px;
+  height: 28px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #374151, #111827);
-  color: #f3f4f6;
-  font-size: 17px;
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.5), inset 0 1px 3px rgb(0 0 0 / 0.6);
+  justify-content: center;
+  gap: 6px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #374151, #0b0f14);
+  color: #e5e7eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6),
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.15);
 }
 .case-handle {
   border-radius: 6px;
-  background: linear-gradient(180deg, #4b5563, #111827);
+  background: linear-gradient(180deg, #4b5563, #0b0f14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
 }
 .case-latch-plate {
   border-radius: 3px;
-  background: linear-gradient(180deg, #6b7280, #374151);
+  background: linear-gradient(180deg, #6b7280, #1f2937);
 }
 .case-latch {
   border-radius: 3px 3px 2px 2px;
-  background: linear-gradient(180deg, #f9fafb, #9ca3af);
-  box-shadow: 0 0 0 1px #374151;
+  background: linear-gradient(180deg, #ffffff, #c7ccd3 45%, #8b929c);
+  box-shadow:
+    0 0 0 1px #374151,
+    inset 0 1px 0 #fff;
 }
-/* Interior: bandeja con canales de fichas, mazos y dados */
+/* Interior: bandeja de terciopelo negro con canales de fichas, mazos y dados */
 .case-tray {
-  background: #111827;
-  border: 3px solid #1f2937;
-  box-shadow: inset 0 0 14px rgb(0 0 0 / 0.8);
+  background:
+    radial-gradient(ellipse at 50% 40%, rgb(255 255 255 / 0.05), transparent 70%),
+    #0b0f14;
+  border: 3px solid #2b3340;
+  box-shadow: inset 0 0 14px rgb(0 0 0 / 0.9);
 }
 .case-chip-row {
   height: 17px;
   border-radius: 9px;
   box-shadow:
-    inset 0 3px 4px rgb(0 0 0 / 0.55),
-    inset 0 -2px 3px rgb(255 255 255 / 0.15);
+    inset 0 3px 4px rgb(0 0 0 / 0.45),
+    inset 0 -2px 3px rgb(255 255 255 / 0.15),
+    0 0 0 1px rgb(0 0 0 / 0.6);
 }
 .case-deck {
   width: 38px;
   height: 24px;
+  padding: 2px;
   border-radius: 3px;
-  border: 2px solid #f8fafc;
-  box-shadow: 0 2px 3px rgb(0 0 0 / 0.6);
+  background: #f8fafc;
+  /* el espesor del mazo */
+  box-shadow:
+    0 1px 0 #d1d5db,
+    0 2px 0 #9ca3af,
+    0 3px 4px rgb(0 0 0 / 0.7);
 }
 .case-die {
   width: 16px;
@@ -532,26 +585,26 @@
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #ffffff, #d1d5db);
   color: #111827;
   font-size: 16px;
   line-height: 1;
+  box-shadow: 0 2px 3px rgb(0 0 0 / 0.6);
 }
 .case-foam {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid #1f2937;
-  background:
-    radial-gradient(circle at 25% 25%, rgb(255 255 255 / 0.06) 0 2px, transparent 3px) 0 0 / 9px 9px,
-    linear-gradient(180deg, #1f2937, #0b0f14);
+  border: 3px solid #2b3340;
+  background: #064e3b;
+}
+.case-felt::after {
+  inset: 6px;
+  border-radius: 4px;
 }
 .case-foam-label {
   font-weight: 800;
-  letter-spacing: 0.3em;
-  font-size: 13px;
-  color: #eab308;
-  text-shadow: 0 0 8px rgb(234 179 8 / 0.5);
+  letter-spacing: 0.32em;
+  font-size: 10px;
+  color: #ecfdf5;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
 }
 .cajita-burst {
   position: absolute;
