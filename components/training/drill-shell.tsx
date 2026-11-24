@@ -228,8 +228,8 @@ function scrollParent(el: HTMLElement): HTMLElement | null {
 const VERDICT_TEXT: Record<Verdict, string> = { right: "¡Bien!", wrong: "No era", close: "Muy justo: las dos valen" }
 
 /**
- * La respuesta, en un panel pegado abajo de la pestaña (sticky, arriba de la
- * barra de pestañas, que queda a mano): veredicto, el dato clave y la
+ * La respuesta, en un panel pegado abajo de la pestaña (sticky; su fondo sigue
+ * por detrás de la barra flotante de pestañas, que queda a mano): veredicto, el dato clave y la
  * explicación plegada en "Ver por qué". Al ir dentro de la pestaña, si cambiás
  * de pestaña no queda flotando encima de otra.
  */
@@ -255,7 +255,8 @@ function AnswerSheet({
       ref={ref}
       role="dialog"
       aria-label={VERDICT_TEXT[verdict]}
-      className="answer-sheet sticky bottom-0 z-30 -mx-1 flex max-h-[65dvh] flex-col rounded-t-3xl border-x border-t bg-background shadow-[0_-12px_32px_rgba(0,0,0,0.55)]"
+      // Se estira por detrás de la barra flotante (que es de vidrio): el panel llega hasta abajo de todo.
+      className="answer-sheet sticky bottom-[calc(-1*var(--dock-space))] z-30 -mx-1 -mb-[var(--dock-space)] flex max-h-[calc(65dvh+var(--dock-space))] flex-col rounded-t-3xl border-x border-t bg-background pb-[var(--dock-space)] shadow-[0_-12px_32px_rgba(0,0,0,0.55)]"
     >
       <div className="overflow-y-auto px-4 pt-2 space-y-3 text-sm">
         <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/40" />

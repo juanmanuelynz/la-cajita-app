@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import { useState, useEffect, Suspense, useMemo, useCallback } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -73,10 +74,12 @@ ChartJS.register(
 
 type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
+// En el orden de la barra (y del deslizar entre pestañas). Partidas va al centro,
+// como botón grande: es lo que más se usa en una noche de juego.
 const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: "ranking", label: "Ranking Anual", short: "Ranking", icon: Trophy },
-  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
   { id: "estadisticas", label: "Estadísticas", short: "Estadísticas", icon: BarChart3 },
+  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
   { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
   // El id sigue siendo "reglas" para no romper links con ?tab=reglas.
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
@@ -84,8 +87,8 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
 
 // El invitado (GUEST_PIN) solo ve sus sueltas, Entrenar y los Ajustes (con el logout).
 const GUEST_TABS: typeof TABS = [
-  { id: "partidas", label: "Partidas sueltas", short: "Sueltas", icon: Zap },
   { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
+  { id: "partidas", label: "Partidas sueltas", short: "Sueltas", icon: Zap },
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
@@ -124,9 +127,9 @@ function LaCajitaPoker() {
     emblaApi?.reInit()
   }, [emblaApi, tabs])
 
-  // Si la pestaña elegida no existe para este rol, ir a la primera.
+  // Si la pestaña elegida no existe para este rol, ir a Partidas (el invitado arranca en sus sueltas).
   useEffect(() => {
-    if (role && !tabs.some((t) => t.id === activeTab)) setActiveTab(tabs[0].id)
+    if (role && !tabs.some((t) => t.id === activeTab)) setActiveTab("partidas")
   }, [role, tabs, activeTab])
 
   useEffect(() => {
@@ -615,7 +618,7 @@ function LaCajitaPoker() {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col">
+    <div className="relative h-[100dvh] flex flex-col">
       <div className="backdrop-blur-sm border-b flex-shrink-0">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-around items-center">
@@ -722,7 +725,8 @@ function LaCajitaPoker() {
         <div className="overflow-hidden flex-1 min-h-0" ref={emblaRef}>
           <div className="flex h-full touch-pan-y">
             {tabs.map((tab) => (
-              <div key={tab.id} className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
+              // Abajo deja lugar para la barra flotante, así no tapa lo último de cada pestaña.
+              <div key={tab.id} className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pb-[var(--dock-space)]">
                 {screens[tab.id]}
               </div>
             ))}
@@ -730,30 +734,54 @@ function LaCajitaPoker() {
         </div>
       </div>
 
-      {/* Barra de secciones: ícono + nombre; la activa en color, con una pastilla detrás del ícono. */}
-      <nav className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
-        <div className="flex h-16 items-stretch justify-around">
+      {/* Barra flotante de vidrio: íconos + nombre; Partidas al centro, como botón grande que sobresale. */}
+      <nav className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        <div
+          className={cn(
+            "pointer-events-auto relative mx-auto flex h-16 max-w-md items-stretch justify-around rounded-[2rem] px-1",
+            "border border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150",
+            "shadow-[0_12px_32px_-8px_rgb(0_0_0/0.55),inset_0_1px_0_rgb(255_255_255/0.08)]",
+          )}
+        >
           {tabs.map((tab) => {
             const active = activeTab === tab.id
             const Icon = tab.icon
+            const center = tab.id === "partidas"
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-1 max-w-32 flex-col items-center justify-center gap-0.5 transition-colors duration-200 ${
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={cn(
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-colors duration-200",
+                  center && "justify-end pb-2",
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                )}
               >
-                <span
-                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
-                    active ? "bg-primary/15" : ""
-                  }`}
-                >
-                  <Icon className="h-6 w-6" />
-                </span>
-                <span className={`text-[11px] leading-none ${active ? "font-semibold" : ""}`}>{tab.short}</span>
+                {center ? (
+                  <span
+                    className={cn(
+                      "absolute -top-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full",
+                      "bg-primary text-primary-foreground ring-4 ring-background/70",
+                      "shadow-[0_8px_20px_-4px_color-mix(in_oklch,var(--primary)_60%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
+                      "transition-transform duration-200 active:scale-95",
+                      active && "scale-105",
+                    )}
+                  >
+                    <Icon className="h-7 w-7" />
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-200",
+                      active && "bg-primary/15",
+                    )}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </span>
+                )}
+                <span className={cn("text-[11px] leading-none", active && "font-semibold")}>{tab.short}</span>
               </button>
             )
           })}
