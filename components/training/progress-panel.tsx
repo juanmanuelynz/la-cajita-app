@@ -10,8 +10,14 @@ import {
   DAILY_GOAL,
   DRILL_IDS,
   DRILL_NAMES,
+  SEATS,
+  SEAT_NAMES,
+  STREETS,
+  STREET_NAMES,
   WEAK_MIN_ANSWERS,
+  addDays,
   dayStreak,
+  weekStart,
   levelFor,
   weakSpots,
   type WeakSpot,
@@ -166,6 +172,100 @@ function TallyBar({ label, tally }: { label: string; tally?: TrainingTally }) {
   )
 }
 
+/** Aciertos por calle: 4 anillos (sin datos: guion). */
+function StreetRings({ byStreet }: { byStreet: Record<string, TrainingTally> }) {
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {STREETS.map((st) => {
+        const t = byStreet[st]
+        const ratio = t?.total ? t.right / t.total : null
+        const r = 19
+        const c = 2 * Math.PI * r
+        return (
+          <div key={st} className="flex flex-col items-center gap-1" title={t ? `${t.right} de ${t.total}` : "sin jugar"}>
+            <div className="relative h-14 w-14">
+              <svg viewBox="0 0 48 48" className="h-14 w-14 -rotate-90" aria-hidden>
+                <circle cx="24" cy="24" r={r} fill="none" strokeWidth="4" className="stroke-muted" />
+                {ratio !== null && (
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r={r}
+                    fill="none"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={c}
+                    strokeDashoffset={c * (1 - ratio)}
+                    className="stroke-primary transition-[stroke-dashoffset] duration-700"
+                  />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums">
+                {ratio === null ? "—" : pct(ratio, 0)}
+              </div>
+            </div>
+            <div className="text-center text-[11px] leading-tight">{STREET_NAMES[st]}</div>
+            <div className="text-[10px] tabular-nums text-muted-foreground">{t ? `${t.right}/${t.total}` : "sin jugar"}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** % de aciertos de las últimas 8 semanas (una barra por semana; tocando, el detalle). */
+function WeeklyBars({ byWeek }: { byWeek: (TrainingTally & { week: string })[] }) {
+  const thisWeek = weekStart(getTodayLocalDate())
+  const weeks = Array.from({ length: 8 }, (_, i) => addDays(thisWeek, (i - 7) * 7))
+  const map = new Map(byWeek.map((w) => [w.week, w]))
+  const [sel, setSel] = useState<string>(thisWeek)
+  const selT = map.get(sel)
+  const label = (w: string) => `${Number(w.slice(8))}/${Number(w.slice(5, 7))}`
+  return (
+    <div className="space-y-2">
+      <div className="flex h-24 items-end gap-1.5 border-b border-border">
+        {weeks.map((w) => {
+          const t = map.get(w)
+          const ratio = t?.total ? t.right / t.total : 0
+          return (
+            <button
+              key={w}
+              type="button"
+              onClick={() => setSel(w)}
+              aria-label={`Semana del ${label(w)}: ${t ? `${pct(ratio, 0)} (${t.right} de ${t.total})` : "sin jugar"}`}
+              className="flex h-full flex-1 items-end justify-center"
+            >
+              {t && (
+                <span
+                  className={cn("w-full max-w-5 rounded-t-[4px] transition-colors", sel === w ? "bg-primary" : "bg-primary/45")}
+                  style={{ height: `${Math.max(4, ratio * 100)}%` }}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex gap-1.5 text-[10px] text-muted-foreground">
+        {weeks.map((w) => (
+          <span key={w} className={cn("flex-1 text-center tabular-nums", sel === w && "font-semibold text-foreground")}>
+            {label(w)}
+          </span>
+        ))}
+      </div>
+      <p className="text-xs">
+        Semana del {label(sel)}:{" "}
+        {selT ? (
+          <>
+            <b>{pct(selT.right / selT.total, 0)}</b> bien ({selT.right} de {selT.total})
+          </>
+        ) : (
+          <span className="text-muted-foreground">sin jugar</span>
+        )}
+      </p>
+    </div>
+  )
+}
+
 /** "¿Call o fold? · Omaha Short" (GTO vale igual para todos los juegos: sin juego). */
 function spotName(s: WeakSpot) {
   if (s.drill === "gto") return DRILL_NAMES.gto
@@ -272,6 +372,24 @@ function StatsDrawer({
                   onPractice(spots)
                 }}
               />
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Por semana</div>
+                <WeeklyBars byWeek={progress.byWeek ?? []} />
+              </div>
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Por calle</div>
+                <StreetRings byStreet={progress.byStreet ?? {}} />
+                <p className="text-[11px] text-muted-foreground">
+                  Outs y ¿Call o fold? cuentan solo las respuestas nuevas (antes no se guardaba si era flop o turn).
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Antes del flop, por lugar</div>
+                {SEATS.map((st) => (
+                  <TallyBar key={st} label={SEAT_NAMES[st]} tally={progress.bySeat?.[st]} />
+                ))}
+                <p className="text-[11px] text-muted-foreground">Cuenta solo las respuestas nuevas.</p>
+              </div>
               <div className="space-y-2">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Por ejercicio</div>
                 {DRILL_IDS.map((d) => (

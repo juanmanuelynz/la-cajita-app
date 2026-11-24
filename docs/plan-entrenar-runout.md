@@ -188,10 +188,16 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
   (preguntas fijas por fecha, iguales para todos).
 - El panel de progreso dice la dificultad y en qué nivel sube.
 
-### Fase 5 — Estadísticas por calle y lugar + tendencia
-- Agregar columnas a `training_answers` (p. ej. `street`, `seat`), migración
-  idempotente en `scripts/migrate.mjs` + `.sql` numerado de referencia.
-- En el drawer de progreso: aciertos por calle / lugar y evolución por semana.
+### Fase 5 — Estadísticas por calle y lugar + tendencia ✅ (24/11/2026)
+- Columnas `street` y `seat` (nullables) en `training_answers`: `scripts/14-…sql`
+  y `migrate.mjs`. Cada respuesta las manda (`answerContext` en `training.ts`, con
+  tests): Outs y ¿Call o fold? guardan flop/turn; luz y ciegas guardan el lugar
+  (primero / medio / reparte / ciega).
+- Al leer, la calle de los ejercicios de calle fija se deduce para las respuestas
+  viejas (`FIXED_STREET`); Outs y ¿Call o fold? viejos y el lugar cuentan solo
+  desde que se guarda (decidido con el usuario).
+- Panel de progreso: barras por semana (últimas 8, lunes a domingo), 4 anillos
+  por calle y barras por lugar en Antes del flop.
 
 ### Fase 6 — Más preflop (solo con fuente)
 - Rangos de call / 3-bet. **No inventar**: buscar fuente publicada (como hicimos con

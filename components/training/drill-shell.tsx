@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { Check, X, Equal, Flame, ChevronDown } from "lucide-react"
 import { playSequence, playSound, type SoundName } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
-import type { DrillId } from "@/lib/poker/training"
+import { answerContext, type DrillId } from "@/lib/poker/training"
 import { withDifficulty, type Difficulty } from "@/lib/poker/difficulty"
 import { cn } from "@/lib/utils"
 
@@ -12,7 +12,8 @@ export type Verdict = "right" | "wrong" | "close"
 
 /** Lo que el ejercicio avisa hacia afuera (para guardar el progreso). */
 export const TrainingContext = createContext<{
-  onAnswer?: (drill: DrillId, variant: Variant, correct: boolean) => void
+  /** `where`: calle y lugar de la situación (para las estadísticas por calle y lugar). */
+  onAnswer?: (drill: DrillId, variant: Variant, correct: boolean, where?: ReturnType<typeof answerContext>) => void
   /** Dificultad según el nivel de quien entrena (sin nombre elegido o en el desafío: media). */
   difficulty?: Difficulty
 }>({})
@@ -99,9 +100,9 @@ export function useDrill<T>(id: DrillId, { variant, preset, onNext }: DrillProps
       }))
       playSound(ok ? "chipLay" : "error")
       if (big) playSound(big, { delay: 0.25 })
-      onAnswer?.(id, variant, ok)
+      onAnswer?.(id, variant, ok, answerContext(drill))
     },
-    [id, variant, onAnswer],
+    [id, variant, onAnswer, drill],
   )
 
   return { drill, verdict, score, answer, next, inChallenge: !!preset }

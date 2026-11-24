@@ -32,6 +32,9 @@ const MIGRATIONS = [
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (player_id, challenge_date)
   )`,
+  // 14-training-street-seat.sql: calle y lugar de cada respuesta (nullables).
+  "ALTER TABLE training_answers ADD COLUMN IF NOT EXISTS street TEXT",
+  "ALTER TABLE training_answers ADD COLUMN IF NOT EXISTS seat TEXT",
 ]
 
 const url = process.env.DATABASE_URL

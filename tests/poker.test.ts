@@ -585,3 +585,41 @@ describe("Dificultad según el nivel", () => {
     expect(checked).toBeGreaterThan(0)
   }, 60000)
 })
+
+describe("Calle y lugar de cada respuesta", () => {
+  it("deduce la calle de los ejercicios de calle fija y lee la de outs / call o fold", async () => {
+    const { answerContext } = await import("../lib/poker/training")
+    const { makeOuts, makePotOdds, makeWhoWins, makeUsable, makeCompare } = await import("../lib/poker/drills")
+    const rng = seededRng(2)
+    expect(answerContext(makeWhoWins(HE, rng)).street).toBe("river")
+    expect(answerContext(makeUsable(HE, rng)).street).toBe("river")
+    expect(answerContext(makeCompare(HE, rng)).street).toBe("preflop")
+    const o = makeOuts(HE, rng)
+    expect(answerContext(o).street).toBe(o.street)
+    const p = makePotOdds(HE, rng)
+    expect(answerContext(p)).toEqual({ street: p.street, seat: null })
+    expect(answerContext(null)).toEqual({ street: null, seat: null })
+  })
+
+  it("lugar en la mesa: primero, medio, reparte, ciega", async () => {
+    const { answerContext } = await import("../lib/poker/training")
+    const luz = (seat: number, players: number) => answerContext({ kind: "luz", seat, players })
+    expect(luz(1, 5).seat).toBe("primero")
+    expect(luz(3, 5).seat).toBe("medio")
+    expect(luz(5, 5)).toEqual({ street: "preflop", seat: "reparte" })
+    const pf = (pos: string, table: 4 | 5 | 6) => answerContext({ kind: "preflop", pos, table }).seat
+    expect(pf("UTG", 6)).toBe("primero")
+    expect(pf("MP", 6)).toBe("medio")
+    expect(pf("CO", 4)).toBe("primero") // con 4 se sacan los primeros lugares
+    expect(pf("BU", 6)).toBe("reparte")
+    expect(pf("SB", 5)).toBe("ciega")
+  })
+
+  it("semana: arranca el lunes", async () => {
+    const { weekStart } = await import("../lib/poker/training")
+    expect(weekStart("2026-11-24")).toBe("2026-11-23") // martes → lunes
+    expect(weekStart("2026-11-23")).toBe("2026-11-23")
+    expect(weekStart("2026-11-29")).toBe("2026-11-23") // domingo
+    expect(weekStart("2026-11-30")).toBe("2026-11-30")
+  })
+})

@@ -547,15 +547,15 @@ export async function registerActiveMatch(matchId: string): Promise<MatchWithPla
 export async function recordTrainingAnswer(input: TrainingAnswerInput): Promise<void> {
   const a = TrainingAnswerSchema.parse(input)
   await sql`
-    INSERT INTO training_answers (player_id, drill, game, deck, correct, local_date)
-    VALUES (${a.playerId}, ${a.drill}, ${a.game}, ${a.deck}, ${a.correct}, ${a.localDate})
+    INSERT INTO training_answers (player_id, drill, game, deck, correct, local_date, street, seat)
+    VALUES (${a.playerId}, ${a.drill}, ${a.game}, ${a.deck}, ${a.correct}, ${a.localDate}, ${a.street ?? null}, ${a.seat ?? null})
   `
 }
 
 export async function getTrainingProgress(playerId: string, today: string): Promise<TrainingProgress> {
   const id = UuidSchema.parse(playerId)
   const day = DateSchema.parse(today)
-  const [drills, variants, combos, days, todayRows] = (await sql.transaction([
+  const [drills, variants, combos, streets, seats, weeks, days, todayRows] = (await sql.transaction([
     sql`
       SELECT drill AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
       FROM training_answers WHERE player_id = ${id} GROUP BY drill
@@ -567,6 +567,31 @@ export async function getTrainingProgress(playerId: string, today: string): Prom
     sql`
       SELECT drill || ':' || game || ':' || deck AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
       FROM training_answers WHERE player_id = ${id} GROUP BY drill, game, deck
+    `,
+    // Calle: la guardada o, en las respuestas viejas, la de los ejercicios de calle fija
+    // (FIXED_STREET en lib/poker/training.ts). Outs y ¿Call o fold? viejos quedan afuera.
+    sql`
+      SELECT key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM (
+        SELECT correct, COALESCE(street, CASE drill
+          WHEN 'usable' THEN 'river' WHEN 'whoWins' THEN 'river' WHEN 'gto' THEN 'river'
+          WHEN 'compare' THEN 'preflop' WHEN 'preflop' THEN 'preflop' WHEN 'luz' THEN 'preflop'
+        END) AS key
+        FROM training_answers WHERE player_id = ${id}
+      ) t
+      WHERE key IS NOT NULL GROUP BY key
+    `,
+    sql`
+      SELECT seat AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers WHERE player_id = ${id} AND seat IS NOT NULL GROUP BY seat
+    `,
+    // Últimas 8 semanas (lunes a domingo, por la fecha del celular).
+    sql`
+      SELECT date_trunc('week', local_date)::date::text AS key,
+        COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM training_answers
+      WHERE player_id = ${id} AND local_date > ${day}::date - 56
+      GROUP BY 1 ORDER BY 1
     `,
     sql`
       SELECT DISTINCT local_date::text AS day FROM training_answers
@@ -584,6 +609,9 @@ export async function getTrainingProgress(playerId: string, today: string): Prom
     byDrill: toMap(drills),
     byVariant: toMap(variants),
     byDrillVariant: toMap(combos),
+    byStreet: toMap(streets),
+    bySeat: toMap(seats),
+    byWeek: weeks.map((r) => ({ week: String(r.key), right: Number(r.right), total: Number(r.total) })),
     days: days.map((r) => String(r.day)),
     today: { right: Number(todayRows[0]?.right ?? 0), total: Number(todayRows[0]?.total ?? 0) },
   }

@@ -55,10 +55,10 @@ Tables in Neon (DDL reference in [scripts/](scripts/), originally written for Su
 - `matches` — id, date, caji_value, total_money, player_count, tournament_id (→ tournaments), is_casual, created_at
 - `match_players` — id, match_id (→ matches), player_id (→ players), cajitas, final_chips, money_won, position, points, created_at
 - `active_matches` — id, date, caji_value, player_count, tournament_id (→ tournaments), is_casual, players (JSONB array), created_at, updated_at
-- `training_answers` — id, player_id (→ players), drill, game, deck, correct, local_date (device date), created_at — one row per answered exercise in Entrenar
+- `training_answers` — id, player_id (→ players), drill, game, deck, correct, local_date (device date), street, seat (nullable; street of fixed-street drills is derived on read), created_at — one row per answered exercise in Entrenar
 - `training_daily` — player_id, challenge_date (PK together), score, total, created_at — Desafío del día, one attempt per player per day
 
-Schema changes for existing DBs ship as idempotent statements in [scripts/migrate.mjs](scripts/migrate.mjs), which Vercel runs on every build before `next build` (`npm run migrate`; a failure aborts the deploy). Keep the numbered `.sql` file as the reference too. To bootstrap a fresh Neon DB, run the numbered scripts in order (01→13) via `psql "$DATABASE_URL" -f scripts/0X-...sql`. The current production schema was migrated wholesale from Supabase via `pg_dump`.
+Schema changes for existing DBs ship as idempotent statements in [scripts/migrate.mjs](scripts/migrate.mjs), which Vercel runs on every build before `next build` (`npm run migrate`; a failure aborts the deploy). Keep the numbered `.sql` file as the reference too. To bootstrap a fresh Neon DB, run the numbered scripts in order (01→14) via `psql "$DATABASE_URL" -f scripts/0X-...sql`. The current production schema was migrated wholesale from Supabase via `pg_dump`.
 
 ### Environment Variables
 Create `.env.local` with:

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
-import { levelFor, type DrillId, type WeakSpot } from "@/lib/poker/training"
+import { levelFor, type DrillId, type TrainingSeat, type TrainingStreet, type WeakSpot } from "@/lib/poker/training"
 import { difficultyForLevel, type Difficulty } from "@/lib/poker/difficulty"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
@@ -219,9 +219,18 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
   // Cada respuesta se guarda (si hay jugador elegido). Si falla por falta de
   // señal, se pierde esa respuesta: no vale la pena una cola para esto.
   const onAnswer = useCallback(
-    (drillId: DrillId, v: Variant, correct: boolean) => {
+    (drillId: DrillId, v: Variant, correct: boolean, where?: { street: string | null; seat: string | null }) => {
       if (!playerId) return
-      db.recordTrainingAnswer({ playerId, drill: drillId, game: v.game, deck: v.deck, correct, localDate: getTodayLocalDate() })
+      db.recordTrainingAnswer({
+        playerId,
+        drill: drillId,
+        game: v.game,
+        deck: v.deck,
+        correct,
+        localDate: getTodayLocalDate(),
+        street: (where?.street ?? null) as TrainingStreet | null,
+        seat: (where?.seat ?? null) as TrainingSeat | null,
+      })
         .then(() => setVersion((n) => n + 1))
         .catch(() => {})
     },

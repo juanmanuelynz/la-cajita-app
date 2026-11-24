@@ -118,6 +118,9 @@ export const TrainingAnswerSchema = z.object({
   deck: z.enum(["long", "short"]),
   correct: z.boolean(),
   localDate: z.string().regex(dateRegex),
+  /** En qué calle fue la decisión y desde qué lugar (null si no aplica). */
+  street: z.enum(["preflop", "flop", "turn", "river"]).nullish(),
+  seat: z.enum(["primero", "medio", "reparte", "ciega"]).nullish(),
 })
 
 export const DailyResultSchema = z

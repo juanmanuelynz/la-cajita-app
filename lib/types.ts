@@ -82,6 +82,12 @@ export interface TrainingProgress {
   byVariant: Record<string, TrainingTally>
   /** Aciertos por ejercicio, juego y mazo juntos (clave: "potOdds:omaha:short"): para "Tus puntos débiles". */
   byDrillVariant: Record<string, TrainingTally>
+  /** Aciertos por calle ("preflop", "flop", "turn", "river"). */
+  byStreet?: Record<string, TrainingTally>
+  /** Aciertos por lugar en la mesa (solo Antes del flop: "primero", "medio", "reparte", "ciega"). */
+  bySeat?: Record<string, TrainingTally>
+  /** Aciertos por semana (lunes, "YYYY-MM-DD"), las últimas 8 con respuestas. */
+  byWeek?: (TrainingTally & { week: string })[]
   /** Fechas (YYYY-MM-DD) en que entrenó, de la más nueva a la más vieja. */
   days: string[]
   /** Respuestas de hoy. */

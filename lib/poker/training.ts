@@ -5,6 +5,7 @@ import { makeGto } from "./gto"
 import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 import { withDifficulty, type Difficulty } from "./difficulty"
+import { POSITIONS_BY_TABLE } from "./preflop"
 
 export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
@@ -177,6 +178,68 @@ export function levelFor(right: number): LevelInfo {
   const start = levelStart(level)
   const title = LEVEL_TITLES.filter(([from]) => from <= level).at(-1)![1]
   return { level, title, into: right - start, span: levelStart(level + 1) - start }
+}
+
+// ── Calle y lugar de cada respuesta ─────────────────────────────────────────
+
+export const STREETS = ["preflop", "flop", "turn", "river"] as const
+export type TrainingStreet = (typeof STREETS)[number]
+export const STREET_NAMES: Record<TrainingStreet, string> = {
+  preflop: "Antes del flop",
+  flop: "Flop",
+  turn: "Turn",
+  river: "River",
+}
+
+/** Lugar en la mesa (solo "Antes del flop"): cuándo hablás. */
+export const SEATS = ["primero", "medio", "reparte", "ciega"] as const
+export type TrainingSeat = (typeof SEATS)[number]
+export const SEAT_NAMES: Record<TrainingSeat, string> = {
+  primero: "Hablando primero",
+  medio: "En el medio",
+  reparte: "Repartiendo",
+  ciega: "En la ciega chica",
+}
+
+/**
+ * Calle de los ejercicios que siempre son en la misma (sirve también para las
+ * respuestas viejas, que no la guardaron). Outs y ¿Call o fold? pueden ser en
+ * flop o turn: esos no se deducen.
+ */
+export const FIXED_STREET: Partial<Record<DrillId, TrainingStreet>> = {
+  usable: "river",
+  whoWins: "river",
+  gto: "river",
+  compare: "preflop",
+  preflop: "preflop",
+  luz: "preflop",
+}
+
+/** Calle y lugar de una situación ya generada, para guardarlos con la respuesta. */
+export function answerContext(data: unknown): { street: TrainingStreet | null; seat: TrainingSeat | null } {
+  const d = data as { kind?: string; street?: string; seat?: number; players?: number; pos?: string; table?: 4 | 5 | 6 }
+  const kind = d?.kind as DrillId | undefined
+  if (!kind) return { street: null, seat: null }
+  if (kind === "outs" || kind === "potOdds") {
+    return { street: d.street === "flop" || d.street === "turn" ? d.street : null, seat: null }
+  }
+  const street = FIXED_STREET[kind] ?? null
+  if (kind === "luz" && d.seat && d.players) {
+    return { street, seat: d.seat === d.players ? "reparte" : d.seat === 1 ? "primero" : "medio" }
+  }
+  if (kind === "preflop" && d.pos && d.table) {
+    const seat: TrainingSeat =
+      d.pos === "BU" ? "reparte" : d.pos === "SB" ? "ciega" : POSITIONS_BY_TABLE[d.table][0] === d.pos ? "primero" : "medio"
+    return { street, seat }
+  }
+  return { street, seat: null }
+}
+
+/** Lunes de la semana de una fecha (YYYY-MM-DD), como `date_trunc('week')` de Postgres. */
+export function weekStart(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`)
+  const dow = (d.getUTCDay() + 6) % 7 // lunes = 0
+  return addDays(date, -dow)
 }
 
 // ── Tus puntos débiles ──────────────────────────────────────────────────────
