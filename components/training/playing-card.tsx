@@ -90,7 +90,7 @@ const LEAFLETS = [
 /** La hojita del dorso (SVG sin ids, así se puede repetir mil veces en la página). */
 export function LeafMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="-1 -1.06 2 1.4" className={className} fill="currentColor" aria-hidden>
+    <svg viewBox="-0.6 -1.03 1.2 1.35" className={className} fill="currentColor" aria-hidden>
       {LEAFLETS.map(([deg, len]) => (
         <path
           key={deg}
@@ -102,6 +102,9 @@ export function LeafMark({ className }: { className?: string }) {
     </svg>
   )
 }
+
+// En los dorsos chicos la hoja ocupa casi todo el paño, si no no se distingue.
+const LEAF_WIDTH = { mini: "w-[96%]", xs: "w-[80%]", sm: "w-[66%]", md: "w-[56%]" } as const
 
 /** Dorso de La Cajita: marco blanco, paño verde con tramado fino y la hojita al medio. */
 export function CardBack({ size = "md", className }: { size?: CardSize | "mini"; className?: string }) {
@@ -117,7 +120,7 @@ export function CardBack({ size = "md", className }: { size?: CardSize | "mini";
       )}
     >
       <div className={cn("card-back-felt", size === "mini" && "card-back-felt-mini", FELT_RADIUS[size])}>
-        <LeafMark className="w-[84%]" />
+        <LeafMark className={LEAF_WIDTH[size]} />
       </div>
     </div>
   )

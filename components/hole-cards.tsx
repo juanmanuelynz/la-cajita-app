@@ -39,7 +39,7 @@ function CardBack() {
   return (
     <div className="hole-card-back" style={{ height: CARD_H }}>
       <div className="card-back-felt">
-        <LeafMark className="w-[78%]" />
+        <LeafMark className="w-[50%]" />
       </div>
     </div>
   )
