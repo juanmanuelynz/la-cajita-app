@@ -215,11 +215,11 @@ export function DailyChallenge({
   const status = !playerId
     ? "Elegí quién sos para jugar"
     : done
-      ? `Sacaste ${mine ? mine.score : score}/${DAILY_LENGTH}${myPos >= 0 && board ? ` · vas ${myPos + 1}º de ${board.length}` : ""}`
+      ? `Sacaste ${mine ? mine.score : score}/${DAILY_LENGTH}${myPos >= 0 && board ? ` · ${myPos + 1}º de ${board.length}` : ""}`
       : answers.length > 0
         ? `Vas por la ${answers.length + 1} de ${DAILY_LENGTH}`
         : board && board.length > 0
-          ? `${DAILY_LENGTH} preguntas · ya jugaron ${board.length}`
+          ? `${DAILY_LENGTH} preguntas`
           : `${DAILY_LENGTH} preguntas, iguales para todos`
 
   const cta = done ? (
@@ -240,7 +240,7 @@ export function DailyChallenge({
     <Button
       size="sm"
       disabled={!playerId}
-      className="rounded-full bg-amber-400 px-5 font-bold text-black shadow-[0_3px_0_0] shadow-amber-700 hover:bg-amber-300 active:translate-y-0.5 active:shadow-none"
+      className="rounded-full bg-amber-400 px-4 min-[360px]:px-5 font-bold text-black shadow-[0_3px_0_0] shadow-amber-700 hover:bg-amber-300 active:translate-y-0.5 active:shadow-none"
       onClick={() => setRunning(true)}
     >
       {answers.length > 0 ? "Seguir" : "Jugar"}
@@ -251,13 +251,26 @@ export function DailyChallenge({
     <div className="overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-500/20 via-amber-500/5 to-card">
       {result}
       {/* Una sola línea: el ejercicio tiene que quedar a la vista. */}
-      <div className="flex items-center gap-3 px-3 py-2">
+      <div className="flex items-center gap-2.5 px-3 py-2 min-[360px]:gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-[0_2px_0_0] shadow-amber-700">
           <CalendarCheck className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-bold leading-tight">Desafío del día</div>
-          <div className="truncate text-xs text-muted-foreground">{status}</div>
+          <div className="truncate text-[15px] font-bold leading-tight min-[360px]:text-base">Desafío del día</div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="min-w-0 truncate">{status}</span>
+            {/* Cuántos jugaron hoy; tocando, el ranking. */}
+            <button
+              type="button"
+              onClick={() => setShowBoard((b) => !b)}
+              aria-label="Ranking del desafío"
+              aria-expanded={showBoard}
+              className="flex shrink-0 items-center gap-0.5 font-medium text-amber-500"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              {board && board.length > 0 ? board.length : ""}
+            </button>
+          </div>
           {/* Cómo vas: solo con el desafío empezado. */}
           {answers.length > 0 && (
             <div className="mt-1 flex gap-0.5" aria-hidden>
@@ -273,15 +286,6 @@ export function DailyChallenge({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setShowBoard((b) => !b)}
-          aria-label="Ranking del desafío"
-          className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-amber-500"
-        >
-          <Trophy className="h-4 w-4" />
-          {board && board.length > 0 ? board.length : ""}
-        </button>
         {cta}
       </div>
       {submitError && (

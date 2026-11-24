@@ -302,8 +302,8 @@ export function TrainerCard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-1.5">
-                <span className="truncate font-bold leading-tight">{player.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
+                <span className="max-w-[65%] shrink-0 truncate font-bold leading-tight">{player.name}</span>
+                <span className="hidden min-w-0 truncate text-xs text-muted-foreground min-[360px]:inline">
                   Nv {lvl.level} · {lvl.title}
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 self-center text-muted-foreground" />
