@@ -92,8 +92,10 @@ export function PokerTable({
   const row = (seats: TableSeat[], side: "top" | "bottom") => (
     <div
       className={cn(
-        "relative z-10 flex min-h-6 justify-center gap-4",
+        "relative z-10 flex min-h-6 gap-4",
         side === "top" ? "-mt-3 items-start" : "-mb-3 items-end",
+        // Dos de un lado: bien separados, cada uno sobre la curva (con el de enfrente forman un triángulo).
+        seats.length > 1 ? cn("-mx-2 justify-between", side === "top" ? "mt-3" : "mb-3") : "justify-center",
       )}
     >
       {seats.map((s) => (
