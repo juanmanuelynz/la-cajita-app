@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useState, useEffect, Suspense, useMemo, useCallback } from "react"
+import { useState, useEffect, Suspense, useMemo, useCallback, type ComponentType } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,13 +17,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   Trophy,
-  NotebookPen,
   AlertCircle,
   BarChart3,
   Settings,
   RefreshCw,
-  GraduationCap,
-  type LucideIcon,
+  Brain,
 } from "lucide-react"
 import {
   Chart as ChartJS,
@@ -37,7 +35,7 @@ import {
   Legend,
 } from "chart.js"
 import * as db from "@/lib/database"
-import { ChipSpinner } from "@/components/poker-chip"
+import { ChipGlyph, ChipSpinner } from "@/components/poker-chip"
 import { MatchSummary } from "@/components/match-summary"
 import type {
   MatchWithPlayers,
@@ -75,19 +73,21 @@ type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
 // En el orden de la barra (y del deslizar entre pestañas). Partidas va al centro,
 // como botón grande: es lo que más se usa en una noche de juego.
-const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
+// Partidas va con la ficha de La Cajita (la misma del indicador de carga).
+const CENTER_ICON: ComponentType<{ className?: string }> = ChipGlyph
+const TABS: { id: TabId; label: string; short: string; icon: ComponentType<{ className?: string }> }[] = [
   { id: "ranking", label: "Ranking Anual", short: "Ranking", icon: Trophy },
   { id: "estadisticas", label: "Estadísticas", short: "Estadísticas", icon: BarChart3 },
-  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
-  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
+  { id: "partidas", label: "Partidas", short: "Partidas", icon: CENTER_ICON },
+  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: Brain },
   // El id sigue siendo "reglas" para no romper links con ?tab=reglas.
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
 // El invitado (GUEST_PIN) solo ve sus sueltas, Entrenar y los Ajustes (con el logout).
 const GUEST_TABS: typeof TABS = [
-  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
-  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
+  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: Brain },
+  { id: "partidas", label: "Partidas", short: "Partidas", icon: CENTER_ICON },
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 

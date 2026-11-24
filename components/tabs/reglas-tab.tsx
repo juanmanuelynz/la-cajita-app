@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { IconTabsList } from "@/components/icon-tabs";
-import { ScrollText, SlidersHorizontal } from "lucide-react";
+import { Flag, ScrollText, SlidersHorizontal } from "lucide-react";
 import { Plus, Trophy } from "lucide-react";
 import { ChipSpinner } from "@/components/poker-chip";
 import { useState } from "react";
@@ -179,7 +179,7 @@ export function ReglasTab({
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
           <IconTabsList
             tabs={[
-              { value: "torneo", label: "Torneo", icon: Trophy },
+              { value: "torneo", label: "Torneo", icon: Flag },
               { value: "ajustes", label: "Ajustes", icon: SlidersHorizontal },
               { value: "reglas", label: "Reglas", icon: ScrollText },
             ]}

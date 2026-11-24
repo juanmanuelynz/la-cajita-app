@@ -30,7 +30,7 @@ import type { TrainingProgress } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import {
   BookOpen,
-  Brain,
+  Sigma,
   Calculator,
   Coins,
   Dumbbell,
@@ -56,7 +56,7 @@ const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; isNew?: boolea
   { id: "potOdds", label: "¿Call o fold?", icon: Scale },
   { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows },
   { id: "antes", label: "Antes del flop", icon: Coins },
-  { id: "gto", label: "GTO river", icon: Brain, isNew: true },
+  { id: "gto", label: "GTO river", icon: Sigma, isNew: true },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
