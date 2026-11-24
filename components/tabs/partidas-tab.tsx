@@ -13,7 +13,7 @@ import {
   ChevronUp,
   Lock,
   Sparkles,
-  Coffee,
+  Zap,
 } from "lucide-react"
 import { ActiveMatchCard } from "@/components/active-match-card"
 import { ChipSpinner } from "@/components/poker-chip"
@@ -156,7 +156,7 @@ export function PartidasTab({
               {loading ? (
                 <ChipSpinner className="w-4 h-4 mr-2" />
               ) : (
-                <Coffee className="w-4 h-4 mr-2" />
+                <Zap className="w-4 h-4 mr-2" />
               )}
               Partida suelta
             </span>
