@@ -21,14 +21,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { IconTabsList } from "@/components/icon-tabs";
 import { ScrollText, SlidersHorizontal } from "lucide-react";
-import { Plus, LogOut, Trophy } from "lucide-react";
+import { Plus, Trophy } from "lucide-react";
 import { ChipSpinner } from "@/components/poker-chip";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants";
 import type {
   MatchWithPlayers,
@@ -37,10 +35,8 @@ import type {
   Tournament,
 } from "@/lib/types";
 import { X } from "lucide-react";
-import { logout } from "@/app/login/actions";
+import { AjustesCard } from "@/components/ajustes-card";
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium";
-import { useSoundEnabled } from "@/hooks/use-sound-enabled";
-import { playSound } from "@/lib/sounds";
 
 type ReglasSubtab = "torneo" | "reglas" | "ajustes";
 
@@ -96,11 +92,6 @@ export function ReglasTab({
   onSelectTournament,
 }: ReglasTabProps) {
   const [subtab, setSubtab] = useState<ReglasSubtab>("torneo");
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const isDark = mounted && theme === "dark";
-  const [soundOn, setSoundOn] = useSoundEnabled();
 
   const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG);
   const [createRoster, setCreateRoster] = useState<Set<string>>(new Set());
@@ -607,65 +598,7 @@ export function ReglasTab({
         </TabsContent>
 
         <TabsContent value="ajustes" className="pt-4 pb-8 space-y-6 mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Configuración</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2" suppressHydrationWarning>
-                <span className="text-sm">☀️</span>
-                <Switch
-                  checked={isDark}
-                  onCheckedChange={(checked) =>
-                    setTheme(checked ? "dark" : "light")
-                  }
-                  aria-label="Cambiar tema"
-                />
-                <span className="text-sm">🌙</span>
-                <span className="ml-2 text-sm" suppressHydrationWarning>
-                  Tema {mounted ? (isDark ? "oscuro" : "claro") : ""}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2" suppressHydrationWarning>
-                <span className="text-sm">🔇</span>
-                <Switch
-                  checked={mounted ? soundOn : true}
-                  onCheckedChange={(checked) => {
-                    setSoundOn(checked);
-                    // Muestra cómo suena al prenderlo.
-                    if (checked) playSound("chipLay");
-                  }}
-                  aria-label="Activar sonidos"
-                />
-                <span className="text-sm">🔊</span>
-                <span className="ml-2 text-sm" suppressHydrationWarning>
-                  Sonidos {mounted ? (soundOn ? "activados" : "desactivados") : ""}
-                </span>
-              </div>
-
-              <form action={logout}>
-                <Button type="submit" variant="outline" className="w-full">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Cerrar sesión
-                </Button>
-              </form>
-              <details className="text-[11px] text-muted-foreground/70">
-                <summary className="cursor-pointer select-none">Créditos de sonido</summary>
-                <p className="mt-1">
-                  Fichas:{" "}
-                  <a href="https://freesound.org/s/170295/" target="_blank" rel="noreferrer" className="underline">
-                    “Clay Chips” de ArtOrDie
-                  </a>
-                  ,{" "}
-                  <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
-                    CC BY 4.0
-                  </a>{" "}
-                  (recortado). Mazo: vkproduktion, CC0. Resto: Kenney, CC0.
-                </p>
-              </details>
-            </CardContent>
-          </Card>
+          <AjustesCard />
         </TabsContent>
       </Tabs>
 

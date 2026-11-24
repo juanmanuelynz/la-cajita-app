@@ -22,7 +22,6 @@ import {
   Settings,
   RefreshCw,
   GraduationCap,
-  LogOut,
   Zap,
   type LucideIcon,
 } from "lucide-react"
@@ -59,7 +58,7 @@ import { getTodayLocalDate } from "@/lib/formatters"
 import { sortPlayerStats, type SortBy } from "@/lib/stats"
 import type { RankingScope } from "@/components/tabs/ranking-tab"
 import type { AuthRole } from "@/lib/auth"
-import { logout } from "@/app/login/actions"
+import { AjustesCard } from "@/components/ajustes-card"
 
 ChartJS.register(
   CategoryScale,
@@ -83,10 +82,11 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
-// El invitado (GUEST_PIN) solo ve sus sueltas y Entrenar.
+// El invitado (GUEST_PIN) solo ve sus sueltas, Entrenar y los Ajustes (con el logout).
 const GUEST_TABS: typeof TABS = [
   { id: "partidas", label: "Partidas sueltas", short: "Sueltas", icon: Zap },
   { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
+  { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
 function LaCajitaPoker() {
@@ -582,7 +582,11 @@ function LaCajitaPoker() {
     entrenar: (
       <EntrenarTab players={allPlayers} onCreatePlayer={handleCreateTrainingPlayer} />
     ),
-    reglas: (
+    reglas: isGuest ? (
+      <div className="pt-4 pb-8">
+        <AjustesCard />
+      </div>
+    ) : (
       <ReglasTab
         tournaments={tournaments}
         selectedTournamentId={selectedTournamentId}
@@ -623,7 +627,7 @@ function LaCajitaPoker() {
           </div>
           {isGuest && (
             <div className="flex justify-center items-center gap-3 mt-2">
-              <p className="text-sm text-muted-foreground">Invitado · sueltas y entrenar</p>
+              <p className="text-sm text-muted-foreground">Invitado</p>
               <button
                 onClick={refreshData}
                 disabled={loading}
@@ -632,16 +636,6 @@ function LaCajitaPoker() {
               >
                 {loading ? <ChipSpinner className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
               </button>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  aria-label="Salir"
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Salir
-                </button>
-              </form>
             </div>
           )}
           {!isGuest && selectedTournament && (
