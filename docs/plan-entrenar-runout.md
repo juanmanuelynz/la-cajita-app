@@ -175,11 +175,18 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
   respuestas suman al progreso como cualquier ejercicio.
 - Decidido con el usuario: el botón va en el panel de progreso, no como entrada principal.
 
-### Fase 4 — Dificultad según el nivel
-- Parámetro de dificultad en los generadores (`lib/poker/drills.ts`): p. ej. en
-  ¿Call o fold? equity más cerca de lo necesario; en Outs más outs; en ¿Quién gana?
-  manos más parejas. Tests con semilla.
-- El Desafío del día NO cambia (tiene que ser igual para todos): dificultad fija.
+### Fase 4 — Dificultad según el nivel ✅ (24/11/2026)
+- `lib/poker/difficulty.ts` (con tests): niveles 1–3 Fácil, 4–6 Media, 7+ Difícil
+  (`difficultyForLevel`), automático. `difficultyScore` puntúa cada situación de
+  0 (clara) a 1 (ajustada); `withDifficulty` genera hasta 6 candidatos y elige el
+  más cercano. Comparar y luz (caros) reciben el rango (`gap` / `margin`) y lo
+  filtran con una simulación rápida de 300 manos.
+- Media = exactamente el generador de antes. Ciegas y GTO no tienen dificultad.
+- La dificultad viaja en `TrainingContext`; `useDrill` la lee al generar (ref):
+  si cambia al cargar el progreso, vale para la próxima mano.
+- La práctica de "lo que más fallo" usa tu dificultad; el Desafío del día no
+  (preguntas fijas por fecha, iguales para todos).
+- El panel de progreso dice la dificultad y en qué nivel sube.
 
 ### Fase 5 — Estadísticas por calle y lugar + tendencia
 - Agregar columnas a `training_answers` (p. ej. `street`, `seat`), migración

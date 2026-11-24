@@ -529,3 +529,59 @@ describe("Tus puntos débiles", () => {
     for (const q of session) expect(q.data.kind).toBe(q.drill)
   }, 60000)
 })
+
+describe("Dificultad según el nivel", () => {
+  it("niveles 1–3 fácil, 4–6 media, 7+ difícil", async () => {
+    const { difficultyForLevel } = await import("../lib/poker/difficulty")
+    expect([1, 3, 4, 6, 7, 12].map(difficultyForLevel)).toEqual(["facil", "facil", "media", "media", "dificil", "dificil"])
+  })
+
+  it("en media el generador queda igual (mismas preguntas con la misma semilla)", async () => {
+    const { withDifficulty } = await import("../lib/poker/difficulty")
+    const { makePotOdds } = await import("../lib/poker/drills")
+    const a = withDifficulty("potOdds", makePotOdds, "media")(HE, seededRng(9))
+    const b = makePotOdds(HE, seededRng(9))
+    expect(a).toEqual(b)
+  })
+
+  it.each(["usable", "whoWins", "outs", "potOdds"] as const)("%s: difícil sale más ajustado que fácil", async (kind) => {
+    const { withDifficulty, difficultyScore } = await import("../lib/poker/difficulty")
+    const drills = await import("../lib/poker/drills")
+    const make = {
+      usable: drills.makeUsable,
+      whoWins: drills.makeWhoWins,
+      outs: drills.makeOuts,
+      potOdds: drills.makePotOdds,
+    }[kind] as (v: typeof OMAHA, rng?: () => number) => { kind: string }
+    const avg = (d: "facil" | "dificil") => {
+      const gen = withDifficulty(kind, make, d)
+      const rng = seededRng(5)
+      let sum = 0
+      for (let i = 0; i < 20; i++) sum += difficultyScore(gen(OMAHA, rng))
+      return sum / 20
+    }
+    expect(avg("dificil")).toBeGreaterThan(avg("facil") + 0.25)
+  }, 60000)
+
+  it("comparar y luz: el rango buscado se respeta", async () => {
+    const { withDifficulty } = await import("../lib/poker/difficulty")
+    const { makeCompare, makeLuz } = await import("../lib/poker/drills")
+    const rng = seededRng(11)
+    for (let i = 0; i < 4; i++) {
+      const hard = withDifficulty("compare", makeCompare, "dificil")(HE, rng)
+      const easy = withDifficulty("compare", makeCompare, "facil")(HE, rng)
+      const gap = (c: typeof hard) => Math.abs(c.equity[0] - c.equity[1])
+      // Margen por la simulación rápida (300 manos) que hace de filtro.
+      expect(gap(hard)).toBeLessThan(0.22)
+      expect(gap(easy)).toBeGreaterThan(0.22)
+    }
+    let checked = 0
+    for (let i = 0; i < 12 && checked < 4; i++) {
+      const hard = withDifficulty("luz", makeLuz, "dificil")(HE, rng)
+      if (!hard.bet) continue
+      checked++
+      expect(Math.abs(hard.bet.equity - hard.bet.needed)).toBeLessThan(0.14)
+    }
+    expect(checked).toBeGreaterThan(0)
+  }, 60000)
+})

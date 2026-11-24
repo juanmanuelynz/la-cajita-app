@@ -16,6 +16,7 @@ import { QuestionSession } from "./daily-challenge"
  */
 export function PracticeSession({ spots, onExit }: { spots: WeakSpot[]; onExit: () => void }) {
   const parent = useContext(TrainingContext)
+  const difficulty = parent.difficulty ?? "media"
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<DailyQuestion[] | null>(null)
   const [answers, setAnswers] = useState<boolean[]>([])
@@ -26,8 +27,10 @@ export function PracticeSession({ spots, onExit }: { spots: WeakSpot[]; onExit: 
     setQuestions(null)
     setAnswers([])
     setDone(false)
-    const t = setTimeout(() => setQuestions(practiceSession(spots)), 50)
+    const t = setTimeout(() => setQuestions(practiceSession(spots, Math.random, difficulty)), 50)
     return () => clearTimeout(t)
+    // La dificultad se toma al armar la tanda (no rearma si cambia en el medio).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spots, round])
 
   const onAnswer = useCallback(

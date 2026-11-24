@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Check, ChevronDown, Flame, Target, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { DIFFICULTY_NAMES, difficultyForLevel, nextDifficultyAt } from "@/lib/poker/difficulty"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import {
@@ -237,6 +238,14 @@ function StatsDrawer({
           <DrawerDescription>
             {progress && <>Nivel {lvl.level} · {lvl.title}: te faltan {lvl.span - lvl.into} aciertos para el {lvl.level + 1}. </>}
             Meta del día: {DAILY_GOAL} respuestas.
+            {progress && (
+              <span className="mt-1 block">
+                Dificultad de los ejercicios: <b>{DIFFICULTY_NAMES[difficultyForLevel(lvl.level)]}</b>
+                {nextDifficultyAt(difficultyForLevel(lvl.level)) !== null &&
+                  ` (sube en el nivel ${nextDifficultyAt(difficultyForLevel(lvl.level))})`}
+                . El Desafío del día es igual para todos.
+              </span>
+            )}
           </DrawerDescription>
         </DrawerHeader>
         <div className="px-4 pb-8 space-y-5 max-h-[65vh] overflow-y-auto">

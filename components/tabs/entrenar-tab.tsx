@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
-import type { DrillId, WeakSpot } from "@/lib/poker/training"
+import { levelFor, type DrillId, type WeakSpot } from "@/lib/poker/training"
+import { difficultyForLevel, type Difficulty } from "@/lib/poker/difficulty"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
 import { PracticeSession } from "@/components/training/practice-session"
@@ -226,8 +227,14 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
     },
     [playerId],
   )
-  const ctx = useMemo(() => ({ onAnswer }), [onAnswer])
   const progress = useTrainingProgress(playerId, version)
+  // Dificultad según tu nivel (aciertos acumulados). Sin nombre elegido: media.
+  const difficulty: Difficulty = useMemo(() => {
+    if (!playerId || !progress) return "media"
+    const right = Object.values(progress.byDrill).reduce((a, t) => a + t.right, 0)
+    return difficultyForLevel(levelFor(right).level)
+  }, [playerId, progress])
+  const ctx = useMemo(() => ({ onAnswer, difficulty }), [onAnswer, difficulty])
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
 

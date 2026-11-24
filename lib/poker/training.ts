@@ -4,6 +4,7 @@ import { seededRng } from "./cards"
 import { makeGto } from "./gto"
 import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
+import { withDifficulty, type Difficulty } from "./difficulty"
 
 export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
@@ -243,8 +244,13 @@ export function practicePlan(
 }
 
 /** Las preguntas de la práctica (al azar, no es igual para todos como el desafío). */
-export function practiceSession(spots: readonly WeakSpot[], rng: () => number = Math.random): DailyQuestion[] {
-  return practicePlan(spots, rng).map(
-    ({ drill, variant }) => ({ drill, variant, data: MAKERS[drill](variant, rng) }) as DailyQuestion,
-  )
+export function practiceSession(
+  spots: readonly WeakSpot[],
+  rng: () => number = Math.random,
+  difficulty: Difficulty = "media",
+): DailyQuestion[] {
+  return practicePlan(spots, rng).map(({ drill, variant }) => {
+    const make = withDifficulty(drill, MAKERS[drill] as (v: Variant, rng?: () => number) => { kind: string }, difficulty)
+    return { drill, variant, data: make(variant, rng) } as DailyQuestion
+  })
 }

@@ -305,14 +305,22 @@ const COMPARE_TRIALS: Record<Variant["game"], number> = { holdem: 6000, omaha: 3
 /** Diferencia mínima entre las dos (en equity) para que la respuesta sea clara. */
 export const COMPARE_MIN_GAP = 0.08
 
-export function makeCompare(v: Variant, rng: Rng = Math.random): CompareDrill {
+/**
+ * `gap` (dificultad): entre qué diferencias de equity buscar las manos; más
+ * chica, más difícil. Sin `gap`, cualquier diferencia clara (como siempre: el
+ * Desafío del día tiene que seguir dando las mismas preguntas).
+ */
+export function makeCompare(v: Variant, rng: Rng = Math.random, gap?: { min: number; max: number }): CompareDrill {
   const holeCount = GAMES[v.game].holeCount
+  const minGap = gap?.min ?? COMPARE_MIN_GAP
+  const maxGap = gap?.max ?? 1
   let best: CompareDrill | null = null
   for (let tries = 0; tries < 40; tries++) {
     const { holes } = deal(v, 2, holeCount, 0, rng)
-    // Filtro rápido para no gastar simulaciones en manos parejas.
+    // Filtro rápido para no gastar simulaciones en manos parejas (o, con `gap`, fuera de rango).
     const quick = equityMonteCarlo(holes, [], v, 300, rng)
-    if (Math.abs(quick.equity[0] - quick.equity[1]) < COMPARE_MIN_GAP) continue
+    const quickGap = Math.abs(quick.equity[0] - quick.equity[1])
+    if (quickGap < minGap || (quickGap > maxGap && tries < 30)) continue
     const trials = COMPARE_TRIALS[v.game]
     const r = equityMonteCarlo(holes, [], v, trials, rng)
     const d: CompareDrill = {
@@ -396,7 +404,12 @@ export const LUZ = 100
 const LUZ_BET_FRACTIONS = [1 / 2, 2 / 3, 1, 3 / 2, 2]
 const LUZ_TRIALS: Record<Variant["game"], number> = { holdem: 5000, omaha: 2500, manhattan: 1200 }
 
-export function makeLuz(v: Variant, rng: Rng = Math.random): LuzDrill {
+/**
+ * `margin` (dificultad): si alguien apuesta, qué tan lejos tiene que estar tu
+ * equity de lo necesario (más cerca, más difícil). Se prueba con una simulación
+ * rápida antes de la buena. Sin `margin`, como siempre (Desafío del día).
+ */
+export function makeLuz(v: Variant, rng: Rng = Math.random, margin?: { min: number; max: number }): LuzDrill {
   const players = 4 + Math.floor(rng() * 3)
   const luz = LUZ
   const pot = players * luz
@@ -409,11 +422,21 @@ export function makeLuz(v: Variant, rng: Rng = Math.random): LuzDrill {
     return { kind: "luz", players, seat, luz, pot, hero, bet: null }
   }
 
-  const seat = 2 + Math.floor(rng() * (players - 1))
-  const betSeat = 1 + Math.floor(rng() * (seat - 1))
-  const { holes } = deal(v, 2, holeCount, 0, rng)
-  const frac = LUZ_BET_FRACTIONS[Math.floor(rng() * LUZ_BET_FRACTIONS.length)]
-  const amount = Math.max(luz, Math.round((pot * frac) / 100) * 100)
+  let seat = 2 + Math.floor(rng() * (players - 1))
+  let betSeat = 1 + Math.floor(rng() * (seat - 1))
+  let { holes } = deal(v, 2, holeCount, 0, rng)
+  let frac = LUZ_BET_FRACTIONS[Math.floor(rng() * LUZ_BET_FRACTIONS.length)]
+  let amount = Math.max(luz, Math.round((pot * frac) / 100) * 100)
+  for (let tries = 0; margin && tries < 30; tries++) {
+    const quick = equityMonteCarlo(holes, [], v, 300, rng).equity[0]
+    const gap = Math.abs(quick - amount / (pot + 2 * amount))
+    if (gap >= margin.min && gap <= margin.max) break
+    seat = 2 + Math.floor(rng() * (players - 1))
+    betSeat = 1 + Math.floor(rng() * (seat - 1))
+    holes = deal(v, 2, holeCount, 0, rng).holes
+    frac = LUZ_BET_FRACTIONS[Math.floor(rng() * LUZ_BET_FRACTIONS.length)]
+    amount = Math.max(luz, Math.round((pot * frac) / 100) * 100)
+  }
   const trials = LUZ_TRIALS[v.game]
   const equity = equityMonteCarlo(holes, [], v, trials, rng).equity[0]
   const needed = amount / (pot + 2 * amount)

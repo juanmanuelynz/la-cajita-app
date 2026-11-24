@@ -5,6 +5,7 @@ import { Check, X, Equal, Flame, ChevronDown } from "lucide-react"
 import { playSequence, playSound, type SoundName } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
 import type { DrillId } from "@/lib/poker/training"
+import { withDifficulty, type Difficulty } from "@/lib/poker/difficulty"
 import { cn } from "@/lib/utils"
 
 export type Verdict = "right" | "wrong" | "close"
@@ -12,6 +13,8 @@ export type Verdict = "right" | "wrong" | "close"
 /** Lo que el ejercicio avisa hacia afuera (para guardar el progreso). */
 export const TrainingContext = createContext<{
   onAnswer?: (drill: DrillId, variant: Variant, correct: boolean) => void
+  /** Dificultad según el nivel de quien entrena (sin nombre elegido o en el desafío: media). */
+  difficulty?: Difficulty
 }>({})
 
 /** Props comunes de los ejercicios. Con `preset` muestran una situación dada (Desafío del día). */
@@ -49,7 +52,15 @@ export function useDrill<T>(id: DrillId, { variant, preset, onNext }: DrillProps
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [score, setScore] = useState<DrillScore>({ right: 0, total: 0, streak: 0 })
   const streakRef = useRef(0)
-  const { onAnswer } = useContext(TrainingContext)
+  const { onAnswer, difficulty = "media" } = useContext(TrainingContext)
+  // La dificultad se lee en el momento de generar (ref): si cambia (por ejemplo
+  // al cargar el progreso), vale para la próxima mano, no cambia la que estás viendo.
+  const difficultyRef = useRef(difficulty)
+  difficultyRef.current = difficulty
+  const generate = useCallback(
+    (v: Variant) => withDifficulty(id, make as (v: Variant) => T & { kind: string }, difficultyRef.current)(v) as T,
+    [id, make],
+  )
 
   // Cada mano nueva suena a cartas repartidas.
   useEffect(() => {
@@ -64,14 +75,14 @@ export function useDrill<T>(id: DrillId, { variant, preset, onNext }: DrillProps
   const next = useCallback(() => {
     setVerdict(null)
     if (onNext) onNext()
-    else setDrill(make(variant))
-  }, [make, variant, onNext])
+    else setDrill(generate(variant))
+  }, [generate, variant, onNext])
 
   useEffect(() => {
     if (preset) return
-    setDrill(make(variant))
+    setDrill(generate(variant))
     setVerdict(null)
-  }, [make, variant, preset])
+  }, [generate, variant, preset])
 
   const answer = useCallback(
     (v: Verdict) => {
