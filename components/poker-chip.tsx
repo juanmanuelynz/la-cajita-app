@@ -26,6 +26,16 @@ interface PokerChipProps {
   style?: React.CSSProperties
 }
 
+// Los detalles finos (la hojita, el aro punteado, la canaleta) solo se dibujan
+// si la ficha se ve de 30px o más: más chica no se distinguen y ensucian. Lo
+// decide CSS (container query sobre el ancho de la ficha), sin props.
+const DETAIL = "@max-[29px]:hidden"
+
+/**
+ * Ficha de arcilla como las de la mesa: cuerpo del color, 8 incrustaciones en
+ * el borde, centro con aro impreso y la hojita, y un sombreado diagonal con
+ * brillo arriba a la izquierda (el mismo relieve que la cara de las cartas).
+ */
 export function PokerChip({
   className,
   body = CHIP_COLORS[0].body,
@@ -33,42 +43,61 @@ export function PokerChip({
   label,
   style,
 }: PokerChipProps) {
+  const id = useId()
+  const shade = `${id}-shade`
+  const gloss = `${id}-gloss`
   return (
-    <svg viewBox="0 0 100 100" className={className} style={style} aria-hidden>
-      <circle cx="50" cy="50" r="48" fill={body} />
-      {EDGE_ANGLES.map((a) => (
-        <rect
-          key={a}
-          x="44"
-          y="2"
-          width="12"
-          height="15"
-          rx="2"
-          fill={edge}
-          transform={`rotate(${a} 50 50)`}
+    <span className={cn("@container inline-block shrink-0", className)} style={style} aria-hidden>
+      <svg viewBox="0 0 100 100" className="block h-full w-full overflow-visible">
+        <defs>
+          <linearGradient id={shade} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.3" />
+            <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.6" stopColor="#000" stopOpacity="0" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.32" />
+          </linearGradient>
+          <radialGradient id={gloss} cx="0.36" cy="0.3" r="0.6">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.22" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill={body} />
+        {EDGE_ANGLES.map((a) => (
+          <rect key={a} x="43.5" y="2" width="13" height="14" rx="1.5" fill={edge} transform={`rotate(${a} 50 50)`} />
+        ))}
+        {/* Canaleta entre el borde y el centro. */}
+        <circle className={DETAIL} cx="50" cy="50" r="36.5" fill="none" stroke="#000" strokeOpacity="0.18" strokeWidth="1.5" />
+        {/* Centro: un poco más oscuro, con el aro impreso. */}
+        <circle cx="50" cy="50" r="32" fill={body} />
+        <circle cx="50" cy="50" r="32" fill="#000" fillOpacity="0.14" />
+        <circle cx="50" cy="50" r="31" fill="none" stroke={edge} strokeWidth="2.4" />
+        <circle
+          className={DETAIL}
+          cx="50"
+          cy="50"
+          r="26.5"
+          fill="none"
+          stroke={edge}
+          strokeOpacity="0.55"
+          strokeWidth="1.2"
+          strokeDasharray="3 3.2"
         />
-      ))}
-      <circle cx="50" cy="50" r="31" fill="rgba(0,0,0,0.18)" />
-      <circle
-        cx="50"
-        cy="50"
-        r="28"
-        fill="none"
-        stroke={edge}
-        strokeWidth="2.5"
-        strokeDasharray="6 5"
-      />
-      {label ? (
-        <text x="50" y="51" textAnchor="middle" dominantBaseline="central" fontSize={50} fontWeight={800} fill={edge}>
-          {label}
-        </text>
-      ) : (
-        // La hojita de La Cajita, como en el dorso de las cartas.
-        <g transform={leafTransform(50, 50, 40)}>
-          <LeafPaths fill={edge} />
-        </g>
-      )}
-    </svg>
+        {label ? (
+          <text x="50" y="51" textAnchor="middle" dominantBaseline="central" fontSize={50} fontWeight={800} fill={edge}>
+            {label}
+          </text>
+        ) : (
+          // La hojita de La Cajita, como en el dorso de las cartas.
+          <g className={DETAIL} transform={leafTransform(50, 50, 34)}>
+            <LeafPaths fill={edge} />
+          </g>
+        )}
+        {/* Relieve: brillo arriba a la izquierda, sombra abajo a la derecha, y el canto. */}
+        <circle cx="50" cy="50" r="48" fill={`url(#${shade})`} />
+        <circle cx="50" cy="50" r="32" fill={`url(#${gloss})`} />
+        <circle cx="50" cy="50" r="47.5" fill="none" stroke="#000" strokeOpacity="0.28" strokeWidth="1" />
+      </svg>
+    </span>
   )
 }
 
@@ -93,7 +122,7 @@ export function ChipGlyph({ className }: { className?: string }) {
             />
           ))}
           <circle cx="50" cy="50" r="28" fill="none" stroke="black" strokeWidth="7" />
-          <g transform={leafTransform(50, 50, 34)}>
+          <g className={DETAIL} transform={leafTransform(50, 50, 34)}>
             <LeafPaths fill="black" />
           </g>
         </mask>
@@ -109,7 +138,7 @@ export function ChipSpinner({ className }: { className?: string }) {
     <span
       role="status"
       aria-label="Cargando"
-      className={cn("block shrink-0 [perspective:200px]", className)}
+      className={cn("@container block shrink-0 [perspective:200px]", className)}
     >
       <ChipGlyph className="block h-full w-full animate-chip-flip" />
     </span>
