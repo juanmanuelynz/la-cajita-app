@@ -32,8 +32,10 @@ function SeatView({ seat, side, compact }: { seat: TableSeat; side: "top" | "bot
   const { pick } = seat
   const good = !!pick?.answered && pick.correct
   const wrong = !!pick?.answered && pick.picked && !pick.correct
-  // Con 5 cartas (Manhattan) las grandes se salen del óvalo.
-  const size: CardSize = seat.hero && !compact && seat.cards.length < 5 ? "md" : "sm"
+  // Con 4–5 cartas (Omaha, Manhattan) van solapadas y grandes: así ocupan
+  // menos que chicas en fila.
+  const overlap = seat.cards.length >= 4
+  const size: CardSize = overlap || (seat.hero && !compact) ? "md" : "sm"
 
   const plate = (
     <div
@@ -53,7 +55,14 @@ function SeatView({ seat, side, compact }: { seat: TableSeat; side: "top" | "bot
   const body = (
     <div className={cn("flex flex-col items-center gap-1.5", side === "top" && "flex-col-reverse")}>
       {seat.bet && <BetChip amount={seat.bet} className="my-1" />}
-      <CardRow cards={seat.cards} size={size} used={seat.used} deal={seat.deal} className="flex-nowrap justify-center" />
+      <CardRow
+        cards={seat.cards}
+        size={size}
+        used={seat.used}
+        deal={seat.deal}
+        overlap={overlap}
+        className="flex-nowrap justify-center"
+      />
       {plate}
     </div>
   )
@@ -211,7 +220,7 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
     const x = Math.min(87, Math.max(13, 50 + 41 * r * Math.cos(t)))
     return { left: `${x}%`, top: `${50 + 40 * r * Math.sin(t)}%` }
   }
-  const heroSize: CardSize = (hero?.cards?.length ?? 0) >= 5 ? "sm" : "md"
+  const heroOverlap = (hero?.cards?.length ?? 0) >= 4
 
   return (
     <div className="relative mx-auto h-[340px] w-full max-w-[380px]">
@@ -285,7 +294,7 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
         <>
           <div className="absolute bottom-[1%] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5">
             {hero.cards && (
-              <CardRow cards={hero.cards} size={heroSize} deal={0} className="flex-nowrap justify-center" />
+              <CardRow cards={hero.cards} size="md" overlap={heroOverlap} deal={0} className="flex-nowrap justify-center" />
             )}
             <div className="flex items-center gap-1">
               <div className="whitespace-nowrap rounded-full border border-primary bg-primary px-2 py-0.5 text-[11px] font-semibold leading-4 text-primary-foreground">

@@ -141,7 +141,8 @@ export function LuzDrill(props: DrillProps<LuzData>) {
               <div className="flex flex-col items-center gap-1">
                 <CardRow
                   cards={bet.villain}
-                  size={bet.villain.length >= 4 ? "xs" : "sm"}
+                  size="sm"
+                  overlap={bet.villain.length >= 4}
                   deal={drill.hero.length * 70 + 150}
                   className="flex-nowrap justify-center"
                 />

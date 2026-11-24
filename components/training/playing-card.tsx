@@ -55,7 +55,8 @@ export function PlayingCard({
         SIZES[size],
         SUIT_TEXT[suit],
         highlight && "ring-2 ring-amber-400 -translate-y-1",
-        dim && "opacity-35",
+        // Oscurecer en vez de transparentar: si las cartas se solapan, no se ven a través.
+        dim && "brightness-[0.4]",
         className,
       )}
       aria-label={`${RANK_LABELS[rankOf(card)]}${SUITS[suit]}`}
@@ -86,12 +87,17 @@ export function EmptyCard({ size = "md", active, className }: { size?: CardSize;
   )
 }
 
+// Cuánto se mete cada carta debajo de la anterior al solaparlas: queda a la
+// vista el índice (valor y palo) aunque sea un "10".
+const OVERLAP = { xs: "-ml-2", sm: "-ml-3", md: "-ml-[15px]" } as const
+
 export function CardRow({
   cards,
   size = "md",
   used,
   className,
   deal,
+  overlap,
 }: {
   cards: readonly Card[]
   size?: CardSize
@@ -100,10 +106,12 @@ export function CardRow({
   className?: string
   /** Repartir las cartas con animación, una tras otra, empezando a los `deal` ms. */
   deal?: number
+  /** Abanicar las cartas, cada una tapando el costado derecho de la anterior (manos de 4–5). */
+  overlap?: boolean
 }) {
   // La key con las cartas hace que una mano nueva se vuelva a repartir.
   return (
-    <div key={cards.join("-")} className={cn("flex gap-1 flex-wrap [perspective:600px]", className)}>
+    <div key={cards.join("-")} className={cn("flex flex-wrap [perspective:600px]", overlap ? "gap-0" : "gap-1", className)}>
       {cards.map((c, i) => (
         <PlayingCard
           key={c}
@@ -112,6 +120,7 @@ export function CardRow({
           highlight={used?.includes(c)}
           dim={used ? !used.includes(c) : false}
           dealDelay={deal !== undefined ? deal + i * 70 : undefined}
+          className={overlap && i > 0 ? OVERLAP[size] : undefined}
         />
       ))}
     </div>
