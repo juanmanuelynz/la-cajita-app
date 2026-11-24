@@ -12,17 +12,15 @@ const SIZES = {
   md: "w-11 h-16 rounded-[9px]",
 } as const
 
-// Valor arriba a la izquierda (tipografía condensada) y palo grande abajo.
-const RANK_STYLE = {
-  xs: "left-[3px] top-[2px] text-[15px]",
-  sm: "left-[4px] top-[3px] text-[20px]",
-  md: "left-[5px] top-[4px] text-[25px]",
+// Valor y palo apilados contra el borde izquierdo (como el índice de una carta
+// real): si otra carta la tapa por la derecha, se sigue leyendo entera.
+const INDEX_STYLE = {
+  xs: "left-[3px] top-[2px] gap-[1px]",
+  sm: "left-[4px] top-[3px] gap-[2px]",
+  md: "left-[5px] top-[4px] gap-[3px]",
 } as const
-const SUIT_STYLE = {
-  xs: "right-[3px] bottom-[2px] text-[14px]",
-  sm: "right-[4px] bottom-[3px] text-[19px]",
-  md: "right-[5px] bottom-[4px] text-[24px]",
-} as const
+const RANK_STYLE = { xs: "text-[15px]", sm: "text-[20px]", md: "text-[25px]" } as const
+const SUIT_STYLE = { xs: "text-[13px]", sm: "text-[18px]", md: "text-[23px]" } as const
 
 export type CardSize = keyof typeof SIZES
 
@@ -62,12 +60,12 @@ export function PlayingCard({
       )}
       aria-label={`${RANK_LABELS[rankOf(card)]}${SUITS[suit]}`}
     >
-      <span
-        className={cn("absolute font-semibold tracking-tight [font-family:var(--font-card),sans-serif]", RANK_STYLE[size])}
-      >
-        {RANK_LABELS[rankOf(card)]}
-      </span>
-      <span className={cn("absolute drop-shadow-[0_1px_0_rgb(0_0_0/0.15)]", SUIT_STYLE[size])}>{SUITS[suit]}</span>
+      <div className={cn("absolute flex flex-col items-center", INDEX_STYLE[size])}>
+        <span className={cn("font-semibold tracking-tight [font-family:var(--font-card),sans-serif]", RANK_STYLE[size])}>
+          {RANK_LABELS[rankOf(card)]}
+        </span>
+        <span className={cn("drop-shadow-[0_1px_0_rgb(0_0_0/0.15)]", SUIT_STYLE[size])}>{SUITS[suit]}</span>
+      </div>
     </div>
   )
 }
