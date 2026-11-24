@@ -31,26 +31,38 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0
 }
 
-export async function makeToken(secret: string): Promise<string> {
+/**
+ * "admin": el PIN del grupo (APP_PIN), ve todo.
+ * "guest": el PIN de invitado (GUEST_PIN), solo partidas sueltas y Entrenar.
+ */
+export type AuthRole = "admin" | "guest"
+
+// Formato del token: `${expiry}.${sig}` (admin; igual que antes, así las
+// sesiones ya abiertas siguen valiendo) o `${expiry}.guest.${sig}`. La firma
+// cubre todo lo anterior al último punto, así que el rol no se puede editar.
+export async function makeToken(secret: string, role: AuthRole = "admin"): Promise<string> {
   const expiry = Date.now() + AUTH_MAX_AGE_SECONDS * 1000
-  const payload = `${expiry}`
+  const payload = role === "guest" ? `${expiry}.guest` : `${expiry}`
   const sig = await hmacHex(payload, secret)
   return `${payload}.${sig}`
 }
 
+/** Devuelve el rol del token si es válido y no venció; si no, null. */
 export async function verifyToken(
   token: string | undefined,
   secret: string,
-): Promise<boolean> {
-  if (!token) return false
+): Promise<AuthRole | null> {
+  if (!token) return null
   const parts = token.split(".")
-  if (parts.length !== 2) return false
-  const [payload, sig] = parts
+  if (parts.length !== 2 && parts.length !== 3) return null
+  if (parts.length === 3 && parts[1] !== "guest") return null
+  const sig = parts[parts.length - 1]
+  const payload = parts.slice(0, -1).join(".")
   const expected = await hmacHex(payload, secret)
-  if (!timingSafeEqual(sig, expected)) return false
-  const expiry = Number(payload)
-  if (isNaN(expiry) || expiry < Date.now()) return false
-  return true
+  if (!timingSafeEqual(sig, expected)) return null
+  const expiry = Number(parts[0])
+  if (isNaN(expiry) || expiry < Date.now()) return null
+  return parts.length === 3 ? "guest" : "admin"
 }
 
 export function verifyPin(input: string, expected: string): boolean {

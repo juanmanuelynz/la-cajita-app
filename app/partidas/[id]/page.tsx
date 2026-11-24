@@ -190,7 +190,7 @@ export default function EditActiveMatchPage() {
       setTournamentId(match.tournament_id);
       const casual = !!match.is_casual;
       setIsCasual(casual);
-      const roster = casual
+      const roster = casual || !match.tournament_id
         ? await db.getAllPlayers()
         : await db.getTournamentRoster(match.tournament_id);
       if (!mounted) return;
@@ -215,19 +215,24 @@ export default function EditActiveMatchPage() {
             };
           }),
         });
-        const tournament = await db.getTournamentById(match.tournament_id);
-        if (!mounted) return;
-        if (tournament?.points_config) {
-          setPointsConfig(tournament.points_config);
+        // Las sueltas no reparten puntos ni tienen torneo.
+        if (!casual && match.tournament_id) {
+          const tournament = await db.getTournamentById(match.tournament_id);
+          if (!mounted) return;
+          if (tournament?.points_config) {
+            setPointsConfig(tournament.points_config);
+          }
         }
       }
       setLoading(false);
     };
-    if (matchId) load();
+    // Si no se puede abrir (p. ej. el invitado entra a una partida del
+    // torneo), volvemos al inicio en vez de quedar cargando para siempre.
+    if (matchId) load().catch(() => router.replace("/?tab=partidas"));
     return () => {
       mounted = false;
     };
-  }, [matchId]);
+  }, [matchId, router]);
 
   const updatePlayerMoney = <K extends keyof FormPlayer>(
     index: number,
@@ -376,7 +381,7 @@ export default function EditActiveMatchPage() {
   };
 
   const createNewPlayer = async (index: number) => {
-    if (!newPlayerName.trim() || creatingPlayer || !tournamentId) return;
+    if (!newPlayerName.trim() || creatingPlayer || (!isCasual && !tournamentId)) return;
     setCreatingPlayer(true);
     try {
       // createPlayer con tournamentId hace upsert del jugador y lo agrega
@@ -384,10 +389,10 @@ export default function EditActiveMatchPage() {
       // sumamos al roster: solo se crea el jugador.
       const created = isCasual
         ? await db.createPlayer(newPlayerName.trim())
-        : await db.createPlayer(newPlayerName.trim(), tournamentId);
+        : await db.createPlayer(newPlayerName.trim(), tournamentId!);
       const refreshed = isCasual
         ? await db.getAllPlayers()
-        : await db.getTournamentRoster(tournamentId);
+        : await db.getTournamentRoster(tournamentId!);
       setPlayersList(refreshed);
       selectPlayer(index, created.id);
       setNewPlayerName("");

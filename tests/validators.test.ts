@@ -129,6 +129,13 @@ describe("CreateMatchSchema", () => {
     const result = CreateMatchSchema.safeParse({ ...baseValid, tournamentId: "abc" })
     expect(result.success).toBe(false)
   })
+
+  it("una suelta no necesita torneo; una de torneo sí", () => {
+    const { tournamentId: _omit, ...sinTorneo } = baseValid
+    expect(CreateMatchSchema.safeParse({ ...sinTorneo, isCasual: true }).success).toBe(true)
+    expect(CreateMatchSchema.safeParse({ ...sinTorneo, tournamentId: null, isCasual: true }).success).toBe(true)
+    expect(CreateMatchSchema.safeParse(sinTorneo).success).toBe(false)
+  })
 })
 
 describe("PointsConfigSchema", () => {

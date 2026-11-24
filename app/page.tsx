@@ -22,6 +22,8 @@ import {
   Settings,
   RefreshCw,
   GraduationCap,
+  LogOut,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -56,6 +58,8 @@ import { EntrenarTab } from "@/components/tabs/entrenar-tab"
 import { getTodayLocalDate } from "@/lib/formatters"
 import { sortPlayerStats, type SortBy } from "@/lib/stats"
 import type { RankingScope } from "@/components/tabs/ranking-tab"
+import type { AuthRole } from "@/lib/auth"
+import { logout } from "@/app/login/actions"
 
 ChartJS.register(
   CategoryScale,
@@ -79,9 +83,18 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
+// El invitado (GUEST_PIN) solo ve sus sueltas y Entrenar.
+const GUEST_TABS: typeof TABS = [
+  { id: "partidas", label: "Partidas sueltas", short: "Sueltas", icon: Zap },
+  { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
+]
+
 function LaCajitaPoker() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [role, setRole] = useState<AuthRole | null>(null)
+  const isGuest = role === "guest"
+  const tabs = isGuest ? GUEST_TABS : TABS
   const [activeTab, setActiveTab] = useState<TabId>("ranking")
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
@@ -97,22 +110,32 @@ function LaCajitaPoker() {
     if (!emblaApi) return
     const onSelect = () => {
       const idx = emblaApi.selectedScrollSnap()
-      const next = TABS[idx]?.id
+      const next = tabs[idx]?.id
       if (next) setActiveTab(next)
     }
     emblaApi.on("select", onSelect)
     return () => {
       emblaApi.off("select", onSelect)
     }
-  }, [emblaApi])
+  }, [emblaApi, tabs])
+
+  // Al cambiar la cantidad de pantallas (invitado), Embla tiene que medir de nuevo.
+  useEffect(() => {
+    emblaApi?.reInit()
+  }, [emblaApi, tabs])
+
+  // Si la pestaña elegida no existe para este rol, ir a la primera.
+  useEffect(() => {
+    if (role && !tabs.some((t) => t.id === activeTab)) setActiveTab(tabs[0].id)
+  }, [role, tabs, activeTab])
 
   useEffect(() => {
     if (!emblaApi) return
-    const idx = TABS.findIndex((t) => t.id === activeTab)
+    const idx = tabs.findIndex((t) => t.id === activeTab)
     if (idx >= 0 && emblaApi.selectedScrollSnap() !== idx) {
       emblaApi.scrollTo(idx)
     }
-  }, [activeTab, emblaApi])
+  }, [activeTab, emblaApi, tabs])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,19 +166,55 @@ function LaCajitaPoker() {
   const [activeMatches, setActiveMatches] = useState<ActiveMatch[]>([])
   const [allPlayers, setAllPlayers] = useState<Player[]>([])
   const [roster, setRoster] = useState<Player[]>([])
+  // Sueltas: no pertenecen a ningún torneo, se cargan aparte.
+  const [casualMatches, setCasualMatches] = useState<MatchWithPlayers[]>([])
+  const [casualActiveMatches, setCasualActiveMatches] = useState<ActiveMatch[]>([])
+
+  /** Sueltas + jugadores: lo único que ve el invitado (y que el admin ve aparte). */
+  const loadCasualData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [casualData, casualActiveData, allPlayersData] = await Promise.all([
+        db.getCasualMatches(),
+        db.getCasualActiveMatches(),
+        db.getAllPlayers(),
+      ])
+      setCasualMatches(casualData)
+      setCasualActiveMatches(casualActiveData)
+      setAllPlayers(allPlayersData)
+      setConnectionStatus(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error loading data")
+      setConnectionStatus(false)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const loadAllData = useCallback(async (tournamentId: string) => {
     setLoading(true)
     setError(null)
     try {
-      const [matchesData, statsData, activeMatchesData, rosterData, allPlayersData] =
-        await Promise.all([
-          db.getAllMatches(tournamentId),
-          db.getPlayerStats(tournamentId),
-          db.getAllActiveMatches(tournamentId),
-          db.getTournamentRoster(tournamentId),
-          db.getAllPlayers(),
-        ])
+      const [
+        matchesData,
+        statsData,
+        activeMatchesData,
+        rosterData,
+        allPlayersData,
+        casualData,
+        casualActiveData,
+      ] = await Promise.all([
+        db.getAllMatches(tournamentId),
+        db.getPlayerStats(tournamentId),
+        db.getAllActiveMatches(tournamentId),
+        db.getTournamentRoster(tournamentId),
+        db.getAllPlayers(),
+        db.getCasualMatches(),
+        db.getCasualActiveMatches(),
+      ])
+      setCasualMatches(casualData)
+      setCasualActiveMatches(casualActiveData)
       setMatches(matchesData)
       setPlayerStats(statsData)
       setActiveMatches(activeMatchesData)
@@ -198,8 +257,21 @@ function LaCajitaPoker() {
     await refreshRoster()
   }
 
+  // Alta de jugador desde Entrenar: no lo suma a ningún torneo.
+  const handleCreateTrainingPlayer = async (name: string): Promise<Player> => {
+    const created = await db.createPlayer(name)
+    setAllPlayers(await db.getAllPlayers())
+    return created
+  }
+
   const initializeApp = useCallback(async () => {
     try {
+      const sessionRole = await db.getSessionRole()
+      setRole(sessionRole)
+      if (sessionRole === "guest") {
+        await loadCasualData()
+        return
+      }
       const tournamentsData = await db.getTournaments()
       setTournaments(tournamentsData)
       const mostRecentId = tournamentsData[0]?.id || null
@@ -207,7 +279,8 @@ function LaCajitaPoker() {
       if (mostRecentId) {
         await loadAllData(mostRecentId)
       } else {
-        setConnectionStatus(true)
+        // Sin torneos igual se pueden jugar sueltas.
+        await loadCasualData()
       }
     } catch (err) {
       setConnectionStatus(false)
@@ -217,7 +290,7 @@ function LaCajitaPoker() {
           : "No se pudo conectar a la base de datos. Verifica tu conexión.",
       )
     }
-  }, [loadAllData])
+  }, [loadAllData, loadCasualData])
 
   useEffect(() => {
     void initializeApp()
@@ -226,6 +299,8 @@ function LaCajitaPoker() {
   useEffect(() => {
     const tabParam = searchParams?.get("tab") as TabId | null
     if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      // Si el invitado llega con una pestaña que no tiene, el efecto de
+      // arriba lo manda a la primera.
       setActiveTab(tabParam)
     }
     // ?resumen=<matchId> llega al registrar una partida: abrimos el resumen
@@ -260,7 +335,8 @@ function LaCajitaPoker() {
   }, [rankingScope])
 
   const refreshData = async () => {
-    if (selectedTournamentId) await loadAllData(selectedTournamentId)
+    if (!isGuest && selectedTournamentId) await loadAllData(selectedTournamentId)
+    else await loadCasualData()
   }
 
   const handleTournamentChange = async (tournamentId: string) => {
@@ -315,7 +391,8 @@ function LaCajitaPoker() {
   // isCasual = partida suelta: se anota igual pero no suma al torneo, así
   // que se permite aunque el torneo esté cerrado.
   const createNewActiveMatch = async (isCasual = false) => {
-    if (!selectedTournamentId) return
+    // Las sueltas no son de ningún torneo: se crean aunque no haya uno.
+    if (!isCasual && !selectedTournamentId) return
     setLoading(true)
     setError(null)
     try {
@@ -323,7 +400,7 @@ function LaCajitaPoker() {
         date: getTodayLocalDate(),
         cajiValue: 2000,
         playerCount: 4,
-        tournamentId: selectedTournamentId,
+        tournamentId: isCasual ? null : selectedTournamentId,
         isCasual,
         players: Array(4)
           .fill(null)
@@ -350,10 +427,14 @@ function LaCajitaPoker() {
     setError(null)
     try {
       await db.deleteActiveMatch(matchId)
-      if (selectedTournamentId) {
-        const activeMatchesData = await db.getAllActiveMatches(selectedTournamentId)
-        setActiveMatches(activeMatchesData)
-      }
+      const [activeMatchesData, casualActiveData] = await Promise.all([
+        !isGuest && selectedTournamentId
+          ? db.getAllActiveMatches(selectedTournamentId)
+          : Promise.resolve(activeMatches),
+        db.getCasualActiveMatches(),
+      ])
+      setActiveMatches(activeMatchesData)
+      setCasualActiveMatches(casualActiveData)
       setActiveMatchToDelete(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting active match")
@@ -369,11 +450,12 @@ function LaCajitaPoker() {
   const confirmDeleteMatch = (matchId: string) => setMatchToDelete(matchId)
 
   const deleteMatch = async () => {
-    if (!matchToDelete || !selectedTournamentId) return
+    if (!matchToDelete) return
     setLoading(true)
     try {
       await db.deleteMatch(matchToDelete)
-      await loadAllData(selectedTournamentId)
+      if (selectedTournamentId) await loadAllData(selectedTournamentId)
+      else await loadCasualData()
       setMatchToDelete(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error deleting match")
@@ -400,15 +482,16 @@ function LaCajitaPoker() {
     })
   }
 
-  // Solo las partidas del torneo: las sueltas aparecen en el Historial pero
-  // no cuentan para ranking, estadísticas, podio ni resumen.
+  // Solo las partidas del torneo. getAllMatches ya no trae sueltas, pero el
+  // filtro queda por las dudas: no cuentan para ranking, estadísticas ni podio.
   const tournamentMatches = useMemo(
     () => matches.filter((m) => !m.is_casual),
     [matches],
   )
 
   const summaryMatch = summaryMatchId
-    ? matches.find((m) => m.id === summaryMatchId)
+    ? (matches.find((m) => m.id === summaryMatchId) ??
+      casualMatches.find((m) => m.id === summaryMatchId))
     : undefined
   const closeSummary = useCallback(() => setSummaryMatchId(null), [])
 
@@ -422,7 +505,14 @@ function LaCajitaPoker() {
     [allTimeStats, rankingSortBy],
   )
 
-  if (loading && matches.length === 0 && activeMatches.length === 0) {
+  if (
+    (role === null && connectionStatus !== false) ||
+    (loading &&
+      matches.length === 0 &&
+      activeMatches.length === 0 &&
+      casualMatches.length === 0 &&
+      casualActiveMatches.length === 0)
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -442,6 +532,84 @@ function LaCajitaPoker() {
     )
   }
 
+  // Una pantalla por pestaña; se muestran las que correspondan al rol.
+  const screens: Record<TabId, React.ReactNode> = {
+    ranking: (
+      <RankingTab
+        activeMatches={activeMatches}
+        matches={tournamentMatches}
+        sortedPlayerStats={
+          rankingScope === "historico" ? sortedAllTimeStats : sortedPlayerStats
+        }
+        rankingScope={rankingScope}
+        onRankingScopeChange={setRankingScope}
+        rankingSortBy={rankingSortBy}
+        onRankingSortChange={setRankingSortBy}
+        loading={loading}
+        onContinueActive={editActiveMatch}
+        onDeleteActive={setActiveMatchToDelete}
+      />
+    ),
+    partidas: (
+      <PartidasTab
+        matches={tournamentMatches}
+        activeMatches={activeMatches}
+        casualMatches={casualMatches}
+        casualActiveMatches={casualActiveMatches}
+        guest={isGuest}
+        expandedMatches={expandedMatches}
+        loading={loading}
+        isTournamentClosed={isTournamentClosed}
+        onToggleExpand={toggleMatchExpansion}
+        onCreateActive={() => createNewActiveMatch(false)}
+        onCreateCasual={() => createNewActiveMatch(true)}
+        onContinueActive={editActiveMatch}
+        onDeleteActive={setActiveMatchToDelete}
+        onConfirmDeleteMatch={isGuest ? undefined : confirmDeleteMatch}
+        onShowSummary={setSummaryMatchId}
+      />
+    ),
+    estadisticas: (
+      <EstadisticasTab
+        matches={tournamentMatches}
+        sortedPlayerStats={sortedPlayerStats}
+        expandedPlayerCards={expandedPlayerCards}
+        evolutionSortBy={evolutionSortBy}
+        onTogglePlayerCard={togglePlayerCard}
+        onEvolutionSortChange={setEvolutionSortBy}
+      />
+    ),
+    entrenar: (
+      <EntrenarTab players={allPlayers} onCreatePlayer={handleCreateTrainingPlayer} />
+    ),
+    reglas: (
+      <ReglasTab
+        tournaments={tournaments}
+        selectedTournamentId={selectedTournamentId}
+        selectedTournament={selectedTournament}
+        showCreateTournament={showCreateTournament}
+        showCloseTournamentDialog={showCloseTournamentDialog}
+        newTournamentName={newTournamentName}
+        creatingTournament={creatingTournament}
+        playerStats={playerStats}
+        matches={tournamentMatches}
+        showPodium={showPodium}
+        allPlayers={allPlayers}
+        roster={roster}
+        onShowPodium={setShowPodium}
+        onShowCreateTournament={setShowCreateTournament}
+        onShowCloseTournamentDialog={setShowCloseTournamentDialog}
+        onNewTournamentNameChange={setNewTournamentName}
+        onCreateTournament={handleCreateTournament}
+        onCloseTournament={handleCloseTournament}
+        onAddPlayerToRoster={handleAddPlayerToRoster}
+        onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
+        onCreateAndAddPlayer={handleCreateAndAddPlayer}
+        onSelectTournament={handleTournamentChange}
+      />
+    ),
+  }
+
   return (
     <div className="h-[100dvh] flex flex-col">
       <div className="backdrop-blur-sm border-b flex-shrink-0">
@@ -453,7 +621,30 @@ function LaCajitaPoker() {
             <h1 className="text-xl md:text-2xl font-bold">♦️</h1>
             <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
           </div>
-          {selectedTournament && (
+          {isGuest && (
+            <div className="flex justify-center items-center gap-3 mt-2">
+              <p className="text-sm text-muted-foreground">Invitado · sueltas y entrenar</p>
+              <button
+                onClick={refreshData}
+                disabled={loading}
+                aria-label="Refrescar"
+                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {loading ? <ChipSpinner className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+              </button>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  aria-label="Salir"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Salir
+                </button>
+              </form>
+            </div>
+          )}
+          {!isGuest && selectedTournament && (
             <div className="flex justify-center items-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">
                 {selectedTournament.name}
@@ -531,77 +722,11 @@ function LaCajitaPoker() {
 
         <div className="overflow-hidden flex-1 min-h-0" ref={emblaRef}>
           <div className="flex h-full touch-pan-y">
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
-              <RankingTab
-                activeMatches={activeMatches}
-                matches={tournamentMatches}
-                sortedPlayerStats={
-                  rankingScope === "historico" ? sortedAllTimeStats : sortedPlayerStats
-                }
-                rankingScope={rankingScope}
-                onRankingScopeChange={setRankingScope}
-                rankingSortBy={rankingSortBy}
-                onRankingSortChange={setRankingSortBy}
-                loading={loading}
-                onContinueActive={editActiveMatch}
-                onDeleteActive={setActiveMatchToDelete}
-              />
-            </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
-              <PartidasTab
-                matches={matches}
-                activeMatches={activeMatches}
-                expandedMatches={expandedMatches}
-                loading={loading}
-                isTournamentClosed={isTournamentClosed}
-                onToggleExpand={toggleMatchExpansion}
-                onCreateActive={() => createNewActiveMatch(false)}
-                onCreateCasual={() => createNewActiveMatch(true)}
-                onContinueActive={editActiveMatch}
-                onDeleteActive={setActiveMatchToDelete}
-                onConfirmDeleteMatch={confirmDeleteMatch}
-                onShowSummary={setSummaryMatchId}
-              />
-            </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
-              <EstadisticasTab
-                matches={tournamentMatches}
-                sortedPlayerStats={sortedPlayerStats}
-                expandedPlayerCards={expandedPlayerCards}
-                evolutionSortBy={evolutionSortBy}
-                onTogglePlayerCard={togglePlayerCard}
-                onEvolutionSortChange={setEvolutionSortBy}
-              />
-            </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
-              <EntrenarTab players={allPlayers} />
-            </div>
-            <div className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
-              <ReglasTab
-                tournaments={tournaments}
-                selectedTournamentId={selectedTournamentId}
-                selectedTournament={selectedTournament}
-                showCreateTournament={showCreateTournament}
-                showCloseTournamentDialog={showCloseTournamentDialog}
-                newTournamentName={newTournamentName}
-                creatingTournament={creatingTournament}
-                playerStats={playerStats}
-                matches={tournamentMatches}
-                showPodium={showPodium}
-                allPlayers={allPlayers}
-                roster={roster}
-                onShowPodium={setShowPodium}
-                onShowCreateTournament={setShowCreateTournament}
-                onShowCloseTournamentDialog={setShowCloseTournamentDialog}
-                onNewTournamentNameChange={setNewTournamentName}
-                onCreateTournament={handleCreateTournament}
-                onCloseTournament={handleCloseTournament}
-                onAddPlayerToRoster={handleAddPlayerToRoster}
-                onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
-                onCreateAndAddPlayer={handleCreateAndAddPlayer}
-                onSelectTournament={handleTournamentChange}
-              />
-            </div>
+            {tabs.map((tab) => (
+              <div key={tab.id} className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto">
+                {screens[tab.id]}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -609,7 +734,7 @@ function LaCajitaPoker() {
       {/* Barra de secciones: ícono + nombre; la activa en color, con una pastilla detrás del ícono. */}
       <nav className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
         <div className="flex h-16 items-stretch justify-around">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active = activeTab === tab.id
             const Icon = tab.icon
             return (

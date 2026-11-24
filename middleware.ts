@@ -16,8 +16,8 @@ export async function middleware(request: NextRequest) {
   if (!secret) return NextResponse.next()
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
-  const valid = await verifyToken(token, secret)
-  if (!valid) {
+  const role = await verifyToken(token, secret)
+  if (!role) {
     const url = new URL("/login", request.url)
     return NextResponse.redirect(url)
   }

@@ -22,20 +22,24 @@ export async function login(
 ): Promise<LoginState> {
   const pin = String(formData.get("pin") || "")
   const expected = process.env.APP_PIN
+  // PIN de invitado (opcional): entra solo a sueltas y Entrenar.
+  const guestPin = process.env.GUEST_PIN
   const secret = process.env.APP_SECRET
 
   if (!expected || !secret) {
     return { error: "Auth no configurada en el servidor" }
   }
 
-  if (!verifyPin(pin, expected)) {
+  const isAdmin = verifyPin(pin, expected)
+  const isGuest = !isAdmin && !!guestPin && guestPin !== expected && verifyPin(pin, guestPin)
+  if (!isAdmin && !isGuest) {
     // Pequeño delay anti-fuerza-bruta. No es protección real pero ralentiza
     // intentos manuales y enmascara cualquier diff de timing residual.
     await new Promise((r) => setTimeout(r, 500))
     return { error: "PIN incorrecto" }
   }
 
-  const token = await makeToken(secret)
+  const token = await makeToken(secret, isAdmin ? "admin" : "guest")
   const cookieStore = await cookies()
   cookieStore.set(AUTH_COOKIE_NAME, token, {
     httpOnly: true,

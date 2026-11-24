@@ -22,11 +22,18 @@ import { CasualBadge } from "@/components/casual-badge"
 import { formatAmount, formatDate } from "@/lib/formatters"
 import type { ActiveMatch, MatchWithPlayers } from "@/lib/types"
 
-type PartidasSubtab = "partida" | "historial"
+type PartidasSubtab = "partida" | "historial" | "sueltas"
 
 interface PartidasTabProps {
+  /** Partidas del torneo seleccionado (sin sueltas). */
   matches: MatchWithPlayers[]
+  /** Partidas en curso del torneo (sin sueltas). */
   activeMatches: ActiveMatch[]
+  /** Sueltas registradas: no pertenecen a ningún torneo. */
+  casualMatches: MatchWithPlayers[]
+  casualActiveMatches: ActiveMatch[]
+  /** Invitado: solo ve y juega sueltas. */
+  guest?: boolean
   expandedMatches: Set<string>
   loading: boolean
   isTournamentClosed: boolean
@@ -35,13 +42,17 @@ interface PartidasTabProps {
   onCreateCasual: () => void
   onContinueActive: (id: string) => void
   onDeleteActive: (id: string) => void
-  onConfirmDeleteMatch: (id: string) => void
+  /** Sin esto no se muestra el botón de borrar (invitado). */
+  onConfirmDeleteMatch?: (id: string) => void
   onShowSummary: (id: string) => void
 }
 
 export function PartidasTab({
   matches,
   activeMatches,
+  casualMatches,
+  casualActiveMatches,
+  guest = false,
   expandedMatches,
   loading,
   isTournamentClosed,
@@ -55,6 +66,120 @@ export function PartidasTab({
 }: PartidasTabProps) {
   const [subtab, setSubtab] = useState<PartidasSubtab>("partida")
 
+  const renderMatch = (match: MatchWithPlayers) => {
+    const isExpanded = expandedMatches.has(match.id)
+    const winner = match.match_players.find((mp) => mp.position === 1)
+
+    return (
+      <Card key={match.id}>
+        <CardContent className="p-4">
+          <div
+            className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
+            onClick={() => onToggleExpand(match.id)}
+          >
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">{formatDate(match.date)}</span>
+                {match.is_casual && <CasualBadge />}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {match.player_count} jugadores - ${formatAmount(match.total_money)}
+              </div>
+              {winner && (
+                <div className="text-sm mt-1">🏆 Ganador: {winner.players?.name}</div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isExpanded ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </div>
+          </div>
+
+          {isExpanded && (
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="text-sm">
+                  Dinero total jugado:{" "}
+                  <span className="font-semibold">
+                    ${formatAmount(match.total_money)}
+                  </span>
+                </div>
+                {onConfirmDeleteMatch && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onConfirmDeleteMatch(match.id)
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ChipSpinner className="w-4 h-4" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                {match.match_players
+                  .sort((a, b) => a.position - b.position)
+                  .map((mp) => (
+                    <div
+                      key={mp.id}
+                      className="flex items-center justify-between p-2 bg-muted rounded"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            mp.position === 1
+                              ? "bg-yellow-500 text-black"
+                              : mp.position === 2
+                                ? "bg-slate-400 text-black"
+                                : mp.position === 3
+                                  ? "bg-orange-500 text-black"
+                                  : "bg-muted-foreground text-muted"
+                          }`}
+                        >
+                          {mp.position}
+                        </div>
+                        <span className="text-sm">{mp.players?.name}</span>
+                      </div>
+                      <span
+                        className={`text-sm font-semibold ${
+                          mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
+                        }`}
+                      >
+                        ${formatAmount(mp.money_won)}{" "}
+                        <span className="text-xs text-muted-foreground font-normal">
+                          ({mp.cajitas} cjt{mp.cajitas !== 1 ? "s" : ""})
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+              </div>
+              <Button
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onShowSummary(match.id)
+                }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Ver resumen
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+
   return (
     <Tabs
       value={subtab}
@@ -65,14 +190,15 @@ export function PartidasTab({
         <IconTabsList
           tabs={[
             { value: "partida", label: "Partida", icon: Spade },
-            { value: "historial", label: "Historial", icon: History },
+            ...(guest ? [] : [{ value: "historial", label: "Historial", icon: History }]),
+            { value: "sueltas", label: "Sueltas", icon: Zap },
           ]}
         />
       </div>
 
       <TabsContent value="partida" className="pt-4 pb-8 mt-0">
         <div className="space-y-4">
-          {activeMatches.length === 0 ? (
+          {!guest && (activeMatches.length === 0 ? (
             isTournamentClosed ? (
               <div className="rounded-2xl border-2 border-dashed border-muted-foreground/25 px-6 py-12 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -128,8 +254,8 @@ export function PartidasTab({
                 onDelete={onDeleteActive}
               />
             ))
-          )}
-          {activeMatches.length > 0 && !isTournamentClosed && (
+          ))}
+          {!guest && activeMatches.length > 0 && !isTournamentClosed && (
             <Button
               onClick={onCreateActive}
               disabled={loading}
@@ -144,6 +270,16 @@ export function PartidasTab({
               Nueva partida
             </Button>
           )}
+          {/* Sueltas en curso: no son del torneo, se ven siempre. */}
+          {casualActiveMatches.map((match) => (
+            <ActiveMatchCard
+              key={match.id}
+              match={match}
+              loading={loading}
+              onContinue={onContinueActive}
+              onDelete={onDeleteActive}
+            />
+          ))}
           {/* Suelta: para seguir jugando después de la fecha del torneo.
               Se anota igual pero no suma, así que va aunque el torneo esté cerrado. */}
           <Button
@@ -161,126 +297,37 @@ export function PartidasTab({
               Partida suelta
             </span>
             <span className="text-xs font-normal text-muted-foreground">
-              Se anota igual, pero no suma al torneo
+              {guest ? "Se anota igual, pero no es de ningún torneo" : "Se anota igual, pero no suma al torneo"}
             </span>
           </Button>
         </div>
       </TabsContent>
 
-      <TabsContent value="historial" className="pt-4 pb-8 mt-0">
+      {!guest && (
+        <TabsContent value="historial" className="pt-4 pb-8 mt-0">
+          <div className="space-y-1">
+            <h2 className="text-xl font-normal mb-4">Historial de Partidas</h2>
+            <div className="space-y-2">
+              {matches.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todavía no hay partidas en este torneo.</p>
+              ) : (
+                matches.map(renderMatch)
+              )}
+            </div>
+          </div>
+        </TabsContent>
+      )}
+
+      <TabsContent value="sueltas" className="pt-4 pb-8 mt-0">
         <div className="space-y-1">
-          <h2 className="text-xl font-normal mb-4">Historial de Partidas</h2>
+          <h2 className="text-xl font-normal mb-1">Partidas sueltas</h2>
+          <p className="text-sm text-muted-foreground mb-4">No son de ningún torneo: no suman puntos.</p>
           <div className="space-y-2">
-            {matches.map((match) => {
-              const isExpanded = expandedMatches.has(match.id)
-              const winner = match.match_players.find((mp) => mp.position === 1)
-
-              return (
-                <Card key={match.id}>
-                  <CardContent className="p-4">
-                    <div
-                      className="flex justify-between items-start cursor-pointer hover:bg-muted rounded p-2 -m-2 transition-colors"
-                      onClick={() => onToggleExpand(match.id)}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-semibold">{formatDate(match.date)}</span>
-                          {match.is_casual && <CasualBadge />}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {match.player_count} jugadores - ${formatAmount(match.total_money)}
-                        </div>
-                        {winner && (
-                          <div className="text-sm mt-1">🏆 Ganador: {winner.players?.name}</div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="mt-4 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm">
-                            Dinero total jugado:{" "}
-                            <span className="font-semibold">
-                              ${formatAmount(match.total_money)}
-                            </span>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onConfirmDeleteMatch(match.id)
-                            }}
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <ChipSpinner className="w-4 h-4" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                          {match.match_players
-                            .sort((a, b) => a.position - b.position)
-                            .map((mp) => (
-                              <div
-                                key={mp.id}
-                                className="flex items-center justify-between p-2 bg-muted rounded"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                      mp.position === 1
-                                        ? "bg-yellow-500 text-black"
-                                        : mp.position === 2
-                                          ? "bg-slate-400 text-black"
-                                          : mp.position === 3
-                                            ? "bg-orange-500 text-black"
-                                            : "bg-muted-foreground text-muted"
-                                    }`}
-                                  >
-                                    {mp.position}
-                                  </div>
-                                  <span className="text-sm">{mp.players?.name}</span>
-                                </div>
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    mp.money_won >= 0 ? "text-emerald-500" : "text-rose-500"
-                                  }`}
-                                >
-                                  ${formatAmount(mp.money_won)}{" "}
-                                  <span className="text-xs text-muted-foreground font-normal">
-                                    ({mp.cajitas} cjt{mp.cajitas !== 1 ? "s" : ""})
-                                  </span>
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                        <Button
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onShowSummary(match.id)
-                          }}
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Ver resumen
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {casualMatches.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Todavía no hay sueltas registradas.</p>
+            ) : (
+              casualMatches.map(renderMatch)
+            )}
           </div>
         </div>
       </TabsContent>

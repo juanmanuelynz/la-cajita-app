@@ -42,7 +42,7 @@ The Neon `DATABASE_URL` is read server-side only; it must not be prefixed with `
 
 **Active matches** (`active_matches` table): draft/in-progress sessions stored as JSONB. Players fill in results during a live game. When finished, `registerActiveMatch()` promotes the draft into the permanent `matches`/`match_players` tables and deletes the active match.
 
-**Sueltas** (`is_casual` on `matches` and `active_matches`): one-off games played after the tournament night ends. Same flow as a normal match, but any player can join (not just the roster, and creating one doesn't add them to the roster), they can be created even if the tournament is closed, and they store `points = 0`. They hang off the current tournament only to show up in its Historial (with a badge); `getPlayerStats`/`getAllTimeStats` exclude them in SQL and `app/page.tsx` filters them out (`tournamentMatches`) before passing matches to ranking, stats, podium and summary.
+**Sueltas** (`is_casual` on `matches` and `active_matches`): one-off games played after the tournament night ends. Same flow as a normal match, but any player can join (not just the roster, and creating one doesn't add them to the roster), they can be created even with no open tournament, and they store `points = 0`. They don't belong to any tournament: new ones are saved with `tournament_id = NULL` (older rows may still carry one; it's ignored). They're fetched on their own with `getCasualMatches` / `getCasualActiveMatches` and shown in Partidas → Sueltas; `getAllMatches`, `getAllActiveMatches`, `getPlayerStats` and `getAllTimeStats` exclude them in SQL.
 
 ### Routes
 - `/` — Main dashboard: player stats, match history, charts, create new match or active match. This is a large "use client" component.
@@ -66,6 +66,7 @@ Create `.env.local` with:
 DATABASE_URL=postgresql://[user]:[pwd]@[host]-pooler.[region].aws.neon.tech/neondb?sslmode=require
 APP_PIN=######            # 6-digit PIN shared with the group
 APP_SECRET=<32 bytes hex> # HMAC secret for signing the auth cookie
+GUEST_PIN=######          # optional: guest PIN (sueltas + Entrenar only); must differ from APP_PIN
 ```
 Use the **pooled** Neon connection string (host contains `-pooler`) — the HTTP driver is built for serverless and the pooled endpoint scales to zero cleanly. Never expose any of these vars to the client (no `NEXT_PUBLIC_` prefix).
 
@@ -75,6 +76,8 @@ If `APP_SECRET` is unset the middleware **fails open** (no auth) — make sure i
 
 ### Auth
 PIN-gated, single shared credential. The middleware in [middleware.ts](middleware.ts) redirects any non-`/login` request to `/login` unless the `la_cajita_auth` cookie carries a valid HMAC-signed expiry token. Login flow lives at [app/login/page.tsx](app/login/page.tsx) with the server action in [app/login/actions.ts](app/login/actions.ts); logout is wired into the Configuración tab (gear icon; internal tab id is still `reglas`). Sessions last 30 days. Token logic is in [lib/auth.ts](lib/auth.ts) and uses Web Crypto only (works in both Edge and Node runtimes).
+
+**Roles**: `APP_PIN` logs in as `admin` (everything); `GUEST_PIN` logs in as `guest`, who only sees Partidas (sueltas only) and Entrenar, with a "Salir" button in the header. The role is inside the signed token (`expiry.sig` = admin, the old format so existing sessions keep working; `expiry.guest.sig` = guest). It's enforced server-side: every tournament Server Action in `lib/database.ts` calls `requireAdmin()` ([lib/session.ts](lib/session.ts)), and active-match actions by id only let a guest touch sueltas. `deleteMatch` is admin-only. Any new Server Action must decide which role may call it. The client asks for the role with `getSessionRole()`.
 
 ### Components
 - [components/ui/](components/ui/) — shadcn/ui component library (do not modify these directly; regenerate with shadcn CLI if needed)

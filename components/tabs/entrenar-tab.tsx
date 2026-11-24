@@ -167,7 +167,14 @@ const PLAYER_KEY = "la-cajita:entrenar:jugador"
 /** Jugadores que no aparecen en "¿Quién sos?" de Entrenar (por nombre, sin importar mayúsculas). */
 const HIDDEN_IN_ENTRENAR = ["nano", "tito"]
 
-export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
+export function EntrenarTab({
+  players: allPlayers,
+  onCreatePlayer,
+}: {
+  players: Player[]
+  /** "Soy nuevo": crea el jugador (sin sumarlo a ningún torneo) y lo devuelve. */
+  onCreatePlayer?: (name: string) => Promise<Player>
+}) {
   const players = useMemo(
     () => allPlayers.filter((p) => !HIDDEN_IN_ENTRENAR.includes(p.name.trim().toLowerCase())),
     [allPlayers],
@@ -306,6 +313,7 @@ export function EntrenarTab({ players: allPlayers }: { players: Player[] }) {
                   players={players}
                   playerId={playerId}
                   onPlayerChange={changePlayer}
+                  onCreatePlayer={onCreatePlayer}
                   progress={progress}
                   onPractice={setPractice}
                 />

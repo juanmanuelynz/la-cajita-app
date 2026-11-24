@@ -27,6 +27,8 @@ import {
 } from "./validators"
 import { POINTS_DISTRIBUTION } from "./constants"
 import { rankMatchPlayers } from "./ranking"
+import { getCurrentRole, requireAdmin } from "./session"
+import type { AuthRole } from "./auth"
 
 // Devolver fechas/timestamps como string ISO (igual que Supabase via PostgREST),
 // en lugar de objetos Date nativos — React no puede renderizar Date como child.
@@ -36,6 +38,23 @@ types.setTypeParser(1114, (val) => val)
 types.setTypeParser(1184, (val) => val)
 
 const sql = neon(process.env.DATABASE_URL!)
+
+// ────────────────────────────────────────────────────────────────────────────
+// Sesión
+// ────────────────────────────────────────────────────────────────────────────
+// Permisos: el invitado (GUEST_PIN) solo usa partidas sueltas y Entrenar. Todo
+// lo del torneo llama a requireAdmin(); lo de partidas activas por id chequea
+// que sea suelta. Se valida acá porque el cliente puede llamar cualquier
+// Server Action, aunque la UI no la muestre.
+
+export async function getSessionRole(): Promise<AuthRole> {
+  return getCurrentRole()
+}
+
+/** El invitado solo puede tocar partidas activas que sean sueltas. */
+async function assertCanUseActiveMatch(match: { is_casual?: boolean } | undefined | null) {
+  if (match && !match.is_casual) await requireAdmin()
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Players
@@ -53,6 +72,9 @@ export async function createPlayer(
   tournamentId?: string,
 ): Promise<Player> {
   const parsed = PlayerNameSchema.parse(name)
+  // Sumar al roster de un torneo es cosa del admin; crear el jugador solo
+  // (para una suelta o para Entrenar) lo puede hacer el invitado.
+  if (tournamentId) await requireAdmin()
   // UPSERT por nombre: si ya existe, devolvemos el row sin modificarlo.
   // Si se pasa tournamentId, lo agregamos al roster del torneo en la misma
   // transacción HTTP — así "+ Crear nuevo jugador" desde una partida activa
@@ -82,6 +104,7 @@ export async function createPlayer(
 }
 
 export async function getPlayerByName(name: string): Promise<Player | null> {
+  await requireAdmin()
   const parsed = PlayerNameSchema.parse(name)
   const rows = await sql`
     SELECT id, name, created_at FROM players WHERE name = ${parsed} LIMIT 1
@@ -92,6 +115,7 @@ export async function getPlayerByName(name: string): Promise<Player | null> {
 export async function getTournamentRoster(
   tournamentId: string,
 ): Promise<Player[]> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT p.id, p.name, p.created_at
@@ -107,6 +131,7 @@ export async function addPlayerToTournament(
   tournamentId: string,
   playerId: string,
 ): Promise<void> {
+  await requireAdmin()
   const parsedTournament = UuidSchema.parse(tournamentId)
   const parsedPlayer = UuidSchema.parse(playerId)
   await sql`
@@ -120,6 +145,7 @@ export async function removePlayerFromTournament(
   tournamentId: string,
   playerId: string,
 ): Promise<void> {
+  await requireAdmin()
   const parsedTournament = UuidSchema.parse(tournamentId)
   const parsedPlayer = UuidSchema.parse(playerId)
   await sql`
@@ -133,6 +159,7 @@ export async function removePlayerFromTournament(
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getTournaments(): Promise<Tournament[]> {
+  await requireAdmin()
   const rows = await sql`
     SELECT * FROM tournaments ORDER BY created_at DESC
   `
@@ -140,6 +167,7 @@ export async function getTournaments(): Promise<Tournament[]> {
 }
 
 export async function getTournamentById(id: string): Promise<Tournament | null> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(id)
   const rows = await sql`SELECT * FROM tournaments WHERE id = ${parsed} LIMIT 1`
   return (rows[0] as Tournament) ?? null
@@ -150,6 +178,7 @@ export async function createTournament(
   pointsConfig?: number[],
   rosterIds?: string[],
 ): Promise<Tournament> {
+  await requireAdmin()
   const parsedName = TournamentNameSchema.parse(name)
   const parsedConfig = PointsConfigSchema.parse(
     pointsConfig ?? POINTS_DISTRIBUTION,
@@ -177,6 +206,7 @@ export async function createTournament(
 }
 
 export async function closeTournament(id: string): Promise<void> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(id)
   await sql`UPDATE tournaments SET closed_at = NOW() WHERE id = ${parsed}`
 }
@@ -186,7 +216,9 @@ export async function closeTournament(id: string): Promise<void> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getAllMatches(tournamentId: string): Promise<MatchWithPlayers[]> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(tournamentId)
+  // Las sueltas no son del torneo: van aparte (getCasualMatches).
   const rows = await sql`
     SELECT
       m.id,
@@ -218,9 +250,49 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
     FROM matches m
     LEFT JOIN match_players mp ON mp.match_id = m.id
     LEFT JOIN players p ON p.id = mp.player_id
-    WHERE m.tournament_id = ${parsed}
+    WHERE m.tournament_id = ${parsed} AND NOT m.is_casual
     GROUP BY m.id
     ORDER BY m.date DESC
+  `
+  return rows as MatchWithPlayers[]
+}
+
+/** Todas las partidas sueltas registradas, de cualquier torneo o de ninguno. */
+export async function getCasualMatches(): Promise<MatchWithPlayers[]> {
+  const rows = await sql`
+    SELECT
+      m.id,
+      m.date,
+      m.caji_value,
+      m.total_money,
+      m.player_count,
+      m.is_casual,
+      m.created_at,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', mp.id,
+            'match_id', mp.match_id,
+            'player_id', mp.player_id,
+            'cajitas', mp.cajitas,
+            'final_chips', mp.final_chips,
+            'money_won', mp.money_won,
+            'position', mp.position,
+            'points', mp.points,
+            'tie_break', mp.tie_break,
+            'created_at', mp.created_at,
+            'players', json_build_object('id', p.id, 'name', p.name, 'created_at', p.created_at)
+          )
+          ORDER BY mp.position ASC
+        ) FILTER (WHERE mp.id IS NOT NULL),
+        '[]'::json
+      ) AS match_players
+    FROM matches m
+    LEFT JOIN match_players mp ON mp.match_id = m.id
+    LEFT JOIN players p ON p.id = mp.player_id
+    WHERE m.is_casual
+    GROUP BY m.id
+    ORDER BY m.date DESC, m.created_at DESC
   `
   return rows as MatchWithPlayers[]
 }
@@ -228,7 +300,8 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
 export async function createMatch(matchData: {
   date: string
   cajiValue: number
-  tournamentId: string
+  /** Obligatorio salvo en las sueltas, que no pertenecen a ningún torneo. */
+  tournamentId?: string | null
   isCasual?: boolean
   players: Array<{
     playerId?: string
@@ -240,6 +313,9 @@ export async function createMatch(matchData: {
   }>
 }): Promise<MatchWithPlayers> {
   const validated = CreateMatchSchema.parse(matchData)
+  if (!validated.isCasual) await requireAdmin()
+  // Las sueltas no cuelgan de un torneo (ni reparten puntos).
+  const tournamentId = validated.isCasual ? null : validated.tournamentId!
 
   // Ranking determinístico delegado a lib/ranking (testeable sin DB).
   const sortedPlayers = rankMatchPlayers(validated.players).map((r) => ({
@@ -261,16 +337,18 @@ export async function createMatch(matchData: {
         `,
   )
   const resolveTx = (await sql.transaction([
-    sql`SELECT points_config FROM tournaments WHERE id = ${validated.tournamentId} LIMIT 1`,
+    tournamentId
+      ? sql`SELECT points_config FROM tournaments WHERE id = ${tournamentId} LIMIT 1`
+      : sql`SELECT NULL AS points_config`,
     ...resolveQueries,
   ])) as Array<Array<Record<string, unknown>>>
 
   const tournamentRow = resolveTx[0][0] as { points_config: unknown } | undefined
-  if (!tournamentRow) {
-    throw new Error(`Torneo ${validated.tournamentId} no encontrado`)
+  if (tournamentId && !tournamentRow) {
+    throw new Error(`Torneo ${tournamentId} no encontrado`)
   }
   const pointsConfig = PointsConfigSchema.parse(
-    Array.isArray(tournamentRow.points_config)
+    Array.isArray(tournamentRow?.points_config)
       ? tournamentRow.points_config
       : POINTS_DISTRIBUTION,
   )
@@ -299,7 +377,7 @@ export async function createMatch(matchData: {
       ${validated.cajiValue},
       ${totalMoney},
       ${validated.players.length},
-      ${validated.tournamentId},
+      ${tournamentId},
       ${validated.isCasual}
     )
     RETURNING *
@@ -339,6 +417,7 @@ export async function createMatch(matchData: {
 }
 
 export async function deleteMatch(matchId: string): Promise<void> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(matchId)
   await sql`DELETE FROM matches WHERE id = ${parsed}`
 }
@@ -348,6 +427,7 @@ export async function deleteMatch(matchId: string): Promise<void> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[]> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT
@@ -385,6 +465,7 @@ export async function getPlayerStats(tournamentId: string): Promise<PlayerStats[
 }
 
 export async function getAllTimeStats(): Promise<PlayerStats[]> {
+  await requireAdmin()
   const rows = await sql`
     SELECT
       p.id,
@@ -428,10 +509,21 @@ export async function getAllTimeStats(): Promise<PlayerStats[]> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function getAllActiveMatches(tournamentId: string): Promise<ActiveMatch[]> {
+  await requireAdmin()
   const parsed = UuidSchema.parse(tournamentId)
   const rows = await sql`
     SELECT * FROM active_matches
-    WHERE tournament_id = ${parsed}
+    WHERE tournament_id = ${parsed} AND NOT is_casual
+    ORDER BY created_at DESC
+  `
+  return rows as ActiveMatch[]
+}
+
+/** Sueltas en curso (no dependen del torneo). */
+export async function getCasualActiveMatches(): Promise<ActiveMatch[]> {
+  const rows = await sql`
+    SELECT * FROM active_matches
+    WHERE is_casual
     ORDER BY created_at DESC
   `
   return rows as ActiveMatch[]
@@ -442,14 +534,17 @@ export async function getActiveMatchById(matchId: string): Promise<ActiveMatch |
   const rows = await sql`
     SELECT * FROM active_matches WHERE id = ${parsed} LIMIT 1
   `
-  return (rows[0] as ActiveMatch) ?? null
+  const match = (rows[0] as ActiveMatch) ?? null
+  await assertCanUseActiveMatch(match)
+  return match
 }
 
 export async function createActiveMatch(matchData: {
   date: string
   cajiValue: number
   playerCount: number
-  tournamentId: string
+  /** Obligatorio salvo en las sueltas, que no pertenecen a ningún torneo. */
+  tournamentId?: string | null
   isCasual?: boolean
   players: Array<{
     playerId?: string
@@ -461,6 +556,7 @@ export async function createActiveMatch(matchData: {
   }>
 }): Promise<ActiveMatch> {
   const validated = CreateActiveMatchSchema.parse(matchData)
+  if (!validated.isCasual) await requireAdmin()
   // No persistimos tieBreak en active_matches: el orden de carga se infiere
   // del orden del array y se materializa como tie_break entero en createMatch.
   const playersClean = validated.players.map(({ tieBreak: _omit, ...rest }) => rest)
@@ -472,7 +568,7 @@ export async function createActiveMatch(matchData: {
       ${validated.date},
       ${validated.cajiValue},
       ${validated.playerCount},
-      ${validated.tournamentId},
+      ${validated.isCasual ? null : validated.tournamentId!},
       ${validated.isCasual},
       ${JSON.stringify(playersClean)}::jsonb
     )
@@ -499,6 +595,7 @@ export async function updateActiveMatch(
 ): Promise<ActiveMatch> {
   const parsedId = UuidSchema.parse(matchId)
   const validated = UpdateActiveMatchSchema.parse(matchData)
+  await assertCanUseActiveMatch(await getActiveMatchRow(parsedId))
   // Mismo razonamiento que en createActiveMatch: el orden del array es la
   // única fuente de verdad para desempates; tieBreak no se persiste acá.
   const playersClean = validated.players.map(({ tieBreak: _omit, ...rest }) => rest)
@@ -516,16 +613,23 @@ export async function updateActiveMatch(
   return rows[0] as ActiveMatch
 }
 
+/** Lee la partida activa sin chequear permisos (uso interno). */
+async function getActiveMatchRow(id: string): Promise<ActiveMatch | undefined> {
+  const rows = await sql`SELECT * FROM active_matches WHERE id = ${id} LIMIT 1`
+  return rows[0] as ActiveMatch | undefined
+}
+
 export async function deleteActiveMatch(matchId: string): Promise<void> {
   const parsed = UuidSchema.parse(matchId)
+  await assertCanUseActiveMatch(await getActiveMatchRow(parsed))
   await sql`DELETE FROM active_matches WHERE id = ${parsed}`
 }
 
 export async function registerActiveMatch(matchId: string): Promise<MatchWithPlayers> {
   const parsed = UuidSchema.parse(matchId)
-  const rows = await sql`SELECT * FROM active_matches WHERE id = ${parsed} LIMIT 1`
-  const activeMatch = rows[0] as ActiveMatch | undefined
+  const activeMatch = await getActiveMatchRow(parsed)
   if (!activeMatch) throw new Error(`Active match ${parsed} not found`)
+  await assertCanUseActiveMatch(activeMatch)
 
   const realMatch = await createMatch({
     date: activeMatch.date,

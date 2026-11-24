@@ -48,13 +48,18 @@ export const CreateMatchSchema = z
   .object({
     date: z.string().regex(dateRegex, "La fecha debe estar en formato YYYY-MM-DD"),
     cajiValue: z.number().int().positive("El valor de la cajita debe ser positivo"),
-    tournamentId: z.string().uuid("ID de torneo inválido"),
+    // Las sueltas no pertenecen a ningún torneo: ahí puede faltar.
+    tournamentId: z.string().uuid("ID de torneo inválido").nullish(),
     // Suelta: se registra pero no reparte puntos ni cuenta para el torneo.
     isCasual: z.boolean().optional().default(false),
     players: z
       .array(FinalMatchPlayerSchema)
       .min(2, "Una partida necesita al menos 2 jugadores")
       .max(8, "Una partida no puede tener más de 8 jugadores"),
+  })
+  .refine((data) => data.isCasual || !!data.tournamentId, {
+    message: "Falta el torneo de la partida",
+    path: ["tournamentId"],
   })
   .refine(
     (data) => {
@@ -85,14 +90,20 @@ export const CreateMatchSchema = z
     },
   )
 
-export const CreateActiveMatchSchema = z.object({
-  date: z.string().regex(dateRegex),
-  cajiValue: z.number().int().positive(),
-  playerCount: z.number().int().min(2).max(8),
-  tournamentId: z.string().uuid(),
-  isCasual: z.boolean().optional().default(false),
-  players: z.array(ActiveMatchPlayerSchema).min(2).max(8),
-})
+export const CreateActiveMatchSchema = z
+  .object({
+    date: z.string().regex(dateRegex),
+    cajiValue: z.number().int().positive(),
+    playerCount: z.number().int().min(2).max(8),
+    // Las sueltas no pertenecen a ningún torneo: ahí puede faltar.
+    tournamentId: z.string().uuid().nullish(),
+    isCasual: z.boolean().optional().default(false),
+    players: z.array(ActiveMatchPlayerSchema).min(2).max(8),
+  })
+  .refine((data) => data.isCasual || !!data.tournamentId, {
+    message: "Falta el torneo de la partida",
+    path: ["tournamentId"],
+  })
 
 export const UpdateActiveMatchSchema = z.object({
   date: z.string().regex(dateRegex),

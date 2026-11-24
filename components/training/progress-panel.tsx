@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Check, ChevronDown, Flame, Target, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { DIFFICULTY_NAMES, difficultyForLevel, nextDifficultyAt } from "@/lib/poker/difficulty"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
@@ -113,13 +114,37 @@ function PlayerDrawer({
   players,
   value,
   onChange,
+  onCreate,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   players: Player[]
   value: string | null
   onChange: (id: string | null) => void
+  onCreate?: (name: string) => Promise<Player>
 }) {
+  const [newName, setNewName] = useState("")
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  const create = async () => {
+    const name = newName.trim()
+    if (!onCreate || !name || creating) return
+    setCreating(true)
+    setCreateError(null)
+    try {
+      // Si el nombre ya existe, createPlayer devuelve ese jugador.
+      const player = await onCreate(name)
+      onChange(player.id)
+      setNewName("")
+      onOpenChange(false)
+    } catch {
+      setCreateError("No se pudo crear. Probá con otro nombre.")
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
@@ -146,6 +171,30 @@ function PlayerDrawer({
             </button>
           ))}
         </div>
+        {onCreate && (
+          <form
+            className="px-4 pb-8 -mt-4 space-y-1"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void create()
+            }}
+          >
+            <div className="text-xs text-muted-foreground">¿No estás en la lista?</div>
+            <div className="flex gap-2">
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Tu nombre"
+                maxLength={50}
+                aria-label="Tu nombre"
+              />
+              <Button type="submit" disabled={!newName.trim() || creating}>
+                {creating ? "Creando..." : "Agregarme"}
+              </Button>
+            </div>
+            {createError && <div className="text-xs text-rose-500">{createError}</div>}
+          </form>
+        )}
       </DrawerContent>
     </Drawer>
   )
@@ -424,12 +473,14 @@ export function TrainerCard({
   players,
   playerId,
   onPlayerChange,
+  onCreatePlayer,
   progress,
   onPractice,
 }: {
   players: Player[]
   playerId: string | null
   onPlayerChange: (id: string | null) => void
+  onCreatePlayer?: (name: string) => Promise<Player>
   progress: TrainingProgress | null
   /** "Practicar lo que más fallo" (desde el panel de progreso). */
   onPractice: (spots: WeakSpot[]) => void
@@ -445,6 +496,7 @@ export function TrainerCard({
       players={players}
       value={playerId}
       onChange={onPlayerChange}
+      onCreate={onCreatePlayer}
     />
   )
 

@@ -49,7 +49,8 @@ export interface ActiveMatch {
   date: string
   caji_value: number
   player_count: number
-  tournament_id: string
+  /** null en las sueltas nuevas: no pertenecen a ningún torneo. */
+  tournament_id: string | null
   is_casual?: boolean
   players: Array<{
     name: string
