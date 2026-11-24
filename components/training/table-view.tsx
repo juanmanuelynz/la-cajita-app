@@ -251,6 +251,25 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
         const deg = angleOf(i)
         const folded = s.action?.kind === "fold"
         const bettor = s.action?.kind === "bet"
+        // Con cartas boca arriba la ficha va pegada a las cartas, del lado del centro
+        // (medida sobre las cartas reales, así no las tapa aunque sean 4 o 5).
+        // Los de la mitad de arriba la llevan abajo de su cartelito; los de los costados, al lado de las cartas.
+        const rad = (deg * Math.PI) / 180
+        const chipBeside =
+          s.cards && s.chip ? (Math.sin(rad) < -0.5 ? "below" : Math.cos(rad) < 0 ? "right" : "left") : null
+        const chip = s.chip && (
+          <BetChip
+            amount={s.chip === true ? undefined : s.chip}
+            className={cn(
+              "absolute z-10 whitespace-nowrap",
+              chipBeside === "right" && "left-full top-1/2 ml-1.5 -translate-y-1/2",
+              chipBeside === "left" && "right-full top-1/2 mr-1.5 -translate-y-1/2",
+              chipBeside === "below" && "left-1/2 top-full mt-1.5 -translate-x-1/2",
+              !chipBeside && "-translate-x-1/2 -translate-y-1/2",
+            )}
+            style={chipBeside ? undefined : at(deg, 0.6)}
+          />
+        )
         return (
           <div key={s.key}>
             <div
@@ -261,13 +280,16 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
               )}
             >
               {s.cards && (
-                <CardRow
-                  cards={s.cards}
-                  size="sm"
-                  overlap={s.cards.length >= 4}
-                  deal={s.deal}
-                  className="flex-nowrap justify-center"
-                />
+                <div className="relative">
+                  <CardRow
+                    cards={s.cards}
+                    size="sm"
+                    overlap={s.cards.length >= 4}
+                    deal={s.deal}
+                    className="flex-nowrap justify-center"
+                  />
+                  {(chipBeside === "right" || chipBeside === "left") && chip}
+                </div>
               )}
               {!folded && !s.cards && (
                 <div className="flex -space-x-2">
@@ -294,14 +316,9 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
                   {s.action.text}
                 </div>
               )}
+              {chipBeside === "below" && chip}
             </div>
-            {s.chip && (
-              <BetChip
-                amount={s.chip === true ? undefined : s.chip}
-                className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-                style={at(deg, s.cards ? 0.45 : 0.6)}
-              />
-            )}
+            {!chipBeside && chip}
             {s.dealer && <DealerButton style={at(deg + 16, 0.72)} />}
           </div>
         )
