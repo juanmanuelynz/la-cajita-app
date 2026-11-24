@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { makeDeck, parseCards as P, seededRng, cardLabel } from "../lib/poker/cards"
 import { bestHand, bestScore, Cat, categoryOf, eval5 } from "../lib/poker/evaluator"
 import { computeEquity, countOuts, equityExact, equityMonteCarlo } from "../lib/poker/equity"
-import { makeOuts, makePotOdds, makeWhoWins } from "../lib/poker/drills"
+import { callEv, makeOuts, makePotOdds, makeWhoWins } from "../lib/poker/drills"
 import type { Variant } from "../lib/poker/variants"
 import type { DeckType } from "../lib/poker/cards"
 
@@ -198,7 +198,17 @@ describe("ejercicios", () => {
       expect(p.needed).toBeGreaterThan(0)
       expect(p.needed).toBeLessThan(0.5)
       expect(p.shouldCall).toBe(p.equity >= p.needed)
+      expect(p.bet % 100).toBe(0) // la ficha más chica es de $100
+      expect(p.pot % 100).toBe(0)
+      // Call gana plata en promedio justo cuando la chance supera lo necesario.
+      expect(callEv(p.pot, p.bet, p.equity) >= -1e-9).toBe(p.shouldCall)
     }
+  })
+
+  it("callEv: 0 en el punto justo, fold vale $0", () => {
+    expect(callEv(1000, 500, 0.25)).toBeCloseTo(0)
+    expect(callEv(1000, 500, 0.5)).toBeCloseTo(500)
+    expect(callEv(1000, 500, 0)).toBeCloseTo(-500)
   })
 })
 
@@ -307,6 +317,8 @@ describe("GTO en el river", () => {
       expect(new Set(d.options).size).toBe(4)
       expect(d.options).toContain(d.answer)
       expect(Number.isInteger(d.bet)).toBe(true)
+      expect(d.bet % 100).toBe(0)
+      expect(d.pot % 100).toBe(0)
       if (q === "bluffCombos") expect(d.value! * (d.bet / (d.pot + d.bet))).toBeCloseTo(d.answer)
     }
   })
@@ -439,6 +451,7 @@ describe("Con luz", () => {
         withBet++
         expect(d.bet.seat).toBeLessThan(d.seat) // apostó alguien que habla antes
         expect(d.bet.needed).toBeCloseTo(d.bet.amount / (d.pot + 2 * d.bet.amount), 10)
+        expect(d.bet.amount % 100).toBe(0)
         expect(d.bet.shouldCall).toBe(d.bet.equity >= d.bet.needed)
         expect(new Set([...d.hero, ...d.bet.villain]).size).toBe(d.hero.length * 2)
       }

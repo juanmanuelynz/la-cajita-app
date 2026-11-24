@@ -1,14 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { CATEGORY_NAMES, type Cat } from "@/lib/poker/evaluator"
 import { makeUsable, type UsableDrill as UsableData } from "@/lib/poker/drills"
 import { GAMES } from "@/lib/poker/variants"
-import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
 import { PokerTable } from "./table-view"
-import { DrillShell, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, answerTone, useDrill, type DrillProps } from "./drill-shell"
 
 const cuantas = (n: number) => (n === 1 ? "1 carta" : `${n} cartas`)
 
@@ -64,24 +62,18 @@ export function UsableDrill(props: DrillProps<UsableData>) {
         boardLabel="River"
         bottom={[{ key: "vos", name: "Vos", hero: true, cards: hole, used: answered ? hand.fromHole : undefined, deal: 400 }]}
       />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {drill.options.map((c) => (
-          <Button
+          <AnswerButton
             key={c}
-            variant="outline"
-            disabled={answered}
+            tone={answerTone(answered, { correct: c === hand.cat, picked: picked === c })}
             onClick={() => {
               setPicked(c)
               answer(c === hand.cat ? "right" : "wrong")
             }}
-            className={cn(
-              "disabled:opacity-100",
-              answered && c === hand.cat && "border-emerald-500 bg-emerald-500/10",
-              answered && picked === c && c !== hand.cat && "border-rose-500 bg-rose-500/10",
-            )}
           >
             {CATEGORY_NAMES[c]}
-          </Button>
+          </AnswerButton>
         ))}
       </div>
     </DrillShell>

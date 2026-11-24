@@ -1,13 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { makeWhoWins, type WhoWinsDrill as WhoWinsData } from "@/lib/poker/drills"
 import { GAMES } from "@/lib/poker/variants"
-import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
 import { PokerTable, type TableSeat } from "./table-view"
-import { DrillShell, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, answerTone, useDrill, type DrillProps } from "./drill-shell"
 
 const TIE = -1
 
@@ -82,18 +80,9 @@ export function WhoWinsDrill(props: DrillProps<WhoWinsData>) {
         </div>
       )}
 
-      <Button
-        variant="outline"
-        className={cn(
-          "w-full",
-          answered && isTie && "border-amber-400",
-          answered && picked === TIE && !isTie && "border-rose-500",
-        )}
-        disabled={answered}
-        onClick={() => choose(TIE)}
-      >
+      <AnswerButton tone={answerTone(answered, { correct: isTie, picked: picked === TIE })} onClick={() => choose(TIE)}>
         Empate (reparten)
-      </Button>
+      </AnswerButton>
     </DrillShell>
   )
 }

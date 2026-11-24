@@ -1,15 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import type { Card } from "@/lib/poker/cards"
 import type { BestHand } from "@/lib/poker/evaluator"
 import { makeOuts, type OutsDrill as OutsData } from "@/lib/poker/drills"
 import type { Variant } from "@/lib/poker/variants"
-import { cn } from "@/lib/utils"
 import { CardRow } from "./playing-card"
 import { PokerTable, TableChip } from "./table-view"
-import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, answerTone, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 /** Mesa + tu mano + la del rival (a la vista, para practicar). */
 export function SpotView({
@@ -131,22 +129,17 @@ export function OutsDrill(props: DrillProps<OutsData>) {
       <SpotView {...drill} variant={variant} />
       <div className="grid grid-cols-4 gap-2">
         {drill.options.map((o) => (
-          <Button
+          <AnswerButton
             key={o}
-            variant="outline"
-            disabled={answered}
+            tone={answerTone(answered, { correct: o === correct, picked: picked === o })}
+            className="text-lg tabular-nums"
             onClick={() => {
               setPicked(o)
               answer(o === correct ? "right" : "wrong")
             }}
-            className={cn(
-              "text-lg tabular-nums disabled:opacity-100",
-              answered && o === correct && "border-emerald-500 bg-emerald-500/10",
-              answered && picked === o && o !== correct && "border-rose-500 bg-rose-500/10",
-            )}
           >
             {o}
-          </Button>
+          </AnswerButton>
         ))}
       </div>
     </DrillShell>

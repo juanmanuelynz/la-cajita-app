@@ -137,13 +137,19 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 - Hecha: ver "Lo visual" arriba. No encontramos capturas de la sesión diaria ni de
   la pantalla de leaks; sí de mesa, feedback, rangos y estadísticas.
 
-### Fase 1 — Respuesta con más presencia
-- Botones de acción (Fold / Check / Call / Bet / Raise y opciones) con borde de
-  color y brillo al responder; misma pieza para todos los ejercicios.
-- Feedback compacto ("¡Bien!" / "No era") y la explicación plegable ("Ver por qué").
-- Interruptor "Contexto de la mano" para mostrar/ocultar pistas (nombre de la
-  jugada del rival, pozo, etc.) → modo más difícil sin pistas.
-- Archivos: `components/training/drill-shell.tsx` y cada `*-drill.tsx`.
+### Fase 1 — Respuesta con más presencia ✅ (24/11/2026, solo en Entrenar)
+- `AnswerButton` + `answerTone` en `components/training/drill-shell.tsx`, la misma
+  pieza en todos los ejercicios: se prende verde (bien), rojo (tu error), dorado
+  (muy justo, las dos valen) y el resto se apaga.
+- En ¿Call o fold? y Antes del flop (luz, con apuesta) arriba de cada botón va
+  cuánto deja la opción en promedio (`callEv` en `lib/poker/drills.ts`; fold = $0),
+  redondeado a $100.
+- La respuesta sube desde abajo (`AnswerSheet`, portal sobre `<body>`): veredicto,
+  el dato clave y la explicación plegada en "Ver por qué"; botón blanco "Siguiente".
+- Montos de los ejercicios en múltiplos de $100 (la ficha más chica); en GTO los
+  pozos pasan a múltiplos de $1200 para que todos los tamaños den redondo.
+- Quedó afuera el interruptor "Contexto de la mano": no aparece en las capturas de
+  Runout; si se quiere, va aparte.
 
 ### Fase 2 — Mesa con contexto
 - En `PokerTable`: botón de dealer, lugar de cada jugador ("3º", "Reparte"),
@@ -184,5 +190,5 @@ Cada fase se puede hacer sola. Orden sugerido por impacto / esfuerzo.
 
 1. ¿La sesión personalizada (fase 3) reemplaza la tira de ejercicios como entrada
    principal o queda como un botón más?
-2. ¿Botones de acción con brillo (fase 1) solo en Entrenar o en toda la app?
+2. ~~¿Botones con brillo solo en Entrenar o en toda la app?~~ Solo Entrenar (24/11).
 3. ¿Sumamos "stack" a la mesa usando cajitas, o no tiene sentido en la mesa de La Cajita?

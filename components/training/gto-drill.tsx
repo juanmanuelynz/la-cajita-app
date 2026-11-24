@@ -2,8 +2,7 @@
 
 import { useState, type ReactNode } from "react"
 import { alpha, bluffShare, makeGto, mdf, type GtoDrill as GtoData } from "@/lib/poker/gto"
-import { cn } from "@/lib/utils"
-import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, answerTone, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 const TITLES: Record<GtoData["question"], string> = {
   defend: "¿Cuánto defender?",
@@ -176,26 +175,19 @@ export function GtoDrill(props: DrillProps<GtoData>) {
         </div>
       }
     >
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {drill.options.map((o) => (
-          <button
+          <AnswerButton
             key={o}
-            type="button"
-            disabled={answered}
+            tone={answerTone(answered, { correct: o === drill.answer, picked: picked === o })}
+            className="text-lg font-bold tabular-nums"
             onClick={() => {
               setPicked(o)
               answer(o === drill.answer ? "right" : "wrong")
             }}
-            className={cn(
-              "min-h-12 rounded-xl border bg-card text-lg font-bold tabular-nums transition-colors",
-              !answered && "active:scale-[0.97] active:bg-muted",
-              answered && o === drill.answer && "border-emerald-500 bg-emerald-500/10 text-emerald-500",
-              answered && picked === o && o !== drill.answer && "border-rose-500 bg-rose-500/10 text-rose-500",
-              answered && o !== drill.answer && picked !== o && "opacity-50",
-            )}
           >
             {fmt(o)}
-          </button>
+          </AnswerButton>
         ))}
       </div>
     </DrillShell>

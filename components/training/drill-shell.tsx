@@ -1,8 +1,8 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react"
-import { CheckCircle2, XCircle, Flame, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from "react"
+import { createPortal } from "react-dom"
+import { Check, X, Equal, Flame, ChevronDown } from "lucide-react"
 import { playSequence, playSound, type SoundName } from "@/lib/sounds"
 import type { Variant } from "@/lib/poker/variants"
 import type { DrillId } from "@/lib/poker/training"
@@ -120,6 +120,38 @@ export function DrillShell({
   headline?: ReactNode
   nextLabel?: string
 }) {
+  const endRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const [sheetH, setSheetH] = useState(0)
+  const scrolled = useRef(false)
+
+  // Medir el panel (cambia al abrir "Ver por qué").
+  useEffect(() => {
+    if (!verdict) {
+      setSheetH(0)
+      scrolled.current = false
+      return
+    }
+    const el = sheetRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setSheetH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [verdict])
+
+  // Al responder, que los botones queden a la vista justo arriba del panel.
+  useEffect(() => {
+    if (!verdict || !sheetH || scrolled.current) return
+    scrolled.current = true
+    const end = endRef.current
+    if (!end) return
+    const delta = end.getBoundingClientRect().bottom - (window.innerHeight - sheetH - 12)
+    if (delta <= 0) return
+    const parent = scrollParent(end)
+    if (parent) parent.scrollBy({ top: delta, behavior: "smooth" })
+    else window.scrollBy({ top: delta, behavior: "smooth" })
+  }, [verdict, sheetH])
+
   return (
     <div className="relative pt-2 space-y-4">
       {score?.milestone && (
@@ -157,28 +189,191 @@ export function DrillShell({
 
       {children}
 
-      {verdict && (
-        <div
-          className={cn(
-            "rounded-lg border p-3 space-y-2 text-sm",
-            verdict === "wrong" ? "border-rose-500/50 bg-rose-500/10" : "border-emerald-500/50 bg-emerald-500/10",
-          )}
-        >
-          <div className="flex items-center gap-2 font-semibold">
-            {verdict === "wrong" ? (
-              <XCircle className="w-4 h-4 text-rose-500" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+      <div ref={endRef} />
+      {/* Lugar para poder scrollear lo de arriba por encima del panel. */}
+      {verdict && <div aria-hidden style={{ height: sheetH }} />}
+
+      {verdict &&
+        createPortal(
+          <AnswerSheet
+            ref={sheetRef}
+            verdict={verdict}
+            headline={headline}
+            feedback={feedback}
+            nextLabel={nextLabel}
+            onNext={onNext}
+          />,
+          document.body,
+        )}
+    </div>
+  )
+}
+
+/** Busca el contenedor que scrollea (la pestaña), o null si es la ventana. */
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY
+    if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) return p
+  }
+  return null
+}
+
+const VERDICT_TEXT: Record<Verdict, string> = { right: "¡Bien!", wrong: "No era", close: "Muy justo: las dos valen" }
+
+/**
+ * La respuesta, en un panel que sube desde abajo: veredicto, el dato clave y la
+ * explicación plegada en "Ver por qué". Va en un portal sobre <body> porque el
+ * carrusel de pestañas tiene transform (ver CelebrationOverlay).
+ */
+function AnswerSheet({
+  ref,
+  verdict,
+  headline,
+  feedback,
+  nextLabel,
+  onNext,
+}: {
+  ref: Ref<HTMLDivElement>
+  verdict: Verdict
+  headline?: ReactNode
+  feedback?: ReactNode
+  nextLabel: string
+  onNext: () => void
+}) {
+  const [why, setWhy] = useState(false)
+  const Icon = verdict === "right" ? Check : verdict === "wrong" ? X : Equal
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label={VERDICT_TEXT[verdict]}
+      className="answer-sheet fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[80dvh] max-w-lg flex-col rounded-t-3xl border-t bg-background shadow-[0_-12px_32px_rgba(0,0,0,0.55)]"
+    >
+      <div className="overflow-y-auto px-4 pt-2 space-y-3 text-sm">
+        <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/40" />
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-black",
+              verdict === "right" ? "bg-emerald-500" : verdict === "wrong" ? "bg-rose-500" : "bg-amber-400",
             )}
-            {verdict === "right" ? "¡Bien!" : verdict === "close" ? "Muy justo: las dos valen" : "No era esa"}
+          >
+            <Icon className="h-5 w-5" strokeWidth={3} />
           </div>
-          {headline && <div className="py-1">{headline}</div>}
-          {feedback}
-          <Button className="w-full mt-1" onClick={onNext}>
-            {nextLabel} <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+          <div className="text-lg font-semibold">{VERDICT_TEXT[verdict]}</div>
         </div>
+        {headline && <div>{headline}</div>}
+        {feedback && (
+          <>
+            <button
+              type="button"
+              onClick={() => setWhy((w) => !w)}
+              aria-expanded={why}
+              className="flex items-center gap-1 text-muted-foreground"
+            >
+              {why ? "Ocultar" : "Ver por qué"}
+              <ChevronDown className={cn("h-4 w-4 transition-transform", why && "rotate-180")} />
+            </button>
+            {why && <div className="pb-1">{feedback}</div>}
+          </>
+        )}
+      </div>
+      <div className="px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)]">
+        <button
+          type="button"
+          onClick={onNext}
+          className="h-12 w-full rounded-2xl bg-foreground text-base font-semibold text-background active:scale-[0.98] transition-transform"
+        >
+          {nextLabel}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export type AnswerTone = "idle" | "right" | "wrong" | "close" | "dim"
+
+/**
+ * Cómo se ve cada opción al responder: la correcta se prende en verde, la que
+ * elegiste mal en rojo y el resto se apaga. Con `close` (las dos valen) se
+ * prende en dorado la que elegiste.
+ */
+export function answerTone(
+  answered: boolean,
+  { correct, picked, close = false }: { correct: boolean; picked: boolean; close?: boolean },
+): AnswerTone {
+  if (!answered) return "idle"
+  if (close) return picked ? "close" : "dim"
+  if (correct) return "right"
+  return picked ? "wrong" : "dim"
+}
+
+const TONE_BUTTON: Record<AnswerTone, string> = {
+  idle: "border-border bg-card active:scale-[0.97] active:bg-muted",
+  right:
+    "border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 shadow-[0_0_22px_-2px_rgba(16,185,129,0.6)]",
+  wrong: "border-rose-500 bg-rose-500/15 text-rose-600 dark:text-rose-300 shadow-[0_0_22px_-2px_rgba(244,63,94,0.55)]",
+  close: "border-amber-400 bg-amber-400/15 text-amber-600 dark:text-amber-200 shadow-[0_0_22px_-2px_rgba(251,191,36,0.5)]",
+  dim: "border-border bg-card opacity-40",
+}
+
+const TONE_PILL: Record<AnswerTone, string> = {
+  idle: "border-border text-muted-foreground",
+  right: "border-emerald-500/70 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  wrong: "border-rose-500/70 bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  close: "border-amber-400/70 bg-amber-400/10 text-amber-600 dark:text-amber-300",
+  dim: "border-border text-muted-foreground",
+}
+
+/** Monto promedio en múltiplos de $100 (la ficha más chica), con signo. */
+export function evLabel(n: number): string {
+  const r = Math.round(n / 100) * 100
+  if (r === 0) return n === 0 ? pesos(0) : `≈ ${pesos(0)}`
+  return `${r > 0 ? "+" : "−"}${pesos(Math.abs(r))}`
+}
+
+/**
+ * Botón de respuesta de Entrenar (la misma pieza en todos los ejercicios). Con
+ * `amount` muestra arriba, al responder, cuánto se gana o pierde en promedio
+ * con esa opción (el lugar está reservado desde antes para que no salte nada).
+ */
+export function AnswerButton({
+  tone,
+  amount,
+  className,
+  children,
+  ...props
+}: { tone: AnswerTone; amount?: number } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const answered = tone !== "idle"
+  const button = (
+    <button
+      type="button"
+      disabled={answered}
+      {...props}
+      className={cn(
+        "min-h-14 w-full rounded-2xl border-2 px-2 text-base font-semibold leading-tight transition-all duration-200",
+        TONE_BUTTON[tone],
+        className,
       )}
+    >
+      {children}
+    </button>
+  )
+  if (amount === undefined) return button
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        aria-hidden={!answered}
+        className={cn(
+          "flex h-7 items-center rounded-lg border px-3 text-sm font-semibold tabular-nums transition-opacity duration-300",
+          TONE_PILL[tone === "dim" ? "dim" : tone],
+          !answered && "opacity-0",
+          tone === "dim" && "opacity-60",
+        )}
+      >
+        {evLabel(amount)}
+      </div>
+      {button}
     </div>
   )
 }

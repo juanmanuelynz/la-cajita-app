@@ -1,10 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { makePotOdds, type PotOddsDrill as PotOddsData } from "@/lib/poker/drills"
-import { cn } from "@/lib/utils"
-import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { callEv, makePotOdds, type PotOddsDrill as PotOddsData } from "@/lib/poker/drills"
+import { AnswerButton, DrillShell, Stats, answerTone, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 import { OutsMath, SpotView } from "./outs-drill"
 
 export function PotOddsDrill(props: DrillProps<PotOddsData>) {
@@ -79,31 +77,17 @@ export function PotOddsDrill(props: DrillProps<PotOddsData>) {
       }
     >
       <SpotView {...drill} variant={variant} />
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          disabled={answered}
-          onClick={() => choose("fold")}
-          className={cn(
-            "disabled:opacity-100",
-            answered && !drill.shouldCall && "border-emerald-500 bg-emerald-500/10",
-            answered && picked === "fold" && drill.shouldCall && !drill.close && "border-rose-500 bg-rose-500/10",
-          )}
-        >
-          Fold
-        </Button>
-        <Button
-          variant="outline"
-          disabled={answered}
-          onClick={() => choose("call")}
-          className={cn(
-            "disabled:opacity-100",
-            answered && drill.shouldCall && "border-emerald-500 bg-emerald-500/10",
-            answered && picked === "call" && !drill.shouldCall && !drill.close && "border-rose-500 bg-rose-500/10",
-          )}
-        >
-          Call {pesos(bet)}
-        </Button>
+      <div className="grid grid-cols-2 gap-3">
+        {(["fold", "call"] as const).map((c) => (
+          <AnswerButton
+            key={c}
+            tone={answerTone(answered, { correct: (c === "call") === drill.shouldCall, picked: picked === c, close: drill.close })}
+            amount={c === "call" ? callEv(pot, bet, equity) : 0}
+            onClick={() => choose(c)}
+          >
+            {c === "call" ? `Call ${pesos(bet)}` : "Fold"}
+          </AnswerButton>
+        ))}
       </div>
     </DrillShell>
   )

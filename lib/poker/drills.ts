@@ -128,6 +128,13 @@ export interface PotOddsDrill {
 
 const BET_FRACTIONS = [1 / 3, 1 / 2, 2 / 3, 3 / 4, 1, 1.5]
 
+/**
+ * Cuánto ganás o perdés en promedio por hacer call (fold = $0): con chance
+ * `equity` te llevás el pozo más su apuesta, si no perdés lo que pusiste.
+ * Da 0 justo cuando `equity` = apuesta ÷ (pozo + 2 × apuesta).
+ */
+export const callEv = (pot: number, bet: number, equity: number) => equity * (pot + bet) - (1 - equity) * bet
+
 export function makePotOdds(v: Variant, rng: Rng = Math.random): PotOddsDrill {
   const street = rng() < 0.7 ? "turn" : "flop"
   const s = makeBehindSpot(v, street, rng)
@@ -139,7 +146,8 @@ export function makePotOdds(v: Variant, rng: Rng = Math.random): PotOddsDrill {
   // Montos en pesos parecidos a una mesa con cajitas de $2000.
   const pot = (4 + Math.floor(rng() * 57)) * 100 // $400 … $6000
   const frac = BET_FRACTIONS[Math.floor(rng() * BET_FRACTIONS.length)]
-  const bet = Math.max(100, Math.round((pot * frac) / 50) * 50)
+  // Múltiplos de $100: la ficha más chica de La Cajita.
+  const bet = Math.max(100, Math.round((pot * frac) / 100) * 100)
   const needed = bet / (pot + 2 * bet)
 
   return {
@@ -405,7 +413,7 @@ export function makeLuz(v: Variant, rng: Rng = Math.random): LuzDrill {
   const betSeat = 1 + Math.floor(rng() * (seat - 1))
   const { holes } = deal(v, 2, holeCount, 0, rng)
   const frac = LUZ_BET_FRACTIONS[Math.floor(rng() * LUZ_BET_FRACTIONS.length)]
-  const amount = Math.max(luz, Math.round((pot * frac) / 50) * 50)
+  const amount = Math.max(luz, Math.round((pot * frac) / 100) * 100)
   const trials = LUZ_TRIALS[v.game]
   const equity = equityMonteCarlo(holes, [], v, trials, rng).equity[0]
   const needed = amount / (pot + 2 * amount)

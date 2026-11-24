@@ -61,8 +61,8 @@ function percentOptions(answer: number, related: number[], rng: Rng): number[] {
 export function makeGto(_v: Variant, rng: Rng = Math.random, question?: GtoQuestion): GtoDrill {
   const q = question ?? GTO_QUESTIONS[Math.floor(rng() * GTO_QUESTIONS.length)]
   const size = GTO_SIZES[Math.floor(rng() * GTO_SIZES.length)]
-  // Pozos múltiplos de $600: todos los tamaños dan montos redondos.
-  const pot = (1 + Math.floor(rng() * 10)) * 600
+  // Pozos múltiplos de $1200: todos los tamaños dan múltiplos de $100 (la ficha más chica).
+  const pot = (1 + Math.floor(rng() * 5)) * 1200
   const bet = pot * size.frac
   const r = (x: number) => Math.round(x * 100)
   const all = [r(mdf(pot, bet)), r(alpha(pot, bet)), r(bluffShare(pot, bet)), r(1 - bluffShare(pot, bet))]

@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
+import { callEv, makeLuz, type LuzDrill as LuzData } from "@/lib/poker/drills"
 import { cn } from "@/lib/utils"
 import { PokerTable, TableChip } from "./table-view"
-import { DrillShell, Stats, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, Stats, answerTone, pct, pesos, useDrill, type DrillProps } from "./drill-shell"
 
 type Choice = "fold" | "check" | "bet" | "call"
 
@@ -154,21 +153,17 @@ export function LuzDrill(props: DrillProps<LuzData>) {
         center={<TableChip>Pozo {pesos(drill.pot)}</TableChip>}
         bottom={[{ key: "vos", name: `Vos · ${drill.seat}º`, hero: true, cards: drill.hero, deal: 0 }]}
       />
-      <div className={cn("grid gap-2", bet ? "grid-cols-2" : "grid-cols-3")}>
+      <div className={cn("grid gap-3", bet ? "grid-cols-2" : "grid-cols-3")}>
         {options.map((o) => (
-          <Button
+          <AnswerButton
             key={o.id}
-            variant="outline"
-            disabled={answered}
+            tone={answerTone(answered, { correct: isRight(o.id), picked: picked === o.id, close: bet?.close })}
+            // Con apuesta, cuánto deja cada opción en promedio. Sin apuesta no se puede calcular check vs apostar.
+            amount={bet ? (o.id === "call" ? callEv(drill.pot, bet.amount, bet.equity) : 0) : undefined}
             onClick={() => choose(o.id)}
-            className={cn(
-              "disabled:opacity-100",
-              answered && isRight(o.id) && "border-emerald-500 bg-emerald-500/10",
-              answered && picked === o.id && !isRight(o.id) && "border-rose-500 bg-rose-500/10",
-            )}
           >
             {o.label}
-          </Button>
+          </AnswerButton>
         ))}
       </div>
     </DrillShell>

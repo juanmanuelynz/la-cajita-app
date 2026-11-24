@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react"
 import { FlaskConical } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { makePreflop, type PreflopDrill as PreflopData } from "@/lib/poker/drills"
 import {
   OPEN_RANGES,
@@ -19,7 +18,7 @@ import { BETA_VALIDATION, betaThreshold, shortOpens } from "@/lib/poker/preflop-
 import { GAMES, type Variant } from "@/lib/poker/variants"
 import { cn } from "@/lib/utils"
 import { PokerTable } from "./table-view"
-import { DrillShell, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
+import { AnswerButton, DrillShell, answerTone, Stats, pct, useDrill, type DrillProps } from "./drill-shell"
 
 const TABLE_SIZES = [4, 5, 6] as const
 const POSITIONS: Position[] = ["UTG", "MP", "CO", "BU", "SB"]
@@ -234,21 +233,15 @@ export function PreflopDrill(props: DrillProps<PreflopData>) {
         <SeatsRow table={drill.table} pos={drill.pos} />
         <SeatsLegend />
         <PokerTable boardLabel="Antes del flop" bottom={[{ key: "vos", name: "Vos", hero: true, cards: drill.cards, deal: 0 }]} />
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {[false, true].map((open) => (
-            <Button
+            <AnswerButton
               key={String(open)}
-              variant="outline"
-              disabled={answered}
+              tone={answerTone(answered, { correct: open === drill.open, picked: picked === open })}
               onClick={() => choose(open)}
-              className={cn(
-                "disabled:opacity-100",
-                answered && open === drill.open && "border-emerald-500 bg-emerald-500/10",
-                answered && picked === open && open !== drill.open && "border-rose-500 bg-rose-500/10",
-              )}
             >
               {open ? "Subo" : "Fold"}
-            </Button>
+            </AnswerButton>
           ))}
         </div>
       </DrillShell>
