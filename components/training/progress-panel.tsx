@@ -493,25 +493,23 @@ export function TrainerCard({
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             aria-label="Cambiar quién entrena"
           >
-            <div className="relative">
-              <Avatar name={player.name} className="h-10 w-10" />
-              <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-card bg-amber-400 px-1.5 text-[10px] font-black leading-4 text-black tabular-nums">
-                {lvl.level}
-              </span>
-            </div>
+            <Avatar name={player.name} className="h-10 w-10" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-1.5">
-                <span className="max-w-[65%] shrink-0 truncate font-bold leading-tight">{player.name}</span>
-                <span className="hidden min-w-0 truncate text-xs text-muted-foreground min-[360px]:inline">
+              <div className="flex items-center gap-1">
+                <span className="min-w-0 truncate font-bold leading-tight">{player.name}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </div>
+              {/* El nivel, una sola vez: al lado de la barra que muestra cuánto falta para el próximo. */}
+              <div className="mt-1 flex items-center gap-2">
+                <div className="h-1.5 min-w-6 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 transition-[width] duration-700"
+                    style={{ width: `${(lvl.into / lvl.span) * 100}%` }}
+                  />
+                </div>
+                <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-amber-500">
                   Nv {lvl.level} · {lvl.title}
                 </span>
-                <ChevronDown className="h-3.5 w-3.5 shrink-0 self-center text-muted-foreground" />
-              </div>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 transition-[width] duration-700"
-                  style={{ width: `${(lvl.into / lvl.span) * 100}%` }}
-                />
               </div>
             </div>
           </button>

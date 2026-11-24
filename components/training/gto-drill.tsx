@@ -62,14 +62,14 @@ export function GtoDrill(props: DrillProps<GtoData>) {
     ),
     bluffShare: (
       <>
-        Tus manos o ganan seguro o pierden seguro. Para que al rival le dé lo mismo pagar o tirar, ¿qué % de tus apuestas
+        Tus manos o ganan seguro o pierden seguro. Para que al rival le dé lo mismo pagar o foldear, ¿qué % de tus apuestas
         pueden ser <b>bluffs</b>?
       </>
     ),
     bluffCombos: (
       <>
         Tenés <b>{drill.value} manos</b> que ganan seguro. ¿Cuántos bluffs podés sumar para que al rival le dé lo mismo
-        pagar o tirar?
+        pagar o foldear?
       </>
     ),
   }
@@ -78,7 +78,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
   const explanation: Record<GtoData["question"], ReactNode> = {
     defend: (
       <p>
-        Un bluff arriesga {pesos(bet)} para ganar {pesos(pot)}: le alcanza con que tires {pesos(bet)} ÷ {pesos(pot + bet)} ={" "}
+        Un bluff arriesga {pesos(bet)} para ganar {pesos(pot)}: le alcanza con que foldees {pesos(bet)} ÷ {pesos(pot + bet)} ={" "}
         {pct(a, 0)} de las veces. Para que no gane solo, seguí con al menos pozo ÷ (pozo + apuesta) = {pesos(pot)} ÷{" "}
         {pesos(pot + bet)} = <b>{pct(m, 0)}</b> de tus manos.
       </p>
@@ -86,7 +86,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
     foldNeeded: (
       <p>
         Arriesgás {pesos(bet)} para ganar {pesos(pot)}. Empata cuando apuesta ÷ (pozo + apuesta) = {pesos(bet)} ÷{" "}
-        {pesos(pot + bet)} = <b>{pct(a, 0)}</b>. Si el rival tira más seguido que eso, el bluff gana plata.
+        {pesos(pot + bet)} = <b>{pct(a, 0)}</b>. Si el rival foldea más seguido que eso, el bluff gana plata.
       </p>
     ),
     bluffShare: (
@@ -149,7 +149,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
               left={m}
               right={a}
               leftLabel={`Sigue ${pct(m, 0)}`}
-              rightLabel={`Tira ${pct(a, 0)}`}
+              rightLabel={`Foldea ${pct(a, 0)}`}
               leftClass="bg-emerald-500"
               rightClass="bg-rose-500/70"
             />
