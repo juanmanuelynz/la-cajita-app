@@ -23,7 +23,6 @@ import {
   Settings,
   RefreshCw,
   GraduationCap,
-  Zap,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -88,7 +87,7 @@ const TABS: { id: TabId; label: string; short: string; icon: LucideIcon }[] = [
 // El invitado (GUEST_PIN) solo ve sus sueltas, Entrenar y los Ajustes (con el logout).
 const GUEST_TABS: typeof TABS = [
   { id: "entrenar", label: "Entrenar", short: "Entrenar", icon: GraduationCap },
-  { id: "partidas", label: "Partidas sueltas", short: "Sueltas", icon: Zap },
+  { id: "partidas", label: "Partidas", short: "Partidas", icon: NotebookPen },
   { id: "reglas", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
