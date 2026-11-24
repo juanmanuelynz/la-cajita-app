@@ -638,6 +638,11 @@ function LaCajitaPoker() {
               </button>
             </div>
           )}
+          {isGuest && (
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              Como invitado podés anotar partidas sueltas y usar Entrenar.
+            </p>
+          )}
           {!isGuest && selectedTournament && (
             <div className="flex justify-center items-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">

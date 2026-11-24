@@ -782,6 +782,11 @@ export default function EditActiveMatchPage() {
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-xl font-semibold">Cierre de Partida</h2>
             </div>
+            <p className="-mt-4 text-sm text-muted-foreground">
+              En <strong className="text-foreground">Fichas finales</strong> anotá cuánta plata tiene cada uno en
+              fichas al terminar (en $, no la cantidad de fichas). <strong className="text-foreground">Cjts.</strong>{" "}
+              son las cajitas que compró.
+            </p>
 
             <Card className="border-0 bg-transparent shadow-none">
               <CardContent className="p-0">
