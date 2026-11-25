@@ -86,7 +86,8 @@ el rol `player` y el id del jugador; los tokens de hoy siguen valiendo.
 
 ### Reglas de juego
 
-- **Luz** de $100 por jugador, sin ciegas. Habla primero el de la izquierda del
+- **Luz** igual para todos, sin ciegas. **Se elige al crear la mesa** y arranca
+  en $100. Habla primero el de la izquierda del
   que reparte y el que reparte habla último. Si nadie apostó, se puede pasar.
   Es la misma regla que el ejercicio "Con luz" de Entrenar.
 - **Sin límite.** La subida mínima es igual a la última subida.
@@ -107,14 +108,8 @@ el rol `player` y el id del jugador; los tokens de hoy siguen valiendo.
 
 - **El valor de la cajita se elige al crear la mesa** y arranca en $2.000.
 - Cada cajita suma su valor en fichas.
-- Se puede **pedir otra cuando te quedan $500 o menos**. Entra antes de la mano
-  siguiente.
-
-> **A confirmar** (propuesta, el grupo todavía no lo decidió):
-> - ¿La luz también se elige al crear la mesa, arrancando en $100? Con
->   cajitas grandes, $100 queda chico.
-> - ¿El límite para pedir otra cajita es siempre $500, o una cuarta parte de la
->   cajita? Con cajitas de $2.000 da lo mismo.
+- Se puede **pedir otra cuando te queda una cuarta parte de la cajita o menos**
+  (con cajitas de $2.000, $500). Entra antes de la mano siguiente.
 
 ### Resultados
 
