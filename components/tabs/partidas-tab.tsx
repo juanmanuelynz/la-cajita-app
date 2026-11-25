@@ -45,6 +45,8 @@ interface PartidasTabProps {
   /** Sin esto no se muestra el botón de borrar (invitado). */
   onConfirmDeleteMatch?: (id: string) => void
   onShowSummary: (id: string) => void
+  /** Arriba del contenido (no en Sueltas): el torneo, o el aviso de invitado. */
+  header?: React.ReactNode
 }
 
 export function PartidasTab({
@@ -63,6 +65,7 @@ export function PartidasTab({
   onDeleteActive,
   onConfirmDeleteMatch,
   onShowSummary,
+  header,
 }: PartidasTabProps) {
   const [subtab, setSubtab] = useState<PartidasSubtab>("partida")
 
@@ -195,6 +198,8 @@ export function PartidasTab({
           ]}
         />
       </div>
+
+      {header && (guest || subtab !== "sueltas") && <div className="pt-3">{header}</div>}
 
       <TabsContent value="partida" className="pt-4 pb-8 mt-0">
         <div className="space-y-4">

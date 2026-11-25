@@ -55,6 +55,8 @@ interface EstadisticasTabProps {
   evolutionSortBy: SortBy
   onTogglePlayerCard: (id: string) => void
   onEvolutionSortChange: (s: SortBy) => void
+  /** Arriba del contenido: el torneo del que son las estadísticas. */
+  header?: React.ReactNode
 }
 
 export function EstadisticasTab({
@@ -64,6 +66,7 @@ export function EstadisticasTab({
   evolutionSortBy,
   onTogglePlayerCard,
   onEvolutionSortChange,
+  header,
 }: EstadisticasTabProps) {
   const [subtab, setSubtab] = useState<StatsSubtab>("jugadores")
   const topWinners = getTopWinners(matches)
@@ -86,6 +89,8 @@ export function EstadisticasTab({
           ]}
         />
       </div>
+
+      {header && <div className="pt-3">{header}</div>}
 
       <TabsContent value="jugadores" className="pt-4 pb-8 space-y-4 mt-0">
         {sortedPlayerStats.map((player) => {

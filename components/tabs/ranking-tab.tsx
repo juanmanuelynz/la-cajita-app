@@ -47,6 +47,8 @@ interface RankingTabProps {
   loading: boolean
   onContinueActive: (id: string) => void
   onDeleteActive: (id: string) => void
+  /** En "Torneo actual", el título de la tabla: el nombre del torneo (con refrescar). */
+  tournamentTitle?: React.ReactNode
 }
 
 export function RankingTab({
@@ -60,6 +62,7 @@ export function RankingTab({
   loading,
   onContinueActive,
   onDeleteActive,
+  tournamentTitle,
 }: RankingTabProps) {
   // Solo en "Torneo actual": en el histórico no hay una "última partida".
   const movement = useMemo(
@@ -95,9 +98,13 @@ export function RankingTab({
         </div>
       )}
 
-      <h2 className="text-2xl font-bold text-center">
-        {rankingScope === "historico" ? "Tabla Histórica" : "Tabla Anual"}
-      </h2>
+      {rankingScope === "torneo" && tournamentTitle ? (
+        <h2>{tournamentTitle}</h2>
+      ) : (
+        <h2 className="text-2xl font-bold text-center">
+          {rankingScope === "historico" ? "Tabla Histórica" : "Tabla Anual"}
+        </h2>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full">

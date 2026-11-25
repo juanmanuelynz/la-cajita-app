@@ -26,7 +26,7 @@ import { IconTabsList } from "@/components/icon-tabs";
 import { Flag, ScrollText, SlidersHorizontal } from "lucide-react";
 import { Plus, Trophy } from "lucide-react";
 import { ChipSpinner } from "@/components/poker-chip";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { POINTS_CONFIG_PRESETS, POINTS_DISTRIBUTION } from "@/lib/constants";
 import type {
   MatchWithPlayers,
@@ -63,6 +63,8 @@ interface ReglasTabProps {
   onRemovePlayerFromRoster: (playerId: string) => Promise<void>;
   onCreateAndAddPlayer: (name: string) => Promise<void>;
   onSelectTournament: (tournamentId: string) => void;
+  /** Cada vez que cambia, vuelve a la sub-pestaña Torneo (al tocar el nombre del torneo en otra pantalla). */
+  showTorneoSignal?: number;
 }
 
 const DEFAULT_CONFIG: number[] = [...POINTS_CONFIG_PRESETS["Clásico"]];
@@ -90,8 +92,12 @@ export function ReglasTab({
   onRemovePlayerFromRoster,
   onCreateAndAddPlayer,
   onSelectTournament,
+  showTorneoSignal,
 }: ReglasTabProps) {
   const [subtab, setSubtab] = useState<ReglasSubtab>("torneo");
+  useEffect(() => {
+    if (showTorneoSignal) setSubtab("torneo");
+  }, [showTorneoSignal]);
 
   const [pointsConfig, setPointsConfig] = useState<number[]>(DEFAULT_CONFIG);
   const [createRoster, setCreateRoster] = useState<Set<string>>(new Set());

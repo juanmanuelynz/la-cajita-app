@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useState, useEffect, Suspense, useMemo, useCallback, type ComponentType } from "react"
+import { useState, useEffect, useRef, Suspense, useMemo, useCallback, type ComponentType } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import {
   AlertCircle,
   BarChart3,
   Settings,
-  RefreshCw,
   Brain,
 } from "lucide-react"
 import {
@@ -36,6 +35,7 @@ import {
 } from "chart.js"
 import * as db from "@/lib/database"
 import { ChipSpinner } from "@/components/poker-chip"
+import { TournamentLine } from "@/components/tournament-line"
 import { SpadeGlyph } from "@/components/spade-glyph"
 import { MatchSummary } from "@/components/match-summary"
 import type {
@@ -348,6 +348,26 @@ function LaCajitaPoker() {
     else await loadCasualData()
   }
 
+  // Al volver a la app después de un rato (otro pudo cargar una partida), refrescar solo.
+  const refreshRef = useRef(refreshData)
+  refreshRef.current = refreshData
+  useEffect(() => {
+    let hiddenAt = 0
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") hiddenAt = Date.now()
+      else if (hiddenAt && Date.now() - hiddenAt > 30_000) void refreshRef.current()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
+  }, [])
+
+  // Tocar el nombre del torneo lleva a Ajustes → Torneo, donde se elige.
+  const [torneoSignal, setTorneoSignal] = useState(0)
+  const openTournaments = () => {
+    setActiveTab("reglas")
+    setTorneoSignal((n) => n + 1)
+  }
+
   const handleTournamentChange = async (tournamentId: string) => {
     setSelectedTournamentId(tournamentId)
     await loadAllData(tournamentId)
@@ -396,6 +416,17 @@ function LaCajitaPoker() {
 
   const selectedTournament = tournaments.find((t) => t.id === selectedTournamentId)
   const isTournamentClosed = !!selectedTournament?.closed_at
+  const tournamentLine = (title?: boolean) =>
+    selectedTournament ? (
+      <TournamentLine
+        title={title}
+        name={selectedTournament.name}
+        closed={isTournamentClosed}
+        loading={loading}
+        onOpen={openTournaments}
+        onRefresh={refreshData}
+      />
+    ) : undefined
 
   // isCasual = partida suelta: se anota igual pero no suma al torneo, así
   // que se permite aunque el torneo esté cerrado.
@@ -557,6 +588,7 @@ function LaCajitaPoker() {
         loading={loading}
         onContinueActive={editActiveMatch}
         onDeleteActive={setActiveMatchToDelete}
+        tournamentTitle={tournamentLine(true)}
       />
     ),
     partidas: (
@@ -576,6 +608,18 @@ function LaCajitaPoker() {
         onDeleteActive={setActiveMatchToDelete}
         onConfirmDeleteMatch={isGuest ? undefined : confirmDeleteMatch}
         onShowSummary={setSummaryMatchId}
+        header={
+          isGuest ? (
+            <div className="space-y-0.5 text-center">
+              <TournamentLine name="Invitado" loading={loading} onRefresh={refreshData} />
+              <p className="text-xs text-muted-foreground">
+                Como invitado podés anotar partidas sueltas y usar Entrenar.
+              </p>
+            </div>
+          ) : (
+            tournamentLine()
+          )
+        }
       />
     ),
     estadisticas: (
@@ -586,6 +630,7 @@ function LaCajitaPoker() {
         evolutionSortBy={evolutionSortBy}
         onTogglePlayerCard={togglePlayerCard}
         onEvolutionSortChange={setEvolutionSortBy}
+        header={tournamentLine()}
       />
     ),
     entrenar: (
@@ -619,59 +664,21 @@ function LaCajitaPoker() {
         onRemovePlayerFromRoster={handleRemovePlayerFromRoster}
         onCreateAndAddPlayer={handleCreateAndAddPlayer}
         onSelectTournament={handleTournamentChange}
+        showTorneoSignal={torneoSignal}
       />
     ),
   }
 
   return (
     <div className="relative h-[100dvh] flex flex-col">
+      {/* Header compacto: solo la marca. El torneo y refrescar van dentro de las pantallas donde importan. */}
       <div className="backdrop-blur-sm border-b flex-shrink-0">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-around items-center">
-            <h1 className="text-xl md:text-2xl font-bold">♠️</h1>
-            <h1 className="text-xl md:text-2xl font-bold">♥️</h1>
-            <h1 className="text-xl md:text-2xl font-bold">La Cajita</h1>
-            <h1 className="text-xl md:text-2xl font-bold">♦️</h1>
-            <h1 className="text-xl md:text-2xl font-bold">♣️</h1>
-          </div>
-          {isGuest && (
-            <div className="flex justify-center items-center gap-3 mt-2">
-              <p className="text-sm text-muted-foreground">Invitado</p>
-              <button
-                onClick={refreshData}
-                disabled={loading}
-                aria-label="Refrescar"
-                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {loading ? <ChipSpinner className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
-              </button>
-            </div>
-          )}
-          {isGuest && (
-            <p className="mt-1 text-center text-xs text-muted-foreground">
-              Como invitado podés anotar partidas sueltas y usar Entrenar.
-            </p>
-          )}
-          {!isGuest && selectedTournament && (
-            <div className="flex justify-center items-center gap-2 mt-2">
-              <p className="text-sm text-muted-foreground">
-                {selectedTournament.name}
-                {selectedTournament.closed_at ? " 🔒" : ""}
-              </p>
-              <button
-                onClick={refreshData}
-                disabled={loading}
-                aria-label="Refrescar"
-                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {loading ? (
-                  <ChipSpinner className="w-4 h-4" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          )}
+        <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
+          <span aria-hidden>♠️</span>
+          <span aria-hidden>♥️</span>
+          <h1>La Cajita</h1>
+          <span aria-hidden>♦️</span>
+          <span aria-hidden>♣️</span>
         </div>
       </div>
 
