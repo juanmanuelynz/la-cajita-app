@@ -1,5 +1,6 @@
 "use client"
 
+import { SUIT_RED } from "@/components/training/playing-card"
 import { cn } from "@/lib/utils"
 import { useState, useEffect, useRef, Suspense, useMemo, useCallback, type ComponentType } from "react"
 import useEmblaCarousel from "embla-carousel-react"
@@ -675,11 +676,12 @@ function LaCajitaPoker() {
       {/* Fondo sólido, sin backdrop-blur: en el iPhone (app instalada) el blur dejaba el título gris y borroso. */}
       <div className="border-b bg-background text-foreground flex-shrink-0">
         <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
-          <span aria-hidden>♠️</span>
-          <span aria-hidden>♥️</span>
+          {/* Palos como texto (\uFE0E), no emoji: en el iPhone ♠ y ♣ salían negros sobre el fondo oscuro. Mismo coral que las cartas. */}
+          <span aria-hidden>{"♠\uFE0E"}</span>
+          <span aria-hidden className={SUIT_RED}>{"♥\uFE0E"}</span>
           <h1>La Cajita</h1>
-          <span aria-hidden>♦️</span>
-          <span aria-hidden>♣️</span>
+          <span aria-hidden className={SUIT_RED}>{"♦\uFE0E"}</span>
+          <span aria-hidden>{"♣\uFE0E"}</span>
         </div>
       </div>
 
