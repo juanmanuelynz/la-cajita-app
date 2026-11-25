@@ -672,7 +672,8 @@ function LaCajitaPoker() {
   return (
     <div className="relative h-[100dvh] flex flex-col">
       {/* Header compacto: solo la marca. El torneo y refrescar van dentro de las pantallas donde importan. */}
-      <div className="backdrop-blur-sm border-b flex-shrink-0">
+      {/* Fondo sólido, sin backdrop-blur: en el iPhone (app instalada) el blur dejaba el título gris y borroso. */}
+      <div className="border-b bg-background text-foreground flex-shrink-0">
         <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
           <span aria-hidden>♠️</span>
           <span aria-hidden>♥️</span>
