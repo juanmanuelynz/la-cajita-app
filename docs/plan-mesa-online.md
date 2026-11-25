@@ -42,14 +42,18 @@ Cómo funciona:
 - Quién es el admin no se escribe en el código (el repo es público): va en una
   variable de Vercel con el id del jugador (`ADMIN_PLAYER_ID`). El PIN de ese
   jugador solo se puede crear o cambiar desde una sesión de admin.
-- **Cada uno arma el suyo:** la primera vez elige su nombre y crea su PIN. Una
-  vez creado, solo el admin lo puede resetear (desde Configuración). Se guarda
-  cifrado, nunca tal cual.
+- **Alta con código de un solo uso:** el admin genera desde Configuración un
+  código para cada jugador y se lo pasa (por ejemplo, por WhatsApp). En el
+  login, "Es mi primera vez" → pone el código → elige su PIN. Así nadie puede
+  armarle el PIN a otro antes que él.
+  - El código sirve una sola vez y vence a los 7 días. Se guarda cifrado.
+  - **Olvidé mi PIN:** el admin genera otro código; al usarlo, el PIN viejo
+    deja de andar.
+  - El PIN de Zeta se arma igual, con un código que genera él mismo entrando
+    con el PIN del grupo.
+- El PIN se guarda cifrado, nunca tal cual.
 - Un PIN personal no puede ser igual al del grupo, al de invitado ni al de otro
   jugador.
-- **Lo que queda abierto:** mientras alguien no armó su PIN, otro podría
-  armárselo y sentarse en la mesa con su nombre. Entre amigos alcanza con que
-  cada uno arme el suyo pronto; si pasa, el admin lo resetea.
 
 ### Roles
 
@@ -153,7 +157,8 @@ En este orden. Cada paso se puede probar por separado antes de seguir.
 2. **Base de datos** (`scripts/15-online-tables.sql` y `scripts/migrate.mjs`):
    - tabla `online_tables`: estado de la mesa en JSONB, el mazo (nunca sale del
      servidor) y un número de versión;
-   - columna `pin_hash` en `players`.
+   - columna `pin_hash` en `players`, y tabla `player_invites` con los códigos
+     de un solo uso (cifrados, con vencimiento).
 3. **Acciones del servidor** (`lib/online-table.ts`, nuevo): crear mesa,
    sentarse con PIN, actuar, pedir cajita, cerrar y "ver la mesa".
    - "Ver la mesa" le devuelve a cada uno **solo sus cartas**. Las de los demás
