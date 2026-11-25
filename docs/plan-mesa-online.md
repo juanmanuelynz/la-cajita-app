@@ -1,8 +1,14 @@
 # Plan: mesa online
 
+> **En pausa (25/11/2026).** Lo más probable es jugar entre nosotros muy de
+> vez en cuando, y para eso alcanza con una app gratis de fichas de juguete.
+> Lo próximo es [jugar contra bots](plan-jugar-contra-bots.md), que reutiliza
+> el motor de la mano y los bots de este plan. El PIN personal y los roles
+> (paso 0) se hacen solo si el juego online prospera.
+
 Plan de la **etapa 1** de la mesa online: jugar entre el grupo, cada uno desde
 su celular, en la misma mano y al mismo tiempo. Acordado el 25/11/2026.
-**Todavía no hay código:** esto es lo que se va a construir.
+**No hay código:** esto es lo que se construiría.
 
 ## Decisiones
 
