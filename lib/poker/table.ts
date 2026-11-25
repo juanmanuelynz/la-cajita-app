@@ -2,14 +2,17 @@
 // docs/plan-jugar-contra-bots.md). Código puro: no sabe de pantallas, bots ni
 // base de datos. Lo usa "Jugar contra bots" y lo usaría la mesa online.
 //
-// Reglas:
-// - Luz igual para todos, sin ciegas: va al pozo pero no es una apuesta, así
-//   que antes del flop, como en las otras calles, se puede pasar.
-// - En todas las calles habla primero el de la izquierda del que reparte y el
-//   que reparte habla último.
-// - Sin límite. La apuesta mínima es la luz; la subida mínima, lo que subió el
-//   último (si nadie subió en la calle, la luz). Un all-in que no llega a la
-//   subida mínima no le reabre la subida a quien ya habló.
+// Reglas (se elige al crear la mesa: con luz o con ciegas):
+// - Con luz (como en La Cajita): luz igual para todos, sin ciegas. Va al pozo
+//   pero no es una apuesta, así que antes del flop se puede pasar. En todas las
+//   calles habla primero el de la izquierda del que reparte.
+// - Con ciegas: la chica la pone el de la izquierda del que reparte y la grande
+//   el siguiente. Antes del flop habla primero el de la izquierda de la grande y
+//   la grande habla última (si nadie subió, puede pasar). Después del flop,
+//   como con luz. Mano a mano, el que reparte pone la chica.
+// - Sin límite. La apuesta mínima es la luz (o la ciega grande); la subida
+//   mínima, lo que subió el último. Un all-in que no llega a la subida mínima
+//   no le reabre la subida a quien ya habló.
 // - Pozos laterales: se arman al final con lo que puso cada uno en la mano.
 // - Cajitas: se piden con una cuarta parte de la cajita o menos y entran antes
 //   de la mano siguiente.
@@ -30,11 +33,17 @@ const NEXT_STREET: Record<BettingStreet, BettingStreet | null> = {
 }
 const BOARD_AFTER: Record<BettingStreet, number> = { preflop: 0, flop: 3, turn: 4, river: 5 }
 
+export type Structure = "luz" | "ciegas"
+
 export interface TableConfig {
   /** Valor de la cajita: lo que suma en fichas cada una. */
   cajita: number
-  /** Luz por jugador. */
+  /** Con luz (todos ponen lo mismo) o con ciegas. */
+  structure: Structure
+  /** Luz por jugador (con luz). */
   luz: number
+  /** Ciegas chica y grande (con ciegas). */
+  blinds: { small: number; big: number }
   /** Juegos de la mesa: uno (fijo) o varios (se rota una vuelta de cada uno). */
   variants: Variant[]
   /** Ficha más chica: las apuestas son múltiplos (salvo un all-in). */
@@ -45,7 +54,9 @@ export interface TableConfig {
 
 export const DEFAULT_CONFIG: TableConfig = {
   cajita: 2000,
+  structure: "luz",
   luz: 100,
+  blinds: { small: 100, big: 200 },
   variants: [{ game: "holdem", deck: "long" }],
   chip: 100,
   burn: false,
@@ -126,6 +137,8 @@ export interface HandState {
   lastRaise: number
   /** Asiento que habla, o null si la mano terminó. */
   toAct: number | null
+  /** Índice en `players` del primero que habla antes del flop (con ciegas, el de la izquierda de la grande). */
+  preflopStart: number
   log: ActionLog[]
   result: HandResult | null
 }
@@ -156,7 +169,15 @@ export function createTable(config: TableConfig, players: { id: string; name: st
   }
   if (config.variants.length === 0) throw new Error("Falta el juego")
   // Todo en múltiplos de la ficha: así cualquier apuesta, pozo y all-in también lo es.
-  if (config.luz <= 0 || config.luz % config.chip !== 0) throw new Error(`La luz va de a ${config.chip}`)
+  if (config.structure === "luz" && (config.luz <= 0 || config.luz % config.chip !== 0)) {
+    throw new Error(`La luz va de a ${config.chip}`)
+  }
+  if (config.structure === "ciegas") {
+    const { small, big } = config.blinds
+    if (small <= 0 || big < small || small % config.chip !== 0 || big % config.chip !== 0) {
+      throw new Error(`Las ciegas van de a ${config.chip} y la grande no puede ser menor que la chica`)
+    }
+  }
   if (config.cajita <= 0 || config.cajita % config.chip !== 0) throw new Error(`La cajita va de a ${config.chip}`)
   return {
     config: clone(config),
@@ -240,21 +261,38 @@ export function startHand(
     deck = shuffled.reverse()
   }
 
-  const players: HandPlayer[] = order.map((s) => {
-    const seat = out.seats[s]
-    const luz = Math.min(out.config.luz, seat.stack)
-    seat.stack -= luz
-    return {
-      seat: s,
-      hole: holes[s],
-      folded: false,
-      allIn: seat.stack === 0,
-      committed: luz,
-      streetBet: 0,
-      acted: false,
-      canRaise: true,
-    }
-  })
+  const players: HandPlayer[] = order.map((s) => ({
+    seat: s,
+    hole: holes[s],
+    folded: false,
+    allIn: false,
+    committed: 0,
+    streetBet: 0,
+    acted: false,
+    canRaise: true,
+  }))
+  const post = (p: HandPlayer, amount: number, isBet: boolean) => {
+    const seat = out.seats[p.seat]
+    const paid = Math.min(amount, seat.stack)
+    seat.stack -= paid
+    p.committed += paid
+    if (isBet) p.streetBet += paid
+    if (seat.stack === 0) p.allIn = true
+  }
+  let currentBet = 0
+  let preflopStart = 0
+  const cfg = out.config
+  if (cfg.structure === "luz") {
+    for (const p of players) post(p, cfg.luz, false)
+  } else {
+    // Mano a mano el que reparte (último de la lista) pone la chica.
+    const sb = players.length === 2 ? players[1] : players[0]
+    const bb = players.length === 2 ? players[0] : players[1]
+    post(sb, cfg.blinds.small, true)
+    post(bb, cfg.blinds.big, true)
+    currentBet = cfg.blinds.big
+    preflopStart = (players.indexOf(bb) + 1) % players.length
+  }
 
   out.button = button
   out.handsPlayed = n
@@ -266,9 +304,10 @@ export function startHand(
     board: [],
     deck,
     street: "preflop",
-    currentBet: 0,
-    lastRaise: out.config.luz,
+    currentBet,
+    lastRaise: minBet(cfg),
     toAct: null,
+    preflopStart,
     log: [],
     result: null,
   }
@@ -286,18 +325,26 @@ function player(h: HandState, seat: number): HandPlayer {
 /** Los que todavía pueden decidir algo (no se retiraron ni están all-in). */
 const canAct = (p: HandPlayer) => !p.folded && !p.allIn
 
-/** Primero en hablar en la calle: el primero de la lista (ya está desde la izquierda del botón). */
+/**
+ * Primero en hablar en la calle: el primero de la lista (que arranca a la
+ * izquierda del botón); antes del flop con ciegas, el de la izquierda de la grande.
+ */
 function firstToAct(h: HandState): number | null {
-  const active = h.players.filter(canAct)
+  const start = h.street === "preflop" ? h.preflopStart : 0
+  const ordered = [...h.players.slice(start), ...h.players.slice(0, start)]
+  const active = ordered.filter(canAct)
   if (active.length === 0) return null
-  // Si queda uno solo con fichas y nadie le apostó, no hay nada que decidir.
+  // Si queda uno solo con fichas y ya pagó lo que hay, no hay nada que decidir.
   if (active.length === 1 && active[0].streetBet >= h.currentBet) return null
   return active[0].seat
 }
 
-/** Apuesta o subida mínima completa (total en la calle): la luz si nadie apostó; si no, apuesta + última subida. */
+/** Apuesta mínima: la luz, o la ciega grande. */
+export const minBet = (c: TableConfig) => (c.structure === "ciegas" ? c.blinds.big : c.luz)
+
+/** Apuesta o subida mínima completa (total en la calle): la mínima si nadie apostó; si no, apuesta + última subida. */
 function fullMinTo(c: TableConfig, h: HandState): number {
-  return h.currentBet === 0 ? Math.max(c.luz, c.chip) : h.currentBet + h.lastRaise
+  return h.currentBet === 0 ? Math.max(minBet(c), c.chip) : h.currentBet + h.lastRaise
 }
 
 /** Lo que puede hacer el que habla. */
@@ -320,7 +367,7 @@ export function legalActions(t: TableState): Legal | null {
   const stack = t.seats[p.seat].stack
   const toCall = Math.min(h.currentBet - p.streetBet, stack)
   const maxTo = p.streetBet + stack
-  // Apuesta mínima: la luz; subida mínima: la última subida completa.
+  // Apuesta mínima: la luz o la grande; subida mínima: la última subida completa.
   const minTo = Math.min(maxTo, fullMinTo(t.config, h))
   // Subir: tiene que tener más de lo que cuesta pagar, y que alguien más pueda pagarle.
   const othersCanCall = h.players.some((o) => o.seat !== p.seat && canAct(o))
@@ -440,7 +487,7 @@ function closeStreet(t: TableState) {
     h.street = next
     deal(h, BOARD_AFTER[next] - h.board.length, t.config.burn)
     h.currentBet = 0
-    h.lastRaise = t.config.luz
+    h.lastRaise = minBet(t.config)
     for (const p of h.players) {
       p.streetBet = 0
       p.acted = false

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { parseCards, seededRng } from "../lib/poker/cards"
-import { botAct, botDecide, botWantsCajita, decide, estimateEquity, type Situation } from "../lib/poker/bot"
+import { botAct, botDecide, botWantsCajita, decide, estimateEquity, seatPositions, type Situation } from "../lib/poker/bot"
+import { vsAction, vsSpots } from "../lib/poker/preflop-vs"
 import {
   act,
   canRequestCajita,
@@ -10,6 +11,7 @@ import {
   requestCajita,
   startHand,
   type Legal,
+  type TableConfig,
   type TableState,
 } from "../lib/poker/table"
 import type { Variant } from "../lib/poker/variants"
@@ -142,4 +144,85 @@ describe("Bots: en la mesa", () => {
     for (let i = 0; i < 10; i++) botDecide(t, seededRng(i))
     expect((performance.now() - t0) / 10).toBeLessThan(150)
   })
+})
+
+describe("Bots con ciegas: rangos de PokerStrategy en Hold'em Long", () => {
+  const blinds = { ...DEFAULT_CONFIG, structure: "ciegas" as const }
+  // Botón 0 → chica 1, grande 2, UTG 3, MP 4, CO 5.
+  const fixedHoles = (h3: string, h4 = "8c 3d") => ({
+    holes: {
+      0: parseCards("9c 4d"),
+      1: parseCards("Tc 5d"),
+      2: parseCards("Jc 6d"),
+      3: parseCards(h3),
+      4: parseCards(h4),
+      5: parseCards("Qc 7d"),
+    },
+    board: parseCards("2h 3h 4h 5h 6s"),
+  })
+
+  it("posiciones de 4 a 6 jugadores, como en Entrenar", () => {
+    const pos = (n: number) => {
+      const t = startHand(createTable(blinds, names(n)), seededRng(1))
+      return t.hand!.players.map((p) => seatPositions(t.hand!)!.get(p.seat))
+    }
+    expect(pos(6)).toEqual(["SB", "BB", "UTG", "MP", "CO", "BU"])
+    expect(pos(5)).toEqual(["SB", "BB", "MP", "CO", "BU"])
+    expect(pos(4)).toEqual(["SB", "BB", "CO", "BU"])
+  })
+
+  it("UTG abre AA a 3 ciegas y tira 72", () => {
+    let t = startHand(createTable(blinds, names(6)), seededRng(1), fixedHoles("As Ad"))
+    let d = botDecide(t, seededRng(2))
+    expect(d.source).toBe("pokerstrategy")
+    expect(d.action).toEqual({ type: "raise", to: 600 })
+    t = startHand(createTable(blinds, names(6)), seededRng(1), fixedHoles("7c 2d"))
+    d = botDecide(t, seededRng(2))
+    expect(d.action.type).toBe("fold")
+  })
+
+  it("contra la subida de UTG, MP hace lo que dice la fuente con cada combinación", () => {
+    const spot = vsSpots().find((s) => s.kind === "vsOpen" && s.hero === "MP" && s.villain === "UTG")!
+    for (const hand of ["As Ad", "Ks Kd", "Qs Qd", "Ah Kh", "Td 9d", "7c 2d"]) {
+      // Cajitas grandes: con $2.000, resubir a $1.800 ya es casi todo y el bot va all-in.
+      let t = startHand(createTable({ ...blinds, cajita: 10000 }, names(6)), seededRng(1), fixedHoles("Ac Ah", hand))
+      t = act(t, { type: "raise", to: 600 }) // UTG abre
+      const d = botDecide(t, seededRng(3))
+      expect(d.source).toBe("pokerstrategy")
+      const expected = vsAction(spot, parseCards(hand))
+      expect(d.action.type).toBe(expected)
+      if (expected === "raise" && d.action.type === "raise") expect(d.action.to).toBe(1800)
+    }
+  })
+
+  it("con luz, en otros juegos o con 7 jugadores, deciden con equity", () => {
+    const cases: [TableConfig, number][] = [
+      [{ ...DEFAULT_CONFIG }, 6],
+      [{ ...blinds, variants: [{ game: "omaha", deck: "long" }] }, 6],
+      [{ ...blinds, variants: [{ game: "holdem", deck: "short" }] }, 6],
+      [blinds, 7],
+    ]
+    for (const [config, n] of cases) {
+      const t = startHand(createTable(config, names(n)), seededRng(4))
+      expect(botDecide(t, seededRng(5), 50).source).toBe("equity")
+    }
+  })
+
+  it("una mesa de bots con ciegas juega manos enteras sin errores", () => {
+    const rng = seededRng(21)
+    let t: TableState = createTable(blinds, names(6))
+    let byRange = 0
+    for (let hand = 0; hand < 30; hand++) {
+      t.seats.forEach((_, i) => {
+        if (botWantsCajita(t, i)) t = requestCajita(t, i)
+      })
+      t = startHand(t, rng)
+      while (t.hand!.toAct !== null) {
+        const r = botAct(t, rng, 40)
+        if (r.decision.source === "pokerstrategy") byRange++
+        t = r.table
+      }
+    }
+    expect(byRange).toBeGreaterThan(30)
+  }, 30000)
 })

@@ -167,6 +167,75 @@ describe("Motor de la mano: apuestas", () => {
   })
 })
 
+describe("Motor de la mano: con ciegas", () => {
+  const blinds = { structure: "ciegas" as const }
+
+  it("la chica y la grande las ponen los dos de la izquierda del botón; habla primero el de la izquierda de la grande", () => {
+    let t = table([2000, 2000, 2000, 2000], blinds)
+    t = startHand(t, seededRng(1))
+    const h = t.hand!
+    expect(h.button).toBe(0)
+    expect(t.seats.map((s) => s.stack)).toEqual([2000, 1900, 1800, 2000])
+    expect(potTotal(h)).toBe(300)
+    expect(h.toAct).toBe(3)
+    const l = legalActions(t)!
+    expect(l.canCheck).toBe(false)
+    expect(l.toCall).toBe(200)
+    expect(l.minTo).toBe(400) // grande + otra grande
+  })
+
+  it("si todos pagan, la grande puede pasar o subir; después del flop habla primero la chica", () => {
+    let t = table([2000, 2000, 2000], blinds)
+    t = startHand(t, seededRng(1))
+    t = act(t, { type: "call" }) // 0 (botón)
+    t = act(t, { type: "call" }) // 1 (chica) completa
+    const l = legalActions(t)!
+    expect(l.seat).toBe(2)
+    expect(l.canCheck).toBe(true)
+    expect(l.canRaise).toBe(true)
+    t = act(t, { type: "check" })
+    expect(t.hand!.street).toBe("flop")
+    expect(t.hand!.toAct).toBe(1)
+    expect(legalActions(t)!.minTo).toBe(200) // apuesta mínima: la grande
+  })
+
+  it("si la grande sube, vuelven a hablar los demás", () => {
+    let t = table([2000, 2000, 2000], blinds)
+    t = startHand(t, seededRng(1))
+    t = act(t, { type: "call" })
+    t = act(t, { type: "call" })
+    t = act(t, { type: "raise", to: 600 })
+    expect(t.hand!.toAct).toBe(0)
+    expect(legalActions(t)!.toCall).toBe(400)
+  })
+
+  it("mano a mano: el que reparte pone la chica y habla primero antes del flop, último después", () => {
+    let t = table([2000, 2000], blinds)
+    t = startHand(t, seededRng(1))
+    expect(t.seats.map((s) => s.stack)).toEqual([1900, 1800])
+    expect(t.hand!.toAct).toBe(0)
+    t = act(t, { type: "call" })
+    t = act(t, { type: "check" })
+    expect(t.hand!.street).toBe("flop")
+    expect(t.hand!.toAct).toBe(1)
+  })
+
+  it("si se retiran todos ante la grande, se lleva las ciegas", () => {
+    let t = table([2000, 2000, 2000], blinds)
+    t = startHand(t, seededRng(1))
+    t = act(t, { type: "fold" })
+    t = act(t, { type: "fold" })
+    expect(t.hand!.result!.won).toEqual({ 2: 300 })
+    expect(t.seats.map((s) => s.stack)).toEqual([2000, 1900, 2100])
+  })
+
+  it("ciegas en múltiplos de la ficha y la grande no menor que la chica", () => {
+    expect(() => createTable(cfg({ ...blinds, blinds: { small: 50, big: 100 } }), names(3))).toThrow()
+    expect(() => createTable(cfg({ ...blinds, blinds: { small: 300, big: 200 } }), names(3))).toThrow()
+    expect(() => createTable(cfg({ ...blinds, blinds: { small: 100, big: 100 } }), names(3))).not.toThrow()
+  })
+})
+
 describe("Motor de la mano: pozos", () => {
   it("tres all-in de distinto tamaño arman pozo principal y dos laterales", () => {
     // Stacks antes de la luz: 500, 1000, 2000, 2000. Manos: 0 > 1 > 2 > 3.
@@ -252,12 +321,14 @@ describe("Motor de la mano: cajitas", () => {
 
   it("las fichas no se crean ni se pierden en cientos de manos al azar", () => {
     const rng = seededRng(99)
-    for (const variant of [
-      { game: "holdem", deck: "long" },
-      { game: "omaha", deck: "short" },
-      { game: "manhattan", deck: "short" },
+    for (const [variant, structure] of [
+      [{ game: "holdem", deck: "long" }, "luz"],
+      [{ game: "omaha", deck: "short" }, "luz"],
+      [{ game: "manhattan", deck: "short" }, "luz"],
+      [{ game: "holdem", deck: "long" }, "ciegas"],
+      [{ game: "manhattan", deck: "short" }, "ciegas"],
     ] as const) {
-      let t = createTable(cfg({ variants: [variant] }), names(variant.game === "manhattan" ? 6 : 5))
+      let t = createTable(cfg({ variants: [variant], structure }), names(variant.game === "manhattan" ? 6 : 5))
       for (let hand = 0; hand < 120; hand++) {
         // Al que le queda poco, le entra otra cajita.
         t.seats.forEach((_, i) => {

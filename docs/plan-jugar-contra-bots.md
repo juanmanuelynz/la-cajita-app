@@ -47,15 +47,21 @@ se retoma ese plan; el motor de la mano y los bots de acá se reutilizan tal cua
   Al armar la mesa no deja poner más bots de los que entran; en modo "se rota"
   manda el juego más justo de la rotación. Si se quemaran cartas, Manhattan
   Short bajaría a 5 (a confirmar; el motor lo soporta con una opción).
-- **Valor de la cajita** (arranca en $2.000) y **luz** (arranca en $100), como en
-  una partida de verdad.
+- **Valor de la cajita** (arranca en $2.000).
+- **Con luz o con ciegas:** con luz (arranca en $100), como en La Cajita; con
+  ciegas (arrancan en $100 la chica y $200 la grande), sin luz. Todo en
+  múltiplos de $100.
 
 ### Reglas
 
 Las mismas que la mesa online:
 
-- **Luz** igual para todos, sin ciegas. Habla primero el de la izquierda del que
-  reparte y el que reparte habla último. Si nadie apostó, se puede pasar.
+- **Con luz:** igual para todos, sin ciegas. Habla primero el de la izquierda del
+  que reparte y el que reparte habla último. Si nadie apostó, se puede pasar.
+- **Con ciegas:** la chica la pone el de la izquierda del que reparte y la
+  grande el siguiente. Antes del flop habla primero el de la izquierda de la
+  grande y la grande última (si nadie subió, puede pasar o subir). Después del
+  flop, como con luz. Mano a mano, el que reparte pone la chica.
 - **Sin límite.** La subida mínima es igual a la última subida.
 - **All-in con pozos laterales.**
 - **Juegos** con las reglas de la casa del evaluador. Manhattan se juega como
@@ -80,9 +86,14 @@ Las mismas que la mesa online:
   nadie) y la comparan con lo que tienen que pagar (pot odds). Apuestan cuando
   están bastante por encima de lo que les toca, pagan si les alcanza y se
   retiran si no. Nunca se retiran si pueden pasar gratis.
-- **Los rangos de PokerStrategy no se usan:** son para mesas con ciegas y acá
-  se juega con luz (decidido el 25/11/2026). Toda la lógica es nuestra, sin
-  fuente: los bots llevan la etiqueta **Beta**.
+- **Excepción: con ciegas, en Hold'em Long y de 4 a 6 jugadores**, antes del
+  flop siguen los rangos de PokerStrategy que ya usa Entrenar: abrir si nadie
+  entró, y con 6, pagar o resubir contra una subida y contestar a una resubida.
+  Con 4 o 5 se sacan las primeras posiciones, como en Entrenar (adaptación
+  nuestra). Los tamaños para resubir (3× la subida, 2,5× la resubida) son
+  nuestros. Con luz los rangos no se usan: son para mesas con ciegas.
+- Todo lo demás es lógica nuestra, sin fuente: en esos casos los bots llevan la
+  etiqueta **Beta**. Cada decisión dice de dónde sale (`source`).
 - **Para no ser previsibles:** farolean a veces (10%, solo contra 1 o 2), juegan
   lento una mano muy buena (15%) y el tamaño de la apuesta varía.
 - Piden otra cajita solo cuando se quedan sin fichas.

@@ -1,18 +1,25 @@
 // Bots de "Jugar contra bots" (ver docs/plan-jugar-contra-bots.md).
 //
-// Deciden igual en todos los juegos y en todas las calles, como el ejercicio
-// "Con luz": simulan su chance de ganar (equity) contra los que siguen en la
-// mano, con cartas al azar (no ven las de nadie), y la comparan con lo que
-// tienen que pagar (pot odds). Es una regla nuestra, sin fuente: en la pantalla
-// van con la etiqueta Beta. Los rangos de PokerStrategy no se usan porque son
-// para mesas con ciegas y acá se juega con luz.
+// En general deciden como el ejercicio "Con luz": simulan su chance de ganar
+// (equity) contra los que siguen en la mano, con cartas al azar (no ven las de
+// nadie), y la comparan con lo que tienen que pagar (pot odds). Es una regla
+// nuestra, sin fuente: en la pantalla van con la etiqueta Beta.
+//
+// Excepción: con ciegas, en Hold'em Long y de 4 a 6 jugadores, antes del flop
+// siguen los rangos de PokerStrategy que ya usa Entrenar (preflop.ts y
+// preflop-vs.ts): abrir si nadie entró, y con 6, pagar o resubir contra una
+// subida y contestar a una resubida. Con 4 o 5 se sacan las primeras
+// posiciones, como en Entrenar (adaptación nuestra). Los tamaños de las
+// subidas fuera de la apertura (3× la subida, 2,5× la resubida) son nuestros.
 //
 // Para que no sean 100% previsibles: a veces farolean, a veces juegan lento una
 // mano muy buena y el tamaño de la apuesta varía un poco.
 
 import { remainingDeck, type Card, type Rng } from "./cards"
 import { bestScore } from "./evaluator"
-import { act, canRequestCajita, legalActions, potTotal, type Action, type Legal, type TableState } from "./table"
+import { act, canRequestCajita, legalActions, potTotal, type Action, type HandState, type Legal, type TableState } from "./table"
+import { handClass, OPEN_RANGES, openRange, type Position } from "./preflop"
+import { vsAction, vsSpots, type Seat6 } from "./preflop-vs"
 import { GAMES, type Variant } from "./variants"
 
 /** Simulaciones por decisión: Manhattan cuesta más por mano, así que simula menos. */
@@ -87,7 +94,10 @@ export interface Situation {
 
 export interface BotDecision {
   action: Action
+  /** Equity simulada (NaN si decidió por rango). */
   equity: number
+  /** De dónde sale la decisión: rangos de PokerStrategy o nuestra cuenta (Beta). */
+  source: "pokerstrategy" | "equity"
   /** Explicación corta, para mostrar o para los tests. */
   reason: string
 }
@@ -114,27 +124,96 @@ export function decide(s: Situation, rng: Rng): BotDecision {
     const strong = strength >= 1.5 && equity >= 0.35
     if (legal.canRaise && strong) {
       if (strength >= 2.5 && rng() < BOT_STYLE.slowplay) {
-        return { action: { type: "check" }, equity, reason: `Juega lento: ${pct} de ganar` }
+        return { action: { type: "check" }, equity, source: "equity", reason: `Juega lento: ${pct} de ganar` }
       }
       const frac = 0.5 + rng() * 0.3
-      return { action: { type: "raise", to: sizeTo(legal, pot * frac, chip) }, equity, reason: `Apuesta: ${pct} de ganar` }
+      return { action: { type: "raise", to: sizeTo(legal, pot * frac, chip) }, equity, source: "equity", reason: `Apuesta: ${pct} de ganar` }
     }
     if (legal.canRaise && opponents <= 2 && rng() < BOT_STYLE.bluff) {
-      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, reason: `Farol con ${pct}` }
+      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, source: "equity", reason: `Farol con ${pct}` }
     }
-    return { action: { type: "check" }, equity, reason: `Pasa: ${pct} de ganar` }
+    return { action: { type: "check" }, equity, source: "equity", reason: `Pasa: ${pct} de ganar` }
   }
 
   // Le apostaron: ¿le alcanza para pagar?
   const needed = legal.toCall / (pot + legal.toCall)
   if (equity < needed + BOT_STYLE.callMargin) {
-    return { action: { type: "fold" }, equity, reason: `Se retira: ${pct} y necesita ${Math.round(needed * 100)}%` }
+    return { action: { type: "fold" }, equity, source: "equity", reason: `Se retira: ${pct} y necesita ${Math.round(needed * 100)}%` }
   }
   // Muy por encima de lo que necesita: sube (o a veces solo paga para disimular).
   if (legal.canRaise && strength >= 1.8 && equity >= needed + 0.2 && rng() >= BOT_STYLE.slowplay) {
-    return { action: { type: "raise", to: raiseTo(0.4 + rng() * 0.4) }, equity, reason: `Sube: ${pct} de ganar` }
+    return { action: { type: "raise", to: raiseTo(0.4 + rng() * 0.4) }, equity, source: "equity", reason: `Sube: ${pct} de ganar` }
   }
-  return { action: { type: "call" }, equity, reason: `Paga: ${pct} y necesita ${Math.round(needed * 100)}%` }
+  return { action: { type: "call" }, equity, source: "equity", reason: `Paga: ${pct} y necesita ${Math.round(needed * 100)}%` }
+}
+
+/**
+ * Posición de cada asiento antes del flop con ciegas, de 4 a 6 jugadores (como
+ * en Entrenar: con menos de 6 se sacan las primeras). null si no aplica.
+ * `players` arranca a la izquierda del botón: chica, grande, …, botón.
+ */
+export function seatPositions(h: HandState): Map<number, Seat6> | null {
+  const n = h.players.length
+  if (n < 4 || n > 6) return null
+  const rest: Seat6[] = n === 6 ? ["UTG", "MP", "CO", "BU"] : n === 5 ? ["MP", "CO", "BU"] : ["CO", "BU"]
+  const names: Seat6[] = ["SB", "BB", ...rest]
+  return new Map(h.players.map((p, i) => [p.seat, names[i]]))
+}
+
+/** Antes del flop con ciegas en Hold'em Long: lo que dicen los rangos de PokerStrategy, o null si no hay rango para la situación. */
+export function rangeDecision(t: TableState, legal: Legal): BotDecision | null {
+  const h = t.hand!
+  const c = t.config
+  if (c.structure !== "ciegas" || h.street !== "preflop" || h.variant.game !== "holdem" || h.variant.deck !== "long") return null
+  const pos = seatPositions(h)
+  if (!pos) return null
+  const me = h.players.find((p) => p.seat === legal.seat)!
+  const mine = pos.get(me.seat)!
+  const big = c.blinds.big
+  const log = h.log.filter((x) => x.street === "preflop")
+  // Subidas: tienen `to`. Pagos: call o all-in sin `to`.
+  const raises = log.filter((x) => x.to !== undefined)
+  const callsBefore = (i: number) => log.slice(0, i < 0 ? log.length : i).filter((x) => x.to === undefined && x.action !== "fold" && x.action !== "check")
+  const myActs = log.filter((x) => x.seat === me.seat)
+  const out = (type: "fold" | "call" | "raise", to: number, reason: string): BotDecision => {
+    let action: Action
+    if (type === "raise" && legal.canRaise) action = { type: "raise", to: sizeTo(legal, to, c.chip) }
+    else if (type === "fold") action = legal.canCheck ? { type: "check" } : { type: "fold" }
+    else action = legal.toCall === 0 ? { type: "check" } : { type: "call" }
+    return { action, equity: NaN, source: "pokerstrategy", reason }
+  }
+  const cls = handClass(me.hole[0], me.hole[1])
+
+  // Nadie entró antes: abrir o no (la grande no abre: ya puso).
+  if (raises.length === 0 && callsBefore(-1).length === 0 && mine !== "BB") {
+    const p = mine as Position
+    if (!openRange(p).has(cls)) return out("fold", 0, `PokerStrategy: ${cls} no abre desde ${mine}`)
+    const size = Number(OPEN_RANGES[p].openSize.replace(",", "."))
+    return out("raise", size * big, `PokerStrategy: abre ${cls} desde ${mine}`)
+  }
+  // Las situaciones contra una subida son solo de mesas de 6.
+  if (h.players.length !== 6) return null
+  // Una subida, nadie pagó en el medio y todavía no hablé: pagar, resubir o fold.
+  if (raises.length === 1 && myActs.length === 0) {
+    const r = raises[0]
+    const idx = log.indexOf(r)
+    if (callsBefore(idx).length > 0 || log.slice(idx + 1).some((x) => x.action !== "fold")) return null
+    const spot = vsSpots().find((s) => s.kind === "vsOpen" && s.hero === mine && s.villain === pos.get(r.seat))
+    if (!spot) return null
+    const a = vsAction(spot, me.hole)
+    return out(a, 3 * r.to!, `PokerStrategy: contra la subida de ${spot.villain}, ${a === "raise" ? "resube" : a === "call" ? "paga" : "se va"} con ${cls}`)
+  }
+  // Abrí, me resubieron y nadie más entró: contestar a la resubida.
+  if (raises.length === 2 && raises[0].seat === me.seat && myActs.length === 1) {
+    const r = raises[1]
+    const idx = log.indexOf(r)
+    if (log.slice(log.indexOf(raises[0]) + 1).some((x) => x !== r && x.action !== "fold")) return null
+    const spot = vsSpots().find((s) => s.kind === "vs3bet" && s.hero === mine && s.villain === pos.get(r.seat))
+    if (!spot || idx < 0) return null
+    const a = vsAction(spot, me.hole)
+    return out(a, 2.5 * r.to!, `PokerStrategy: contra la resubida de ${spot.villain}, ${a === "raise" ? "vuelve a subir" : a === "call" ? "paga" : "se va"} con ${cls}`)
+  }
+  return null
 }
 
 /** Lo que hace el bot al que le toca hablar. */
@@ -142,6 +221,8 @@ export function botDecide(t: TableState, rng: Rng = Math.random, trials?: number
   const h = t.hand
   const legal = legalActions(t)
   if (!h || !legal) throw new Error("No le toca hablar a nadie")
+  const byRange = rangeDecision(t, legal)
+  if (byRange) return byRange
   const me = h.players.find((p) => p.seat === legal.seat)!
   const opponents = h.players.filter((p) => !p.folded && p.seat !== me.seat).length
   const equity = estimateEquity(me.hole, h.board, h.variant, opponents, trials ?? BOT_TRIALS[h.variant.game], rng)
