@@ -16,7 +16,7 @@
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) {
     .ios-pwa-top-gap {
-      padding-top: 40px;
+      padding-top: 20px;
     }
   }
 }
