@@ -75,8 +75,8 @@ type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
 // Hueco de la barra para el botón de Partidas: el botón (56px) asoma 36px por
 // encima, así que su centro queda 8px arriba del borde de la barra. El hueco
-// deja 8px de aire alrededor del botón y apenas muerde la barra.
-const NOTCH = "radial-gradient(circle at 50% -8px, transparent 36px, #000 36.5px)"
+// deja 4px de aire alrededor del botón y apenas muerde la barra.
+const NOTCH = "radial-gradient(circle at 50% -8px, transparent 32px, #000 32.5px)"
 const NOTCH_MASK = { maskImage: NOTCH, WebkitMaskImage: NOTCH } as const
 
 // En el orden de la barra (y del deslizar entre pestañas). Partidas va al centro,
