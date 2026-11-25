@@ -763,7 +763,7 @@ function LaCajitaPoker() {
                   <span
                     className={cn(
                       "absolute -top-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full",
-                      "bg-primary text-primary-foreground ring-4 ring-background/70",
+                      "bg-primary text-primary-foreground ring-1 ring-white/25",
                       "shadow-[0_8px_20px_-4px_color-mix(in_oklch,var(--primary)_60%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
                       "transition-transform duration-200 active:scale-95",
                       active && "scale-105",
