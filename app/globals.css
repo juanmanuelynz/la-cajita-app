@@ -10,6 +10,17 @@
   }
 }
 
+/* iOS 27 pone un vidrio borroso arriba de toda app instalada (no se puede
+   apagar desde la web). Bajamos el header para que quede fuera de esa zona.
+   Solo en la app instalada (standalone) y solo en iOS (-webkit-touch-callout). */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    .ios-pwa-top-gap {
+      padding-top: 40px;
+    }
+  }
+}
+
 /* Scroll sin barra (las pantallas de cada tab): se puede scrollear igual,
    pero no aparece la barrita al costado. */
 @utility no-scrollbar {
