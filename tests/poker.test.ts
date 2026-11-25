@@ -732,7 +732,7 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     expect(byFold).toBeLessThan(240)
   })
 
-  it("Defender contra proyectos: de 100 manos, en enteros y igual a la fórmula", async () => {
+  it("Defender contra bluffs con chances: de 100 manos, en enteros y igual a la fórmula", async () => {
     const { makeSemiBluff } = await import("../lib/poker/ev")
     const rng = seededRng(12)
     for (let i = 0; i < 300; i++) {
@@ -775,13 +775,13 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     expect(shoves).toBeLessThan(210)
   })
 
-  it("entran al desafío desde el 26/11/2026 sin cambiar los días anteriores", async () => {
-    const { dailyChallenge, dailyDrills, EV_IN_DAILY_FROM } = await import("../lib/poker/training")
-    expect(EV_IN_DAILY_FROM).toBe("2026-11-26")
-    expect(dailyDrills("2026-11-25")).not.toContain("shove")
-    expect(dailyDrills("2026-11-26")).toEqual(expect.arrayContaining(["betOrCheck", "semiBluff", "shove"]))
-    expect(dailyDrills("2026-11-26")).not.toContain("preflopVs")
-    // Mismas preguntas que antes de sumarlos (hoy ya pudo haberse jugado).
+  it("están en Beta: no entran al desafío y no cambian los días anteriores", async () => {
+    const { dailyChallenge, dailyDrills } = await import("../lib/poker/training")
+    for (const d of ["betOrCheck", "semiBluff", "shove", "callDown", "preflopVs"] as const) {
+      expect(dailyDrills("2026-11-26")).not.toContain(d)
+      expect(dailyDrills("2027-06-01")).not.toContain(d)
+    }
+    // Mismas preguntas que antes de crearlos (hoy ya pudo haberse jugado).
     expect(dailyChallenge("2026-11-23").map((q) => q.drill)).toEqual([
       "usable", "preflop", "potOdds", "usable", "usable", "preflop", "preflop", "outs", "whoWins", "outs",
     ])
@@ -820,9 +820,4 @@ describe("¿Qué le queda? (tres apuestas seguidas)", () => {
     }
   })
 
-  it("está en Beta: no entra al desafío", async () => {
-    const { dailyDrills } = await import("../lib/poker/training")
-    expect(dailyDrills("2026-11-26")).not.toContain("callDown")
-    expect(dailyDrills("2027-06-01")).not.toContain("callDown")
-  })
 })

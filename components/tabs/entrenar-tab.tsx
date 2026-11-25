@@ -93,15 +93,15 @@ const GROUPS: { title: string; drills: DrillEntry[] }[] = [
     drills: [
       { id: "outs", label: "Outs", icon: Target },
       { id: "potOdds", label: "¿Call o fold?", icon: Scale },
-      { id: "shove", label: "¿All-in o fold?", icon: Rocket, isNew: true },
+      { id: "shove", label: "¿All-in o fold?", icon: Rocket, isBeta: true },
     ],
   },
   {
     title: "Cuentas GTO",
     drills: [
       { id: "gto", label: "GTO river", icon: Sigma },
-      { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
-      { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
+      { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isBeta: true },
+      { id: "semiBluff", label: "Bluffs con chances", icon: ShieldHalf, isBeta: true },
       { id: "callDown", label: "¿Qué le queda?", icon: Filter, isBeta: true },
     ],
   },

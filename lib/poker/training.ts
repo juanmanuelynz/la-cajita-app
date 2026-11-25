@@ -23,7 +23,7 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   gto: "GTO en el river",
   preflopVs: "Antes del flop (te suben)",
   betOrCheck: "¿Apostar o pasar?",
-  semiBluff: "Defender contra proyectos",
+  semiBluff: "Defender contra bluffs con chances",
   shove: "¿All-in o fold?",
   callDown: "¿Qué le queda?",
 }
@@ -99,16 +99,16 @@ export type DailyQuestion =
  * se vuelve a generar desde la semilla al tocar "Ver").
  */
 export const GTO_IN_DAILY_FROM = "2026-11-25"
-/** Desde cuándo entran ¿Apostar o pasar?, Defender contra proyectos y ¿All-in o fold?. */
-export const EV_IN_DAILY_FROM = "2026-11-26"
-const EV_DRILLS: readonly DrillId[] = ["betOrCheck", "semiBluff", "shove"]
-/** Ejercicios en Beta: se pueden practicar pero no entran al desafío. */
-export const BETA_DRILLS: readonly DrillId[] = ["callDown"]
+/**
+ * Ejercicios en Beta: se pueden practicar pero no entran al desafío. Son los de
+ * valor esperado (nunca entraron: iban a empezar el 26/11). Para sacar uno de
+ * Beta y sumarlo al desafío, usar una fecha de entrada como GTO_IN_DAILY_FROM.
+ */
+export const BETA_DRILLS: readonly DrillId[] = ["betOrCheck", "semiBluff", "shove", "callDown"]
+/** Nunca entran al desafío: "Te suben" (solo Hold'em largo, y el desafío sortea el juego) y los Beta. */
+export const NOT_IN_DAILY: readonly DrillId[] = ["preflopVs", ...BETA_DRILLS]
 export function dailyDrills(date: string): readonly DrillId[] {
-  // "Te suben" no entra nunca: es solo Hold'em largo y el desafío sortea el juego.
-  // Los Beta tampoco: todavía no están claros.
-  let drills = DRILL_IDS.filter((d) => d !== "preflopVs" && !BETA_DRILLS.includes(d))
-  if (date < EV_IN_DAILY_FROM) drills = drills.filter((d) => !EV_DRILLS.includes(d))
+  const drills = DRILL_IDS.filter((d) => !NOT_IN_DAILY.includes(d))
   return date < GTO_IN_DAILY_FROM ? drills.filter((d) => d !== "gto") : drills
 }
 

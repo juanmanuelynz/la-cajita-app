@@ -34,7 +34,7 @@ Están en `lib/poker/evaluator.ts` y los tests las verifican.
 | `lib/poker/equity.ts` | Qué parte del pozo se lleva cada mano: exacta (recorre todas las mesas) o simulada; outs |
 | `lib/poker/drills.ts` | Generadores de los ejercicios de cartas |
 | `lib/poker/gto.ts` | Fórmulas del river: MDF, alfa, parte de bluffs |
-| `lib/poker/ev.ts` | Ejercicios de valor esperado (¿Apostar o pasar?, Defender contra proyectos, ¿All-in o fold?, ¿Qué le queda?) |
+| `lib/poker/ev.ts` | Ejercicios de valor esperado (¿Apostar o pasar?, Defender contra bluffs con chances, ¿All-in o fold?, ¿Qué le queda?) |
 | `lib/poker/preflop.ts` | Rangos de apertura con ciegas (PokerStrategy) |
 | `lib/poker/preflop-vs.ts` + `preflop-vs-data.ts` | Pagar / resubir cuando te suben (PokerStrategy) |
 | `lib/poker/preflop-beta.ts` + `preflop-beta-data.ts` | Apertura **Beta** para los juegos sin fuente |
@@ -69,10 +69,10 @@ Nivel de confianza (el mismo del [playbook](playbook-daily-dose-gto.md)):
 | Te suben / Te resuben (`preflopVs`) | Antes del flop | Solo Hold'em Long | Fuente | No |
 | Outs (`outs`) | Pagar o no | Todos | Exacto | Sí |
 | ¿Call o fold? (`potOdds`) | Pagar o no | Todos | Exacto | Sí |
-| ¿All-in o fold? (`shove`) | Pagar o no | Igual en todos | Exacto (contado en 10 all-ins) | Desde 26/11 |
+| ¿All-in o fold? (`shove`) | Pagar o no | Igual en todos | Exacto (contado en 10 all-ins) | No (Beta) |
 | GTO river (`gto`) | Cuentas GTO | Igual en todos | Exacto | Desde 25/11 |
-| ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto (contado en 10 manos) | Desde 26/11 |
-| Defender proyectos (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto (de 100 manos, solo river) | Desde 26/11 |
+| ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto (contado en 10 manos) | No (Beta) |
+| Bluffs con chances (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto (de 100 manos, solo river) | No (Beta) |
 | ¿Qué le queda? (`callDown`) | Cuentas GTO | Igual en todos | De 100 manos, redondeando cada calle (±1) | No (Beta) |
 
 Fuentes:
@@ -97,11 +97,11 @@ otro juego tiene que tener el error medido (`scripts/lab/`) o la etiqueta Beta.
 - Sortea ejercicio, juego y mazo. Nunca usa la dificultad por nivel.
 - **Los días pasados tienen que dar siempre las mismas preguntas** (se pueden
   volver a ver). Por eso cada ejercicio nuevo entra desde una fecha
-  (`GTO_IN_DAILY_FROM`, `EV_IN_DAILY_FROM`) y va **al
+  (`GTO_IN_DAILY_FROM`) y va **al
   final** de la lista de ejercicios. Usar una fecha que todavía no llegó (mañana
   o después), así nadie lo jugó con otras preguntas.
-- Los ejercicios en `BETA_DRILLS` (hoy ¿Qué le queda?) no entran nunca; en el
-  menú llevan la etiqueta Beta.
+- Los ejercicios en `BETA_DRILLS` (hoy los cuatro de valor esperado) no entran
+  nunca; en el menú llevan la etiqueta Beta.
 
 ## Cómo agregar un ejercicio
 

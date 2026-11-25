@@ -160,7 +160,7 @@ export function BetOrCheckDrill(props: DrillProps<BetOrCheckData>) {
   )
 }
 
-// ── 2. Defender contra proyectos (bluffs con chances, en el river) ─────────
+// ── 2. Defender contra bluffs con chances (river) ─────────────────────────
 
 export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
   const { drill, verdict, score, answer, next, inChallenge } = useDrill("semiBluff", props, makeSemiBluff)
@@ -172,7 +172,7 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
 
   return (
     <DrillShell
-      title="Defender contra proyectos"
+      title="Defender contra bluffs con chances"
       score={inChallenge ? undefined : score}
       nextLabel={props.nextLabel}
       verdict={verdict}
