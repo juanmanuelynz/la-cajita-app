@@ -188,9 +188,102 @@ Cómo leerlo:
 - Tener uno de los K le baja el trío al rival a un tercio (−65%) en los tres
   juegos.
 
-### Estudio 4: manos con varios jugadores
+### Estudio 4: manos con varios jugadores (medido, lecciones 64 y 311)
 
-Resultados: pendientes (corrida en curso).
+`npx tsx scripts/lab/multiway.ts 3000 300 2026` (unos 10 minutos). Manos al azar,
+equity hasta el river sin apuestas contra 1 y contra 3 rivales al azar. Una mano
+puede tener varios rasgos. Cambios de menos de 0,03 son ruido de la simulación.
+
+Manos por juego: 3000 · simulaciones por mano y cantidad de rivales: 300 · semilla 2026
+Proporción = equity × jugadores (1,00 = su parte justa). «Cambio» = 4 jugadores − 2 jugadores.
+
+**Hold'em Long**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Par alto (10 a A) | 70 | 1.62 | 2.18 | +0.56 |
+| Con As | 441 | 1.24 | 1.33 | +0.09 |
+| Seguidas | 444 | 0.98 | 1.05 | +0.07 |
+| Mismo palo | 706 | 1.01 | 1.07 | +0.06 |
+| Par chico (hasta 9) | 100 | 1.22 | 1.21 | -0.01 |
+| Distinto palo | 2294 | 0.99 | 0.98 | -0.02 |
+| Sin par, sin palo, sin seguidas | 1787 | 0.96 | 0.91 | -0.05 |
+
+**Omaha Long**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Dos palos | 397 | 1.07 | 1.16 | +0.08 |
+| 3 o más seguidas | 360 | 0.98 | 1.04 | +0.06 |
+| Par alto (10 a A) | 376 | 1.22 | 1.25 | +0.04 |
+| Con As | 854 | 1.07 | 1.10 | +0.03 |
+| Un palo | 2296 | 1.00 | 0.99 | -0.00 |
+| Par chico (hasta 9) | 582 | 0.98 | 0.96 | -0.02 |
+| Sin par, sin palo, sin seguidas | 161 | 0.91 | 0.82 | -0.09 |
+| Sin palo repetido | 307 | 0.94 | 0.86 | -0.09 |
+
+**Manhattan Long**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Par alto (10 a A) | 581 | 1.18 | 1.37 | +0.19 |
+| Par chico (hasta 9) | 969 | 1.02 | 1.10 | +0.07 |
+| Con As | 1055 | 1.03 | 1.05 | +0.02 |
+| Un palo | 1565 | 1.00 | 1.00 | +0.00 |
+| Dos palos | 1435 | 1.01 | 1.00 | -0.00 |
+| 3 o más seguidas | 723 | 1.00 | 0.95 | -0.04 |
+
+**Hold'em Short**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Par alto (10 a A) | 145 | 1.32 | 1.47 | +0.14 |
+| Seguidas | 638 | 1.01 | 1.08 | +0.07 |
+| Mismo palo | 745 | 1.02 | 1.06 | +0.05 |
+| Con As | 641 | 1.12 | 1.15 | +0.03 |
+| Par chico (hasta 9) | 97 | 0.93 | 0.93 | +0.00 |
+| Distinto palo | 2255 | 1.00 | 0.99 | -0.01 |
+| Sin par, sin palo, sin seguidas | 1560 | 0.97 | 0.92 | -0.04 |
+
+**Omaha Short**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Dos palos | 401 | 1.08 | 1.18 | +0.10 |
+| Par alto (10 a A) | 786 | 1.06 | 1.12 | +0.06 |
+| 3 o más seguidas | 570 | 1.03 | 1.07 | +0.04 |
+| Con As | 1192 | 1.03 | 1.05 | +0.01 |
+| Un palo | 2252 | 1.00 | 0.99 | -0.00 |
+| Par chico (hasta 9) | 620 | 0.89 | 0.81 | -0.08 |
+| Sin palo repetido | 347 | 0.95 | 0.86 | -0.09 |
+| Sin par, sin palo, sin seguidas | 113 | 0.96 | 0.85 | -0.11 |
+
+**Manhattan Short**
+
+| Rasgo | Manos | Mano a mano | 4 jugadores | Cambio |
+|---|---|---|---|---|
+| Par alto (10 a A) | 1203 | 1.10 | 1.19 | +0.09 |
+| Con As | 1347 | 1.02 | 1.07 | +0.05 |
+| Un palo | 1593 | 1.00 | 1.00 | -0.00 |
+| Dos palos | 1407 | 1.01 | 1.00 | -0.01 |
+| 3 o más seguidas | 1071 | 0.98 | 0.95 | -0.04 |
+| Par chico (hasta 9) | 978 | 0.97 | 0.93 | -0.04 |
+
+Cómo leerlo:
+
+- **Con 4 jugadores ganan los pares altos** en todos los juegos, y mucho más en
+  Hold'em Long (de 1,62 a 2,18 veces su parte).
+- **En Omaha, lo que más mejora con más gente son las manos con dos palos** (dos
+  cartas de un palo y dos de otro): de 1,07 a 1,16–1,18. Después, las 3 o más
+  seguidas.
+- **En Omaha, las manos sin palo repetido pierden** (−0,09) y los pares chicos
+  también (−0,02 a −0,08): con más rivales, alguien suele tener algo mejor.
+- **En Manhattan casi nada cambia**, salvo los pares altos (+0,09 a +0,19): con 5
+  cartas cada uno, las manos se parecen todas mucho más.
+- **Pares chicos en Hold'em**: no ganan parte del pozo con más gente (−0,01 /
+  +0,00). El libro dice lo mismo (lección 64): con más jugadores un par chico
+  gana **plata** porque cuando hace trío cobra mucho, pero no gana más **parte
+  del pozo**. Este estudio mide solo la parte del pozo, sin apuestas.
 
 ## Próximos pasos propuestos
 
