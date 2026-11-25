@@ -91,7 +91,37 @@ equity exacta. Cada mano se completa con cartas al azar hasta tener 4 (Omaha) o
 juego (4 manos completadas por situación, promediadas). Error = real − Hold'em,
 en puntos de porcentaje.
 
-Resultados: pendientes (corrida en curso).
+Situaciones por fila: 200 · manos completadas por situación: 4 · semilla 2026
+
+| Juego | Mazo | Calle | Error medio (pts) | 9 de 10 errores menores a | Cambia «pago el pozo» | Cambia quién va adelante | El que va adelante: Hold'em → real |
+|---|---|---|---|---|---|---|---|
+| Omaha | Long | flop | 20.4 | 33.8 | 30% | 29% | 78.8% → 59.4% |
+| Omaha | Long | turn | 23.7 | 44.4 | 30% | 24% | 85.7% → 63.6% |
+| Manhattan | Long | flop | 22.3 | 41.1 | 36% | 32% | 79.5% → 59.1% |
+| Manhattan | Long | turn | 28.5 | 51.8 | 32% | 32% | 86.4% → 58.9% |
+| Omaha | Short | flop | 14.3 | 27.1 | 24% | 27% | 70.3% → 58.8% |
+| Omaha | Short | turn | 21.4 | 39.4 | 26% | 26% | 78.8% → 59.7% |
+| Manhattan | Short | flop | 17.0 | 34.8 | 25% | 35% | 70.5% → 56.6% |
+| Manhattan | Short | turn | 27.0 | 49.4 | 38% | 43% | 77.7% → 53.9% |
+
+Cómo leerlo:
+
+- **Error medio**: si usás la equity de Hold'em, en promedio le errás por 14 a 28
+  puntos (por ejemplo, creés que ganás el 60% y en realidad es 35% u 85%).
+- **Cambia «pago el pozo»**: en 1 de cada 3 o 4 situaciones, la decisión de
+  pagar una apuesta del pozo (hace falta 33%) cambia.
+- **Cambia quién va adelante**: en 1 de cada 3 o 4, la mano que va adelante en
+  Hold'em va atrás con las cartas extra.
+- **El que va adelante**: en Omaha y Manhattan las manos corren mucho más
+  parejas. El que gana el 80–86% en Hold'em queda en 54–64%.
+
+Conclusión: **la equity de Hold'em no sirve como número para Omaha ni Manhattan**
+(error de más de 10 puntos en casi todas las filas). Lo que sí se puede llevar
+son las fórmulas exactas (pot odds, MDF, EV), con la equity calculada para el
+juego que se juega, que es lo que ya hacen los ejercicios. Cuidado al leerlo: el
+estudio supone que las cartas extra son al azar; en una mano real se juega con
+manos elegidas, así que es una medida de cuánto pesan las cartas que no son "las
+de Hold'em", no un error exacto para cada mano.
 
 ## Próximos pasos propuestos
 
