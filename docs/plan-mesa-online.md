@@ -37,9 +37,8 @@ Cómo funciona:
   de invitado sigue siendo invitado. Si entrás con uno de esos, la app no sabe
   quién sos: en Entrenar elegís el nombre a mano y, para sentarte en la mesa, te
   pide tu PIN personal. Nadie pierde el acceso el día del cambio.
-- **Rol con PIN personal:** **solo Zeta es admin.** Todos los demás entran como
-  **invitado**: sueltas, mesa online, Entrenar y Ajustes. Para manejar el torneo
-  se sigue usando el PIN del grupo (o el PIN personal de Zeta).
+- **Rol con PIN personal:** depende de quién sos (ver "Roles", abajo). Solo
+  Zeta es admin; el resto es jugador o invitado.
 - Quién es el admin no se escribe en el código (el repo es público): va en una
   variable de Vercel con el id del jugador (`ADMIN_PLAYER_ID`). El PIN de ese
   jugador solo se puede crear o cambiar desde una sesión de admin.
@@ -51,6 +50,35 @@ Cómo funciona:
 - **Lo que queda abierto:** mientras alguien no armó su PIN, otro podría
   armárselo y sentarse en la mesa con su nombre. Entre amigos alcanza con que
   cada uno arme el suyo pronto; si pasa, el admin lo resetea.
+
+### Roles
+
+Pasan a ser tres:
+
+| Rol | Cómo se entra | Qué ve y qué hace |
+|---|---|---|
+| **Admin** | PIN del grupo, o el PIN personal de Zeta | Todo, como hoy |
+| **Jugador** | PIN personal de alguien que **jugó algún torneo** | Ver abajo |
+| **Invitado** | PIN de invitado, o PIN personal de alguien que nunca jugó un torneo | Lo de hoy: sueltas, mesa online, Entrenar y Ajustes |
+
+"Jugó algún torneo" = tiene al menos una partida de torneo anotada, o está en
+la lista del torneo abierto. Se calcula al entrar: si un invitado juega su
+primer torneo, pasa a jugador la próxima vez que entra.
+
+**El jugador:**
+
+- **Ve** el ranking y las estadísticas de todos los jugadores, pero solo de los
+  torneos en los que jugó; las partidas de esos torneos y su historial; más
+  todo lo del invitado.
+- **Carga la partida de la noche:** puede crear la partida del torneo y anotar
+  cajitas y fichas, y registrarla.
+- **No puede:** crear ni cerrar torneos, manejar la lista del torneo, borrar
+  partidas, cambiar el sistema de puntos ni resetear PIN.
+
+Se controla en el servidor, como hoy: las acciones de `lib/database.ts` que
+hoy llaman a `requireAdmin()` pasan a decir qué rol las puede usar, y las de
+lectura del torneo filtran por los torneos del jugador. El token firmado suma
+el rol `player` y el id del jugador; los tokens de hoy siguen valiendo.
 
 ### Reglas de juego
 
@@ -110,8 +138,10 @@ Cómo funciona:
 
 En este orden. Cada paso se puede probar por separado antes de seguir.
 
-0. **PIN personal** (`lib/auth.ts`, `app/login/`, `lib/session.ts`): el token
-   firmado pasa a llevar también el id del jugador; el login acepta los PIN de
+0. **PIN personal y rol jugador** (`lib/auth.ts`, `app/login/`,
+   `lib/session.ts`, `lib/database.ts`, las pestañas): el token firmado pasa a
+   llevar también el id del jugador y el rol `player`; cada acción del torneo
+   dice qué rol la puede usar; el login acepta los PIN de
    hoy y los personales; Entrenar toma el nombre de la sesión cuando lo hay.
    Va antes que la mesa porque la mesa lo necesita. Los tokens viejos tienen
    que seguir valiendo (como cuando se sumó el rol de invitado).
