@@ -29,6 +29,7 @@ import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useBackToClose } from "@/hooks/use-back-to-close"
 import { Button } from "@/components/ui/button"
 import {
   ArrowUp,
@@ -315,25 +316,9 @@ export function EntrenarTab({
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
 
-  // Cada ejercicio es una pantalla propia: entra al historial para que el
-  // "atrás" del celular vuelva al menú en vez de salir de la app.
-  const openDrill = (d: DrillChoice) => {
-    setDrill(d)
-    try {
-      history.pushState({ entrenarDrill: d }, "")
-    } catch {
-      // sin historial: igual funciona el botón Volver
-    }
-  }
-  const closeDrill = () => {
-    if (history.state?.entrenarDrill) history.back()
-    else setDrill(null)
-  }
-  useEffect(() => {
-    const onPop = () => setDrill(null)
-    window.addEventListener("popstate", onPop)
-    return () => window.removeEventListener("popstate", onPop)
-  }, [])
+  // Cada ejercicio es una pantalla propia: el "atrás" del celular vuelve al menú.
+  const closeDrill = useCallback(() => setDrill(null), [])
+  useBackToClose(drill !== null, closeDrill, "entrenar-ejercicio")
   // Al entrar o salir de un ejercicio, arrancar desde arriba.
   const firstScroll = useRef(true)
   useEffect(() => {
@@ -445,7 +430,7 @@ export function EntrenarTab({
                     />
                   )}
                   <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
-                  {!challengeActive && <DrillMenu onOpen={openDrill} progress={progress} />}
+                  {!challengeActive && <DrillMenu onOpen={setDrill} progress={progress} />}
                 </>
               )}
             </>

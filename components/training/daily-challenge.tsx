@@ -12,6 +12,7 @@ import { GAMES } from "@/lib/poker/variants"
 import type { DailyResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { TrainingContext } from "./drill-shell"
+import { useBackToClose } from "@/hooks/use-back-to-close"
 import { UsableDrill } from "./usable-drill"
 import { WhoWinsDrill } from "./who-wins-drill"
 import { OutsDrill } from "./outs-drill"
@@ -139,6 +140,12 @@ export function DailyChallenge({
   }, [playerId, today, refreshBoard])
 
   useEffect(() => onActiveChange(running), [running, onActiveChange])
+  // Jugando o viendo el resultado, el "atrás" del celular vuelve a Entrenar.
+  const closeScreen = useCallback(() => {
+    setRunning(false)
+    setShowResult(false)
+  }, [])
+  useBackToClose(running || showResult, closeScreen, "desafio")
 
   const submitted = !!playerId && !!board?.some((r) => r.player_id === playerId)
   const mine = board?.find((r) => r.player_id === playerId)
