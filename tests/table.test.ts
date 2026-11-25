@@ -1,0 +1,286 @@
+import { describe, expect, it } from "vitest"
+import { parseCards, seededRng } from "../lib/poker/cards"
+import {
+  act,
+  buildPots,
+  canRequestCajita,
+  chipsOf,
+  createTable,
+  DEFAULT_CONFIG,
+  legalActions,
+  maxSeats,
+  netResult,
+  potTotal,
+  requestCajita,
+  startHand,
+  variantForHand,
+  type TableConfig,
+  type TableState,
+} from "../lib/poker/table"
+
+const names = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `J${i}` }))
+const cfg = (over: Partial<TableConfig> = {}): TableConfig => ({ ...DEFAULT_CONFIG, ...over })
+
+/** Mesa con stacks a medida (antes de la primera mano). */
+function table(stacks: number[], over: Partial<TableConfig> = {}): TableState {
+  const t = createTable(cfg(over), names(stacks.length))
+  stacks.forEach((s, i) => (t.seats[i].stack = s))
+  return t
+}
+
+const holes = (...hs: string[]) => Object.fromEntries(hs.map((h, i) => [i, parseCards(h)]))
+const totalChips = (t: TableState) => t.seats.reduce((s, _, i) => s + chipsOf(t, i), 0)
+
+describe("Motor de la mano: arranque", () => {
+  it("cada uno arranca con una cajita, pone la luz y habla primero el de la izquierda del que reparte", () => {
+    let t = createTable(cfg(), names(3))
+    expect(t.seats.map((s) => s.stack)).toEqual([2000, 2000, 2000])
+    t = startHand(t, seededRng(1))
+    const h = t.hand!
+    expect(h.button).toBe(0)
+    expect(h.players.map((p) => p.seat)).toEqual([1, 2, 0]) // el que reparte, último
+    expect(h.toAct).toBe(1)
+    expect(potTotal(h)).toBe(300)
+    expect(t.seats.map((s) => s.stack)).toEqual([1900, 1900, 1900])
+    expect(h.players.every((p) => p.hole.length === 2)).toBe(true)
+    // La luz no es apuesta: se puede pasar antes del flop.
+    expect(legalActions(t)!.canCheck).toBe(true)
+  })
+
+  it("el botón rota y saltea a los que no tienen fichas", () => {
+    let t = table([2000, 0, 2000, 2000])
+    t = startHand(t, seededRng(2))
+    expect(t.hand!.button).toBe(0)
+    expect(t.hand!.players.map((p) => p.seat)).toEqual([2, 3, 0])
+    t.hand!.result = { showdown: false, pots: [], won: {}, handNames: {} }
+    t = startHand(t, seededRng(3))
+    expect(t.hand!.button).toBe(2)
+  })
+
+  it("máximo de jugadores por juego y mazo", () => {
+    expect(maxSeats({ game: "holdem", deck: "long" })).toBe(8)
+    expect(maxSeats({ game: "holdem", deck: "short" })).toBe(8)
+    expect(maxSeats({ game: "omaha", deck: "short" })).toBe(7)
+    expect(maxSeats({ game: "manhattan", deck: "short" })).toBe(6)
+    expect(maxSeats({ game: "manhattan", deck: "short" }, true)).toBe(5)
+    expect(maxSeats({ game: "manhattan", deck: "long" })).toBe(8)
+    expect(() => createTable(cfg({ variants: [{ game: "manhattan", deck: "short" }] }), names(7))).toThrow()
+    // En rotación manda el más justo.
+    expect(() =>
+      createTable(cfg({ variants: [{ game: "holdem", deck: "short" }, { game: "omaha", deck: "short" }] }), names(8)),
+    ).toThrow()
+  })
+
+  it("en rotación cambia de juego cada vuelta completa de la mesa", () => {
+    const t = createTable(cfg({ variants: [{ game: "holdem", deck: "long" }, { game: "omaha", deck: "long" }] }), names(3))
+    expect([1, 2, 3, 4, 5, 6, 7].map((n) => variantForHand(t, n).game)).toEqual([
+      "holdem", "holdem", "holdem", "omaha", "omaha", "omaha", "holdem",
+    ])
+  })
+
+  it("reparte la cantidad de cartas de cada juego y la mesa sale de a 3, 1 y 1", () => {
+    let t = createTable(cfg({ variants: [{ game: "manhattan", deck: "short" }] }), names(6))
+    t = startHand(t, seededRng(4))
+    expect(t.hand!.players.every((p) => p.hole.length === 5)).toBe(true)
+    const all = [...t.hand!.players.flatMap((p) => p.hole), ...t.hand!.deck]
+    expect(new Set(all).size).toBe(36)
+    for (let i = 0; i < 6; i++) t = act(t, { type: "check" })
+    expect(t.hand!.street).toBe("flop")
+    expect(t.hand!.board).toHaveLength(3)
+    for (let i = 0; i < 6; i++) t = act(t, { type: "check" })
+    expect(t.hand!.board).toHaveLength(4)
+  })
+})
+
+describe("Motor de la mano: apuestas", () => {
+  it("todos pasan hasta el final: gana la mejor mano", () => {
+    let t = table([2000, 2000, 2000])
+    t = startHand(t, seededRng(1), { holes: holes("As Ad", "Ks Kd", "7c 2h"), board: parseCards("9s 8d 4c 3h Jc") })
+    for (let i = 0; i < 12; i++) t = act(t, { type: "check" })
+    const r = t.hand!.result!
+    expect(r.showdown).toBe(true)
+    expect(r.won).toEqual({ 0: 300 })
+    expect(t.seats.map((s) => s.stack)).toEqual([2200, 1900, 1900])
+    expect(r.handNames[0]).toBeTruthy()
+  })
+
+  it("si se retiran todos, el que apostó se lleva el pozo sin mostrar", () => {
+    let t = table([2000, 2000, 2000])
+    t = startHand(t, seededRng(1))
+    t = act(t, { type: "raise", to: 200 }) // asiento 1
+    t = act(t, { type: "fold" }) // 2
+    t = act(t, { type: "fold" }) // 0
+    const r = t.hand!.result!
+    expect(r.showdown).toBe(false)
+    expect(t.seats[1].stack).toBe(2000 - 100 - 200 + 500)
+    expect(t.hand!.board).toHaveLength(0)
+  })
+
+  it("apuesta mínima = la luz; subida mínima = la última subida", () => {
+    let t = table([5000, 5000, 5000])
+    t = startHand(t, seededRng(1))
+    expect(legalActions(t)!.minTo).toBe(100)
+    expect(() => act(t, { type: "raise", to: 50 })).toThrow()
+    t = act(t, { type: "raise", to: 300 }) // 1 apuesta 300
+    expect(legalActions(t)!.minTo).toBe(600)
+    expect(() => act(t, { type: "raise", to: 500 })).toThrow()
+    expect(() => act(t, { type: "raise", to: 650 })).toThrow() // de a $100
+    t = act(t, { type: "raise", to: 1000 }) // 2 sube 700
+    expect(legalActions(t)!.minTo).toBe(1700)
+    expect(legalActions(t)!.toCall).toBe(1000)
+    expect(() => act(t, { type: "check" })).toThrow()
+  })
+
+  it("un all-in corto no le reabre la subida a quien ya habló", () => {
+    // Asiento 2 tiene 600: después de la luz le quedan 500.
+    let t = table([5000, 5000, 600])
+    t = startHand(t, seededRng(1))
+    t = act(t, { type: "raise", to: 400 }) // 1 apuesta 400
+    t = act(t, { type: "raise", to: 500 }) // 2 all-in por 500: sube solo 100 (< 400)
+    // 0 todavía no habló: puede subir.
+    let l = legalActions(t)!
+    expect(l.seat).toBe(0)
+    expect(l.canRaise).toBe(true)
+    expect(l.minTo).toBe(900) // 500 + la última subida completa (400)
+    t = act(t, { type: "call" })
+    // 1 ya habló y solo le subieron 100: paga o se va, pero no sube.
+    l = legalActions(t)!
+    expect(l.seat).toBe(1)
+    expect(l.canRaise).toBe(false)
+    expect(l.toCall).toBe(100)
+  })
+
+  it("con un all-in sin nadie más que pueda pagar, no se puede subir", () => {
+    let t = table([5000, 1100])
+    t = startHand(t, seededRng(1))
+    // Mano a mano: habla primero el 1 (izquierda del botón 0).
+    t = act(t, { type: "raise", to: 1000 }) // 1 all-in
+    const l = legalActions(t)!
+    expect(l.canRaise).toBe(false)
+    expect(l.toCall).toBe(1000)
+  })
+})
+
+describe("Motor de la mano: pozos", () => {
+  it("tres all-in de distinto tamaño arman pozo principal y dos laterales", () => {
+    // Stacks antes de la luz: 500, 1000, 2000, 2000. Manos: 0 > 1 > 2 > 3.
+    let t = table([2000, 500, 1000, 2000])
+    // Botón 0 → hablan 1, 2, 3, 0. Reordeno para que el asiento 1 tenga la mejor.
+    t = startHand(t, seededRng(1), {
+      holes: holes("7c 2d", "As Ad", "Ks Kd", "Qs Qd"),
+      board: parseCards("9s 8d 4c 3h Jc"),
+    })
+    t = act(t, { type: "raise", to: 400 }) // 1 all-in (500 con la luz)
+    t = act(t, { type: "raise", to: 900 }) // 2 all-in (1000)
+    t = act(t, { type: "raise", to: 1900 }) // 3 all-in (2000)
+    t = act(t, { type: "call" }) // 0 paga todo (2000)
+    const r = t.hand!.result!
+    expect(t.hand!.board).toHaveLength(5)
+    expect(r.pots.map((p) => p.amount)).toEqual([2000, 1500, 2000])
+    expect(r.pots.map((p) => p.winners)).toEqual([[1], [2], [3]])
+    expect(r.won).toEqual({ 1: 2000, 2: 1500, 3: 2000 })
+    expect(t.seats.map((s) => s.stack)).toEqual([0, 2000, 1500, 2000])
+  })
+
+  it("lo que nadie pagó vuelve al que lo apostó", () => {
+    let t = table([3000, 500])
+    t = startHand(t, seededRng(1), { holes: holes("7c 2d", "As Ad"), board: parseCards("9s 8d 4c 3h Jc") })
+    t = act(t, { type: "check" }) // 1
+    t = act(t, { type: "raise", to: 1500 }) // 0
+    t = act(t, { type: "call" }) // 1 all-in por 400
+    const r = t.hand!.result!
+    expect(r.won).toEqual({ 1: 1000, 0: 1100 })
+    expect(t.seats.map((s) => s.stack)).toEqual([2500, 1000])
+  })
+
+  it("empate: se reparte de a fichas y la que sobra va al primero desde la izquierda del botón", () => {
+    let t = table([2000, 2000, 2000])
+    // Escalera en la mesa: empatan 1 y 2; el 0 se retira. Pozo 300 → 150 c/u no se divide de a $100.
+    t = startHand(t, seededRng(1), {
+      holes: holes("2c 3d", "2s 3h", "2h 3c"),
+      board: parseCards("As Kd Qc Jh Ts"),
+    })
+    t = act(t, { type: "check" }) // 1
+    t = act(t, { type: "check" }) // 2
+    t = act(t, { type: "fold" }) // 0
+    for (let i = 0; i < 6; i++) t = act(t, { type: "check" })
+    const r = t.hand!.result!
+    expect(r.pots[0].winners).toEqual([1, 2])
+    expect(r.won).toEqual({ 1: 200, 2: 100 })
+  })
+
+  it("buildPots junta niveles con los mismos candidatos", () => {
+    const base = { hole: [], allIn: false, streetBet: 0, acted: true, canRaise: false }
+    const pots = buildPots([
+      { ...base, seat: 0, folded: false, committed: 300 },
+      { ...base, seat: 1, folded: true, committed: 100 },
+      { ...base, seat: 2, folded: false, committed: 300 },
+    ])
+    expect(pots).toEqual([{ amount: 700, eligible: [0, 2] }])
+  })
+
+  it("Short deck: el color le gana al full", () => {
+    let t = table([2000, 2000], { variants: [{ game: "holdem", deck: "short" }] })
+    t = startHand(t, seededRng(1), {
+      holes: holes("Ks Kd", "As 7s"),
+      board: parseCards("Kh 9s 9d 8s 6s"),
+    })
+    for (let i = 0; i < 8; i++) t = act(t, { type: "check" })
+    expect(t.hand!.result!.won).toEqual({ 1: 200 })
+  })
+})
+
+describe("Motor de la mano: cajitas", () => {
+  it("se pide otra con un cuarto de la cajita o menos y entra en la mano siguiente", () => {
+    expect(canRequestCajita(table([600, 2000]), 0)).toBe(false) // 600 > 500
+    let t = table([500, 2000])
+    expect(canRequestCajita(t, 0)).toBe(true)
+    t = requestCajita(t, 0)
+    expect(canRequestCajita(t, 0)).toBe(false) // ya pidió
+    expect(t.seats[0].stack).toBe(500)
+    t = startHand(t, seededRng(1))
+    expect(t.seats[0].cajitas).toBe(2)
+    expect(chipsOf(t, 0)).toBe(2500)
+    expect(netResult(t, 0)).toBe(2500 - 4000)
+  })
+
+  it("las fichas no se crean ni se pierden en cientos de manos al azar", () => {
+    const rng = seededRng(99)
+    for (const variant of [
+      { game: "holdem", deck: "long" },
+      { game: "omaha", deck: "short" },
+      { game: "manhattan", deck: "short" },
+    ] as const) {
+      let t = createTable(cfg({ variants: [variant] }), names(variant.game === "manhattan" ? 6 : 5))
+      for (let hand = 0; hand < 120; hand++) {
+        // Al que le queda poco, le entra otra cajita.
+        t.seats.forEach((_, i) => {
+          if (canRequestCajita(t, i) && rng() < 0.7) t = requestCajita(t, i)
+        })
+        if (t.seats.filter((s) => s.stack + s.pending * t.config.cajita > 0).length < 2) break
+        t = startHand(t, rng)
+        const expected = t.seats.reduce((s, x) => s + x.cajitas * t.config.cajita, 0)
+        let steps = 0
+        while (t.hand!.toAct !== null) {
+          const l = legalActions(t)!
+          const r = rng()
+          if (l.canRaise && r < 0.25) {
+            const span = Math.floor((l.maxTo - l.minTo) / 100)
+            const to = r < 0.05 ? l.maxTo : l.minTo + 100 * Math.floor(rng() * (span + 1))
+            t = act(t, { type: "raise", to })
+          } else if (l.canCheck) t = act(t, { type: "check" })
+          else if (r < 0.8) t = act(t, { type: "call" })
+          else t = act(t, { type: "fold" })
+          expect(++steps).toBeLessThan(200)
+        }
+        const h = t.hand!
+        expect(h.result).not.toBeNull()
+        expect(totalChips(t)).toBe(expected)
+        expect(t.seats.every((s) => s.stack >= 0)).toBe(true)
+        const paid = Object.values(h.result!.won).reduce((a, b) => a + b, 0)
+        expect(paid).toBe(h.players.reduce((s, p) => s + p.committed, 0))
+        if (h.result!.showdown) expect(h.board).toHaveLength(5)
+      }
+    }
+  })
+})

@@ -34,7 +34,19 @@ se retoma ese plan; el motor de la mano y los bots de acá se reutilizan tal cua
 - **Juego y mazo:** Hold'em, Omaha o Manhattan, en Long o Short. Dos modos:
   **fijo** (el mismo juego toda la sesión) o **se rota** (una ronda de cada
   juego).
-- **Cuántos bots:** de 1 a 7 (mesa de hasta 8).
+- **Cuántos bots:** de 1 a 7 (mesa de hasta 8), según lo que entra en el mazo
+  (cartas propias de todos + 5 de la mesa, sin quemar):
+
+  | Mazo | Juego | Máximo |
+  |---|---|---|
+  | Long (52) | todos | 8 |
+  | Short (36) | Hold'em | 8 |
+  | Short (36) | Omaha | 7 |
+  | Short (36) | Manhattan | 6 |
+
+  Al armar la mesa no deja poner más bots de los que entran; en modo "se rota"
+  manda el juego más justo de la rotación. Si se quemaran cartas, Manhattan
+  Short bajaría a 5 (a confirmar; el motor lo soporta con una opción).
 - **Valor de la cajita** (arranca en $2.000) y **luz** (arranca en $100), como en
   una partida de verdad.
 
@@ -83,7 +95,8 @@ Las mismas que la mesa online:
 
 En este orden. Cada paso se puede probar solo antes de seguir.
 
-1. **Motor de la mano** (`lib/poker/table.ts`, nuevo, con tests). Código puro:
+1. ✅ **Motor de la mano** (`lib/poker/table.ts`, con tests en
+   `tests/table.test.ts`; hecho el 25/11/2026). Código puro:
    luz, orden de habla, el botón que rota, pasar, apostar, pagar, subir,
    retirarse, all-in, pozos laterales, reparto según el juego, quién gana y
    cajitas. Tests con manos armadas a mano: pozos laterales con tres all-in

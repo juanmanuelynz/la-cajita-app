@@ -34,6 +34,7 @@ Están en `lib/poker/evaluator.ts` y los tests las verifican.
 | `lib/poker/equity.ts` | Qué parte del pozo se lleva cada mano: exacta (recorre todas las mesas) o simulada; outs |
 | `lib/poker/drills.ts` | Generadores de los ejercicios de cartas |
 | `lib/poker/gto.ts` | Fórmulas del river: MDF, alfa, parte de bluffs |
+| `lib/poker/table.ts` | Motor de una mano completa con las reglas de la casa (luz, sin límite, pozos laterales, cajitas) para "Jugar contra bots"; tests en `tests/table.test.ts` |
 | `lib/poker/ev.ts` | Ejercicios de valor esperado (¿Apostar o pasar?, Defender contra bluffs con chances, ¿All-in o fold?, ¿Qué le queda?) |
 | `lib/poker/preflop.ts` | Rangos de apertura con ciegas (PokerStrategy) |
 | `lib/poker/preflop-vs.ts` + `preflop-vs-data.ts` | Pagar / resubir cuando te suben (PokerStrategy) |
