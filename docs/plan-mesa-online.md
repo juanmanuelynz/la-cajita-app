@@ -18,12 +18,35 @@ su celular, en la misma mano y al mismo tiempo. Acordado el 25/11/2026.
 - **Cualquiera puede crear una mesa**, con el PIN de admin o el de invitado.
 - **Los invitados también pueden jugar.**
 - **Hasta 8 lugares**, contando los bots.
-- **Para sentarse, cada jugador usa su PIN personal** de 4 dígitos, además del
-  PIN del grupo. Así nadie puede sentarse como otro y ver sus cartas. La primera
-  vez lo crea cada uno; el admin lo puede resetear desde Configuración. Se
-  guarda cifrado, nunca tal cual.
+- Cada uno se sienta como sí mismo gracias a su **PIN personal** (ver abajo).
+  Así nadie puede sentarse como otro y ver sus cartas.
 - Puede sentarse cualquier jugador, esté o no en la lista del torneo (como en
   una suelta).
+
+### PIN personal
+
+Además de los PIN de hoy, cada jugador tiene **su propio PIN** de 4 dígitos para
+entrar a la app. Así la app sabe quién es:
+
+- **Entrenar** elige su nombre solo (hoy se elige a mano una vez por celular).
+- **En la mesa online** se sienta como él, sin pedir otro PIN.
+
+Cómo funciona:
+
+- **Los PIN de hoy siguen andando igual** (el del grupo y el de invitado). Si
+  entrás con uno de esos, la app no sabe quién sos: en Entrenar elegís el nombre
+  a mano y, para sentarte en la mesa, te pide tu PIN personal. Nadie pierde el
+  acceso el día del cambio.
+- **Cada uno arma el suyo:** la primera vez entra con el PIN del grupo, elige su
+  nombre y crea su PIN. El admin lo puede resetear desde Configuración. Se
+  guarda cifrado, nunca tal cual.
+- **Rol con PIN personal:** los jugadores de la **lista del torneo** entran como
+  **admin** (igual que hoy con el PIN del grupo). El resto entra como
+  **invitado**: sueltas, mesa online, Entrenar y Ajustes.
+- **Para que nadie se haga admin con el nombre de otro:** el PIN de un jugador
+  de la lista del torneo solo se puede crear desde una sesión de admin (PIN del
+  grupo). Con el PIN de invitado solo se puede crear el de un jugador que no
+  está en la lista.
 
 ### Reglas de juego
 
@@ -83,6 +106,11 @@ su celular, en la misma mano y al mismo tiempo. Acordado el 25/11/2026.
 
 En este orden. Cada paso se puede probar por separado antes de seguir.
 
+0. **PIN personal** (`lib/auth.ts`, `app/login/`, `lib/session.ts`): el token
+   firmado pasa a llevar también el id del jugador; el login acepta los PIN de
+   hoy y los personales; Entrenar toma el nombre de la sesión cuando lo hay.
+   Va antes que la mesa porque la mesa lo necesita. Los tokens viejos tienen
+   que seguir valiendo (como cuando se sumó el rol de invitado).
 1. **Motor de la mano** (`lib/poker/table.ts`, nuevo, con tests). Código puro,
    sin base de datos ni pantalla: luz, orden de habla, el botón que rota,
    pasar, apostar, pagar, subir, retirarse, all-in, pozos laterales, reparto
@@ -111,6 +139,10 @@ En este orden. Cada paso se puede probar por separado antes de seguir.
 
 ## Riesgos
 
+- **PIN de 4 dígitos al entrar:** son 10.000 combinaciones y hoy el login
+  solo tiene una demora de medio segundo. Con PIN personales hay que sumar
+  un límite de intentos fallidos (por ejemplo, bloquear 15 minutos después de 5
+  errores) o usar 6 dígitos.
 - **Costo de la base (Neon, plan gratis):** mientras se juega, la base no se
   duerme. Una noche de 4 horas gasta unas 4 de las ~100 horas de cómputo
   gratis por mes. Antes de empezar hay que ver cuánto usa la app hoy.
