@@ -10,6 +10,15 @@
   }
 }
 
+/* Scroll sin barra (las pantallas de cada tab): se puede scrollear igual,
+   pero no aparece la barrita al costado. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   :root {
     /* Lo que ocupa la barra flotante de abajo (alto + margen + zona del iPhone),

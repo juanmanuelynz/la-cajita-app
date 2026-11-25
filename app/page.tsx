@@ -742,7 +742,7 @@ function LaCajitaPoker() {
           <div className="flex h-full touch-pan-y">
             {tabs.map((tab) => (
               // Abajo deja lugar para la barra flotante, así no tapa lo último de cada pestaña.
-              <div key={tab.id} className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto pb-[var(--dock-space)]">
+              <div key={tab.id} className="flex-[0_0_100%] min-w-0 px-1 h-full overflow-y-auto no-scrollbar pb-[var(--dock-space)]">
                 {screens[tab.id]}
               </div>
             ))}
