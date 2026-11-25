@@ -207,7 +207,16 @@ export interface RingSeat {
  * resto se reparte por el borde dejando lugar para tus cartas. `center` va en
  * el medio del paño (pozo, la mano del rival).
  */
-export function RingTable({ seats, center }: { seats: RingSeat[]; center?: ReactNode }) {
+export function RingTable({
+  seats,
+  center,
+  heroCardSize = "md",
+}: {
+  seats: RingSeat[]
+  center?: ReactNode
+  /** Tamaño de tus cartas (más chicas si además hay mesa y manos de 4–5). */
+  heroCardSize?: "sm" | "md"
+}) {
   const n = seats.length
   const h = Math.max(0, seats.findIndex((s) => s.hero))
   const hero = seats[h]
@@ -328,7 +337,7 @@ export function RingTable({ seats, center }: { seats: RingSeat[]; center?: React
         <>
           <div className="absolute bottom-[1%] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5">
             {hero.cards && (
-              <CardRow cards={hero.cards} size="md" overlap={heroOverlap} deal={0} className="flex-nowrap justify-center" />
+              <CardRow cards={hero.cards} size={heroCardSize} overlap={heroOverlap} deal={0} className="flex-nowrap justify-center" />
             )}
             <div className="flex items-center gap-1">
               <div className="whitespace-nowrap rounded-full border border-primary bg-primary px-2 py-0.5 text-[11px] font-semibold leading-4 text-primary-foreground">

@@ -1,0 +1,619 @@
+"use client"
+
+// "Jugar contra bots" (docs/plan-jugar-contra-bots.md): armar la mesa, jugar
+// manos completas contra bots y ver cómo terminaste. Todo corre en el celular;
+// la mesa se guarda en localStorage para seguir en la misma mano si se cierra.
+// Es de práctica: no se anota en ningún lado.
+
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { FlaskConical, Minus, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { botAct, botWantsCajita, type BotDecision } from "@/lib/poker/bot"
+import {
+  canRequestCajita,
+  createTable,
+  DEFAULT_CONFIG,
+  legalActions,
+  maxSeats,
+  netResult,
+  potTotal,
+  requestCajita,
+  startHand,
+  act,
+  type Action,
+  type Structure,
+  type TableConfig,
+  type TableState,
+} from "@/lib/poker/table"
+import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
+import type { DeckType } from "@/lib/poker/cards"
+import { CardRow } from "./playing-card"
+import { PotPill, RingTable, type RingSeat } from "./table-view"
+import { pesos } from "./drill-shell"
+
+const STORAGE_KEY = "la-cajita:bots:mesa"
+const SETUP_KEY = "la-cajita:bots:armado"
+const HERO = 0
+/** Pausa entre jugadas de los bots, para poder seguirlas. */
+const BOT_DELAY_MS = 900
+
+type Mode = "fijo" | "rota"
+
+interface Setup {
+  mode: Mode
+  game: GameId
+  deck: DeckType
+  bots: number
+  structure: Structure
+  cajita: number
+  luz: number
+  small: number
+  big: number
+}
+
+const DEFAULT_SETUP: Setup = {
+  mode: "fijo",
+  game: "holdem",
+  deck: "long",
+  bots: 4,
+  structure: "luz",
+  cajita: 2000,
+  luz: 100,
+  small: 100,
+  big: 200,
+}
+
+const variantsOf = (s: Setup): Variant[] =>
+  s.mode === "fijo" ? [{ game: s.game, deck: s.deck }] : GAME_IDS.map((game) => ({ game, deck: s.deck }))
+
+/** Bots que entran en la mesa con ese armado (el juego más justo manda). */
+const maxBots = (s: Setup) => Math.min(...variantsOf(s).map((v) => maxSeats(v))) - 1
+
+const variantLabel = (v: Variant) => `${GAMES[v.game].name} ${v.deck === "short" ? "Short" : "Long"}`
+
+function load<T>(key: string): T | null {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? "null") as T | null
+  } catch {
+    return null
+  }
+}
+function save(key: string, value: unknown) {
+  try {
+    if (value === null) localStorage.removeItem(key)
+    else localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // sin storage: se juega igual, pero no se retoma
+  }
+}
+
+// ── Armado ────────────────────────────────────────────────────────────────
+
+function Choice<T extends string | number>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T
+  options: { id: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex rounded-full bg-muted/70 p-1 text-sm">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(o.id)}
+          className={cn(
+            "flex-1 whitespace-nowrap rounded-full px-2 py-1.5 transition-all",
+            value === o.id ? "bg-background font-semibold text-foreground shadow" : "text-muted-foreground",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Stepper({
+  label,
+  value,
+  step,
+  min,
+  max,
+  money = true,
+  onChange,
+}: {
+  label: string
+  value: number
+  step: number
+  min: number
+  max: number
+  money?: boolean
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm">{label}</span>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-full"
+          disabled={value - step < min}
+          onClick={() => onChange(value - step)}
+          aria-label={`Menos ${label}`}
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+        <span className="w-16 text-center font-semibold tabular-nums">{money ? pesos(value) : value}</span>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-full"
+          disabled={value + step > max}
+          onClick={() => onChange(value + step)}
+          aria-label={`Más ${label}`}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function Field({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-2">
+      <h3 className="px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+/** Si los bots usan rangos de PokerStrategy o nuestra cuenta (Beta). */
+function usesRanges(structure: Structure, variants: Variant[], players: number) {
+  return (
+    structure === "ciegas" &&
+    variants.some((v) => v.game === "holdem" && v.deck === "long") &&
+    players >= 4 &&
+    players <= 6
+  )
+}
+
+function BotsNote({ structure, variants, players }: { structure: Structure; variants: Variant[]; players: number }) {
+  const ranges = usesRanges(structure, variants, players)
+  return (
+    <p className="flex gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+      <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>
+        <b className="text-foreground">Bots Beta:</b> deciden con su chance de ganar contra lo que tienen que pagar
+        (cuenta nuestra, sin fuente).
+        {ranges
+          ? " En Hold'em Long, antes del flop, siguen los rangos de PokerStrategy."
+          : structure === "ciegas"
+            ? " Los rangos de PokerStrategy solo se usan en Hold'em Long con ciegas y de 4 a 6 jugadores."
+            : " Con luz no usan rangos: los de PokerStrategy son para mesas con ciegas."}
+      </span>
+    </p>
+  )
+}
+
+function SetupScreen({ initial, onStart }: { initial: Setup; onStart: (s: Setup) => void }) {
+  const [s, setS] = useState<Setup>(initial)
+  const set = (patch: Partial<Setup>) =>
+    setS((prev) => {
+      const next = { ...prev, ...patch }
+      next.bots = Math.max(1, Math.min(next.bots, maxBots(next)))
+      if (next.big < next.small) next.big = next.small
+      return next
+    })
+  const limit = maxBots(s)
+
+  return (
+    <div className="space-y-5">
+      <Field title="Juego">
+        <Choice
+          value={s.mode}
+          onChange={(mode) => set({ mode })}
+          options={[
+            { id: "fijo", label: "Fijo" },
+            { id: "rota", label: "Se rota" },
+          ]}
+        />
+        {s.mode === "fijo" ? (
+          <Choice value={s.game} onChange={(game) => set({ game })} options={GAME_IDS.map((id) => ({ id, label: GAMES[id].name }))} />
+        ) : (
+          <p className="px-1 text-xs text-muted-foreground">Una vuelta de cada uno: Hold&apos;em, Omaha y Manhattan.</p>
+        )}
+        <Choice
+          value={s.deck}
+          onChange={(deck) => set({ deck })}
+          options={[
+            { id: "long", label: "Long (52)" },
+            { id: "short", label: "Short (36)" },
+          ]}
+        />
+      </Field>
+
+      <Field title="Mesa">
+        <Stepper label="Bots" value={s.bots} step={1} min={1} max={limit} money={false} onChange={(bots) => set({ bots })} />
+        <p className="px-1 text-xs text-muted-foreground">
+          Hasta {limit} con este juego (no dan las cartas para más).
+        </p>
+        <Stepper label="Cajita" value={s.cajita} step={500} min={1000} max={50000} onChange={(cajita) => set({ cajita })} />
+      </Field>
+
+      <Field title="Para entrar a la mano">
+        <Choice
+          value={s.structure}
+          onChange={(structure) => set({ structure })}
+          options={[
+            { id: "luz", label: "Con luz" },
+            { id: "ciegas", label: "Con ciegas" },
+          ]}
+        />
+        {s.structure === "luz" ? (
+          <Stepper label="Luz" value={s.luz} step={100} min={100} max={s.cajita / 4} onChange={(luz) => set({ luz })} />
+        ) : (
+          <>
+            <Stepper label="Ciega chica" value={s.small} step={100} min={100} max={s.cajita / 4} onChange={(small) => set({ small })} />
+            <Stepper label="Ciega grande" value={s.big} step={100} min={s.small} max={s.cajita / 2} onChange={(big) => set({ big })} />
+          </>
+        )}
+      </Field>
+
+      <BotsNote structure={s.structure} variants={variantsOf(s)} players={s.bots + 1} />
+
+      <Button className="h-12 w-full text-base font-bold" onClick={() => onStart(s)}>
+        Sentarse a jugar
+      </Button>
+      <p className="text-center text-xs text-muted-foreground">Es de práctica: no se anota en ningún lado.</p>
+    </div>
+  )
+}
+
+// ── Mesa ──────────────────────────────────────────────────────────────────
+
+/** Cómo se dice lo último que hizo cada uno en la calle. */
+function actionText(t: TableState, seat: number): RingSeat["action"] | undefined {
+  const h = t.hand!
+  const p = h.players.find((x) => x.seat === seat)
+  if (!p) return { kind: "fold", text: "Afuera" }
+  if (p.folded) return { kind: "fold", text: "Se fue" }
+  const last = [...h.log].reverse().find((x) => x.seat === seat && x.street === h.street)
+  if (!last) return undefined
+  switch (last.action) {
+    case "check":
+      return { kind: "check", text: "Pasa" }
+    case "call":
+      return { kind: "check", text: "Paga" }
+    case "raise": {
+      // Con ciegas, antes del flop ya hay apuesta (la grande): siempre es subir.
+      const before = h.log.slice(0, h.log.indexOf(last)).some((x) => x.street === h.street && x.to !== undefined)
+      const blindsBet = h.street === "preflop" && t.config.structure === "ciegas"
+      return { kind: "bet", text: before || blindsBet ? "Sube" : "Apuesta" }
+    }
+    case "allIn":
+      return { kind: "bet", text: "All-in" }
+    default:
+      return undefined
+  }
+}
+
+function seatsFor(t: TableState, heroName: string): RingSeat[] {
+  const h = t.hand!
+  const r = h.result
+  return t.seats.map((s, i) => {
+    const p = h.players.find((x) => x.seat === i)
+    const shown = i === HERO || (!!r && r.showdown && !!p && !p.folded)
+    const won = r?.won[i]
+    const name = i === HERO ? heroName : s.name
+    return {
+      key: s.id,
+      label: i === HERO ? pesos(s.stack) : `${name} · ${pesos(s.stack)}`,
+      hero: i === HERO,
+      cards: p && shown ? p.hole : undefined,
+      action: r && won ? { kind: "bet", text: `Gana ${pesos(won)}` } : actionText(t, i),
+      chip: p && !r && p.streetBet > 0 ? pesos(p.streetBet) : undefined,
+      dealer: h.button === i,
+    }
+  })
+}
+
+/** Montos rápidos para apostar o subir: fracciones del pozo, recortadas a lo permitido. */
+function quickSizes(t: TableState): { label: string; to: number }[] {
+  const l = legalActions(t)!
+  const h = t.hand!
+  const pot = potTotal(h)
+  const chip = t.config.chip
+  const base = h.currentBet
+  const out: { label: string; to: number }[] = []
+  const add = (label: string, raw: number) => {
+    const to = Math.min(l.maxTo, Math.max(l.minTo, Math.round(raw / chip) * chip))
+    if (!out.some((o) => o.to === to)) out.push({ label, to })
+  }
+  add("Mínimo", l.minTo)
+  add("½ pozo", base + (pot + l.toCall) / 2)
+  add("Pozo", base + pot + l.toCall)
+  add("All-in", l.maxTo)
+  return out
+}
+
+function ActionBar({ t, onAct }: { t: TableState; onAct: (a: Action) => void }) {
+  const l = legalActions(t)!
+  const sizes = quickSizes(t)
+  // Arranca en "½ pozo" (se vuelve a montar en cada jugada: ver la key en BotTable).
+  const [to, setTo] = useState(sizes[Math.min(1, sizes.length - 1)]?.to ?? l.minTo)
+  const chip = t.config.chip
+  const raiseWord = t.hand!.currentBet === 0 ? "Apostar" : "Subir a"
+
+  return (
+    <div className="space-y-2 rounded-2xl border bg-card p-3">
+      {l.canRaise && (
+        <>
+          <div className="flex gap-1.5">
+            {sizes.map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => setTo(s.to)}
+                className={cn(
+                  "flex-1 rounded-full border px-1 py-1 text-xs",
+                  to === s.to ? "border-primary bg-primary/15 font-semibold text-primary" : "text-muted-foreground",
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" disabled={to - chip < l.minTo} onClick={() => setTo(to - chip)} aria-label="Menos">
+              <Minus className="h-4 w-4" />
+            </Button>
+            <input
+              type="range"
+              min={l.minTo}
+              max={l.maxTo}
+              step={chip}
+              value={to}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setTo(v >= l.maxTo - chip / 2 ? l.maxTo : v)
+              }}
+              className="flex-1 accent-[var(--primary)]"
+              aria-label="Cuánto"
+            />
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" disabled={to + chip > l.maxTo} onClick={() => setTo(Math.min(l.maxTo, to + chip))} aria-label="Más">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
+      <div className="grid grid-cols-3 gap-2">
+        <Button variant="outline" className="h-11" disabled={l.canCheck} onClick={() => onAct({ type: "fold" })}>
+          Me voy
+        </Button>
+        {l.canCheck ? (
+          <Button variant="outline" className="h-11" onClick={() => onAct({ type: "check" })}>
+            Paso
+          </Button>
+        ) : (
+          <Button variant="outline" className="h-11" onClick={() => onAct({ type: "call" })}>
+            Pago {pesos(l.toCall)}
+          </Button>
+        )}
+        <Button className="h-11 font-bold" disabled={!l.canRaise} onClick={() => onAct({ type: "raise", to })}>
+          {to === l.maxTo && l.canRaise ? "All-in" : `${raiseWord} ${pesos(to)}`}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function Summary({ t, heroName, onNew }: { t: TableState; heroName: string; onNew: () => void }) {
+  const rows = t.seats
+    .map((s, i) => ({ name: i === HERO ? heroName : s.name, cajitas: s.cajitas, net: netResult(t, i), hero: i === HERO }))
+    .sort((a, b) => b.net - a.net)
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className="text-xl font-bold">Fin de la mesa</div>
+        <div className="text-sm text-muted-foreground">{t.handsPlayed} manos jugadas</div>
+      </div>
+      <div className="divide-y rounded-2xl border">
+        {rows.map((r) => (
+          <div key={r.name} className={cn("flex items-center justify-between px-3 py-2", r.hero && "bg-primary/10")}>
+            <span className={cn(r.hero && "font-semibold")}>{r.name}</span>
+            <span className="flex items-center gap-3 text-sm">
+              <span className="text-muted-foreground">
+                {r.cajitas} {r.cajitas === 1 ? "cajita" : "cajitas"}
+              </span>
+              <span className={cn("w-20 text-right font-semibold tabular-nums", r.net >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                {r.net < 0 ? `−${pesos(-r.net)}` : `+${pesos(r.net)}`}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <Button className="h-12 w-full text-base font-bold" onClick={onNew}>
+        Nueva mesa
+      </Button>
+    </div>
+  )
+}
+
+/** Pantalla completa de "Jugar contra bots". */
+export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
+  const [table, setTable] = useState<TableState | null>(null)
+  const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP)
+  const [ended, setEnded] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [lastBot, setLastBot] = useState<BotDecision | null>(null)
+
+  // Retomar la mesa guardada (en useEffect: el reparto es al azar y no puede salir en el servidor).
+  useEffect(() => {
+    const saved = load<TableState>(STORAGE_KEY)
+    if (saved?.hand) setTable(saved)
+    const s = load<Setup>(SETUP_KEY)
+    if (s) setSetup({ ...DEFAULT_SETUP, ...s })
+    setLoaded(true)
+  }, [])
+  useEffect(() => {
+    if (loaded) save(STORAGE_KEY, ended ? null : table)
+  }, [table, ended, loaded])
+
+  const start = (s: Setup) => {
+    save(SETUP_KEY, s)
+    setSetup(s)
+    const config: TableConfig = {
+      ...DEFAULT_CONFIG,
+      cajita: s.cajita,
+      structure: s.structure,
+      luz: s.luz,
+      blinds: { small: s.small, big: s.big },
+      variants: variantsOf(s),
+    }
+    const players = [{ id: "vos", name: heroName }, ...Array.from({ length: s.bots }, (_, i) => ({ id: `bot${i + 1}`, name: `Bot ${i + 1}` }))]
+    setEnded(false)
+    setLastBot(null)
+    setTable(startHand(createTable(config, players)))
+  }
+
+  // Los bots juegan solos, con una pausa para poder seguirlos.
+  const toAct = table?.hand?.toAct ?? null
+  const busy = useRef(false)
+  useEffect(() => {
+    if (!table || toAct === null || toAct === HERO) return
+    const id = setTimeout(() => {
+      if (busy.current) return
+      busy.current = true
+      try {
+        const r = botAct(table)
+        setLastBot(r.decision)
+        setTable(r.table)
+      } finally {
+        busy.current = false
+      }
+    }, BOT_DELAY_MS)
+    return () => clearTimeout(id)
+  }, [table, toAct])
+
+  const onAct = useCallback((a: Action) => setTable((t) => (t ? act(t, a) : t)), [])
+
+  const nextHand = () => {
+    if (!table) return
+    let t = table
+    t.seats.forEach((_, i) => {
+      if (i !== HERO && botWantsCajita(t, i)) t = requestCajita(t, i)
+    })
+    const withChips = t.seats.filter((s) => s.stack + s.pending > 0)
+    if (t.seats[HERO].stack === 0 && t.seats[HERO].pending === 0) return // tiene que pedir cajita o terminar
+    if (withChips.length < 2) return
+    setLastBot(null)
+    setTable(startHand(t))
+  }
+
+  const seats = useMemo(() => (table?.hand ? seatsFor(table, heroName) : []), [table, heroName])
+
+  if (!loaded) return null
+  if (!table) return <SetupScreen initial={setup} onStart={start} />
+  if (ended) return <Summary t={table} heroName={heroName} onNew={() => { setTable(null); setEnded(false) }} />
+
+  const h = table.hand!
+  const r = h.result
+  const heroTurn = toAct === HERO && !r
+  const heroBroke = !!r && table.seats[HERO].stack === 0 && table.seats[HERO].pending === 0
+  const canAsk = canRequestCajita(table, HERO)
+  const heroPlayer = h.players.find((p) => p.seat === HERO)
+  const winners = r ? Object.keys(r.won).map(Number) : []
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          Mano {h.number} · {variantLabel(h.variant)} · {table.config.structure === "luz" ? `Luz ${pesos(table.config.luz)}` : `Ciegas ${pesos(table.config.blinds.small)}/${pesos(table.config.blinds.big)}`}
+        </span>
+        <span className="flex items-center gap-1">
+          <FlaskConical className="h-3 w-3" /> Bots Beta
+        </span>
+      </div>
+
+      <RingTable
+        seats={seats}
+        // Con manos de 4–5 cartas y la mesa en el medio no entra todo en tamaño grande.
+        heroCardSize={GAMES[h.variant.game].holeCount >= 4 ? "sm" : "md"}
+        center={
+          <>
+            {h.board.length > 0 && (
+              <CardRow cards={h.board} size={GAMES[h.variant.game].holeCount >= 4 ? "xs" : "sm"} className="flex-nowrap justify-center" />
+            )}
+            <PotPill>Pozo {pesos(r ? r.pots.reduce((s, p) => s + p.amount, 0) : potTotal(h))}</PotPill>
+          </>
+        }
+      />
+
+      {r ? (
+        <div className="space-y-2 rounded-2xl border bg-card p-3 text-sm">
+          {winners.map((w) => (
+            <div key={w} className="flex justify-between">
+              <span>
+                <b>{w === HERO ? heroName : table.seats[w].name}</b>
+                {r.showdown && r.handNames[w] ? ` · ${r.handNames[w]}` : ""}
+              </span>
+              <span className="font-semibold text-emerald-500">+{pesos(r.won[w])}</span>
+            </div>
+          ))}
+          {!r.showdown && <div className="text-xs text-muted-foreground">Se fueron todos: gana sin mostrar.</div>}
+          {r.showdown && heroPlayer && !heroPlayer.folded && !winners.includes(HERO) && r.handNames[HERO] && (
+            <div className="text-xs text-muted-foreground">Vos: {r.handNames[HERO]}</div>
+          )}
+          <div className="flex gap-2 pt-1">
+            {canAsk && (
+              <Button variant="outline" className="flex-1" onClick={() => setTable(requestCajita(table, HERO))}>
+                Pedir cajita
+              </Button>
+            )}
+            {!heroBroke && (
+              <Button className="flex-1 font-bold" onClick={nextHand}>
+                Siguiente mano
+              </Button>
+            )}
+          </div>
+          {heroBroke && <p className="text-xs text-muted-foreground">Te quedaste sin fichas: pedí otra cajita o terminá.</p>}
+          {table.seats[HERO].pending > 0 && <p className="text-xs text-muted-foreground">Tu cajita entra en la mano siguiente.</p>}
+        </div>
+      ) : heroTurn ? (
+        <ActionBar key={h.log.length} t={table} onAct={onAct} />
+      ) : (
+        <div className="flex h-[52px] items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground">
+          {heroPlayer?.folded ? "Te fuiste: miran los bots…" : `Piensa ${table.seats[toAct ?? 0]?.name ?? ""}…`}
+        </div>
+      )}
+
+      {lastBot && !r && (
+        <p className="text-center text-[11px] text-muted-foreground">
+          {lastBot.source === "pokerstrategy" ? lastBot.reason : `${lastBot.reason} (Beta)`}
+        </p>
+      )}
+
+      <div className="flex items-center justify-between gap-2 pt-1">
+        {!r && canAsk ? (
+          <Button variant="ghost" size="sm" onClick={() => setTable(requestCajita(table, HERO))}>
+            Pedir cajita
+          </Button>
+        ) : (
+          <span />
+        )}
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setEnded(true)}>
+          Terminar mesa
+        </Button>
+      </div>
+    </div>
+  )
+}

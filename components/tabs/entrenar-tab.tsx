@@ -25,6 +25,7 @@ import { EquityCalculator } from "@/components/training/equity-calculator"
 import { HandRankings } from "@/components/training/hand-rankings"
 import { GtoDrill } from "@/components/training/gto-drill"
 import { BetOrCheckDrill, CallDownDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
+import { BotTable } from "@/components/training/bot-table"
 import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
@@ -33,6 +34,7 @@ import { useBackToClose } from "@/hooks/use-back-to-close"
 import { Button } from "@/components/ui/button"
 import {
   ArrowUp,
+  Bot,
   BookOpen,
   ChevronLeft,
   ChevronsUp,
@@ -149,9 +151,38 @@ function drillTally(p: TrainingProgress | null, id: DrillChoice) {
  * Menú de ejercicios: una grilla por tema. Cada tarjeta muestra cómo te va
  * (% de aciertos y la barrita) y si vale para todos los juegos.
  */
-function DrillMenu({ onOpen, progress }: { onOpen: (d: DrillChoice) => void; progress: TrainingProgress | null }) {
+function DrillMenu({
+  onOpen,
+  onPlay,
+  progress,
+}: {
+  onOpen: (d: DrillChoice) => void
+  onPlay: () => void
+  progress: TrainingProgress | null
+}) {
   return (
     <div className="space-y-4 pt-1">
+      <section className="space-y-2">
+        <h3 className="px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Jugar</h3>
+        <button
+          type="button"
+          onClick={onPlay}
+          className="flex w-full items-center gap-3 rounded-2xl border-2 border-primary/50 bg-gradient-to-b from-primary/15 to-transparent p-3 text-left transition-all active:scale-[0.98]"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+            <Bot className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 font-semibold">
+              Jugar contra bots
+              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 text-[9px] font-black uppercase leading-4 text-muted-foreground">
+                <FlaskConical className="h-2.5 w-2.5" /> Beta
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">Manos completas, con luz o ciegas. No se anota.</div>
+          </div>
+        </button>
+      </section>
       {GROUPS.map((g) => (
         <section key={g.title} className="space-y-2">
           <h3 className="px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.title}</h3>
@@ -332,6 +363,10 @@ export function EntrenarTab({
   // "Lo que más fallás" también: atrás vuelve a Entrenar.
   const closePractice = useCallback(() => setPractice(null), [])
   useBackToClose(practice !== null, closePractice, "entrenar-practica")
+  // "Jugar contra bots" también (la mesa queda guardada: al volver se retoma).
+  const [bots, setBots] = useState(false)
+  const closeBots = useCallback(() => setBots(false), [])
+  useBackToClose(bots, closeBots, "entrenar-bots")
   // Al entrar o salir de un ejercicio, arrancar desde arriba.
   const firstScroll = useRef(true)
   useEffect(() => {
@@ -340,10 +375,11 @@ export function EntrenarTab({
       return
     }
     topRef.current?.scrollIntoView({ block: "start" })
-  }, [drill])
+  }, [drill, bots])
 
   const entry = drill ? ENTRIES.find((e) => e.id === drill)! : null
-  const inExercise = subtab === "ejercicios" && (!!drill || !!practice || challengeActive)
+  const inExercise = subtab === "ejercicios" && (!!drill || !!practice || challengeActive || bots)
+  const heroName = players.find((p) => p.id === playerId)?.name ?? "Vos"
   const vsSituation = drill === "vsOpen" || drill === "vs3bet" ? drill : null
 
   const structurePicker = (
@@ -397,6 +433,17 @@ export function EntrenarTab({
           <div ref={topRef} className="scroll-mt-24" />
           {practice ? (
             <PracticeSession spots={practice} onExit={closePractice} />
+          ) : bots ? (
+            <div className="animate-fade-in space-y-3">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="-ml-2 gap-1 px-2" onClick={closeBots}>
+                  <ChevronLeft className="h-4 w-4" />
+                  Volver
+                </Button>
+                <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">Jugar contra bots</div>
+              </div>
+              <BotTable heroName={heroName} />
+            </div>
           ) : (
             <>
               {drill && entry ? (
@@ -448,7 +495,7 @@ export function EntrenarTab({
                     />
                   )}
                   <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
-                  {!challengeActive && <DrillMenu onOpen={setDrill} progress={progress} />}
+                  {!challengeActive && <DrillMenu onOpen={setDrill} onPlay={() => setBots(true)} progress={progress} />}
                 </>
               )}
             </>

@@ -36,6 +36,7 @@ Están en `lib/poker/evaluator.ts` y los tests las verifican.
 | `lib/poker/gto.ts` | Fórmulas del river: MDF, alfa, parte de bluffs |
 | `lib/poker/table.ts` | Motor de una mano completa con las reglas de la casa (luz, sin límite, pozos laterales, cajitas) para "Jugar contra bots"; tests en `tests/table.test.ts` |
 | `lib/poker/bot.ts` | Bots de "Jugar contra bots": equity simulada contra los que siguen vs pot odds, con algo de azar (Beta, sin fuente); con ciegas en Hold'em Long de 4 a 6, antes del flop siguen los rangos de PokerStrategy; tests en `tests/bot.test.ts` |
+| `components/training/bot-table.tsx` | Pantalla de "Jugar contra bots": armado (juego fijo o rotando, bots, cajita, luz o ciegas), la mesa con `RingTable` y tus botones; la mesa se guarda en localStorage |
 | `lib/poker/ev.ts` | Ejercicios de valor esperado (¿Apostar o pasar?, Defender contra bluffs con chances, ¿All-in o fold?, ¿Qué le queda?) |
 | `lib/poker/preflop.ts` | Rangos de apertura con ciegas (PokerStrategy) |
 | `lib/poker/preflop-vs.ts` + `preflop-vs-data.ts` | Pagar / resubir cuando te suben (PokerStrategy) |

@@ -123,7 +123,7 @@ En este orden. Cada paso se puede probar solo antes de seguir.
    25/11/2026). Tests de sentido común: nunca se retira si puede pasar gratis,
    nunca se retira con la mejor mano posible, sus apuestas siempre son
    válidas y una mesa solo de bots juega manos enteras sin perder fichas.
-3. **Pantalla** (`components/training/bot-table.tsx`, nuevo): armar la mesa, la
+3. ✅ **Pantalla** (`components/training/bot-table.tsx`; hecho el 25/11/2026): armar la mesa, la
    mesa ovalada con `RingTable` y las cartas de Entrenar, pozo, fichas de cada
    uno, quién habla, tus botones (pasar, pagar, subir con montos rápidos tipo
    medio pozo / pozo / all-in, retirarse) y la jugada de cada bot con una pausa
