@@ -23,7 +23,7 @@ import { ChallengeResult } from "./challenge-result"
 import { LuzDrill } from "./luz-drill"
 import { GtoDrill } from "./gto-drill"
 import { PreflopVsDrill } from "./preflop-vs-drill"
-import { BetOrCheckDrill, SemiBluffDrill, ShoveDrill } from "./ev-drills"
+import { BetOrCheckDrill, CallDownDrill, SemiBluffDrill, ShoveDrill } from "./ev-drills"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
 
@@ -71,6 +71,8 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <SemiBluffDrill {...common} preset={q.data} />
     case "shove":
       return <ShoveDrill {...common} preset={q.data} />
+    case "callDown":
+      return <CallDownDrill {...common} preset={q.data} />
   }
 }
 

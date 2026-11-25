@@ -26,6 +26,7 @@ playbook de GTO"). Escrito el 25/11/2026.
 | 130, 131 | Si el bluff tiene chances (showdown o proyecto), alcanza con defender menos que la MDF | Defender contra proyectos |
 | 137 | All-in con pocas fichas: los folds bajan lo que tenés que ganar | ¿All-in o fold? (con luz) |
 | 44, 149 | Las pot odds mandan sobre la MDF: contra quien farolea poco, fold | Aviso en "Ver por qué" |
+| 210, 325 | Tres apuestas seguidas: lo que paga todo es el producto de las MDF, y las manos que no foldean pasan a ser casi todo | ¿Qué le queda? (en el Desafío desde el 27/11) |
 
 Fórmulas y tests: `lib/poker/ev.ts` y `tests/poker.test.ts` (verifican los
 ejemplos numéricos del libro).
@@ -48,8 +49,6 @@ nivel está (como hoy la etiqueta **Beta**).
 
 | Lección | Idea | Ejercicio posible |
 |---|---|---|
-| 210, 325 | Tres apuestas seguidas: quien paga todo se queda con el producto de las MDF de cada calle (66% + 66% + 102% → 18% del rango) | "¿Qué le queda?": qué parte de su rango llega al river, y qué parte son proyectos completados |
-| 127 | Qué texturas de flop salen más seguido (contar combinaciones) | Hacerlo exacto para mazo largo y corto: en corto cambian las frecuencias |
 | 34 | Con una apuesta de ~162% del pozo (número de oro) MDF y pot odds dan lo mismo (38%) | Dato curioso para "Ver por qué" de GTO |
 | 40 | El EV se mide contra hacer fold | Explicación en los ejercicios de EV |
 | 150, 151 | Juegos de juguete (A-K-Q, números de 0 a 1) para entender bluffs y valor | Explicación interactiva, no ejercicio |
@@ -123,9 +122,85 @@ estudio supone que las cartas extra son al azar; en una mano real se juega con
 manos elegidas, así que es una medida de cuánto pesan las cartas que no son "las
 de Hold'em", no un error exacto para cada mano.
 
+### Estudio 2: qué flops salen (exacto, lección 127)
+
+`npx tsx scripts/lab/flop-textures.ts` (segundos). Cuenta todos los flops
+posibles; no depende del juego.
+
+Todos los flops posibles, contados uno por uno.
+
+| Flop | Long (52 cartas) | Short (36 cartas) |
+|---|---|---|
+| Tres palos distintos · Sin par | 31.1% | 28.2% |
+| Tres palos distintos · Con par | 8.5% | 12.1% |
+| Tres palos distintos · Trío | 0.2% | 0.5% |
+| Dos del mismo palo · Sin par | 46.6% | 42.4% |
+| Dos del mismo palo · Con par | 8.5% | 12.1% |
+| Los tres del mismo palo · Sin par | 5.2% | 4.7% |
+| **Total sin par** | 82.8% | 75.3% |
+| **Total con par** | 16.9% | 24.2% |
+| **Total trío** | 0.2% | 0.5% |
+| **Total tres palos distintos** | 39.8% | 40.8% |
+| **Total dos del mismo palo** | 55.1% | 54.5% |
+| **Total tres del mismo palo** | 5.2% | 4.7% |
+| Sin par y los 3 rangos entran en una escalera (alguien puede tenerla ya) | 18.5% | 35.9% |
+
+Flops posibles: 22100 en Long, 7140 en Short.
+
+Cómo leerlo:
+
+- En los dos mazos el flop más común es **dos del mismo palo y sin par** (47% y
+  42%), y el de **tres del mismo palo** es raro (5%).
+- **En Short sale par mucho más seguido**: 24% contra 17%. Hay menos rangos (9
+  en vez de 13), así que repiten más.
+- **En Short hay escalera posible el doble de seguido**: en 36% de los flops sin
+  par los 3 rangos entran en una escalera, contra 18% en Long.
+
+### Estudio 3: bloqueadores (exacto, lecciones 21, 24 y 89–91)
+
+`npx tsx scripts/lab/blockers.ts` (instantáneo). River, 1 rival. Color: hay 3
+cartas de un palo en la mesa. Trío: hay un K en la mesa, sin par.
+
+River, 1 rival. «Sin» = no tenés ninguna carta clave; «Con» = tenés una.
+
+| Juego | Mazo | Color: sin → con 1 del palo | Baja | Color con As: sin → con el As | Trío de K: sin → con 1 K | Baja |
+|---|---|---|---|---|---|---|
+| Hold'em | Long | 4.5% → 3.6% | 20.0% | 0.9% → 0% | 0.3% → 0.1% | 66.7% |
+| Omaha | Long | 22.6% → 18.8% | 17.0% | 4.9% → 0% | 1.9% → 0.7% | 65.5% |
+| Manhattan | Long | 34.1% → 28.8% | 15.4% | 7.7% → 0% | 3.3% → 1.2% | 64.9% |
+| Hold'em | Short | 3.7% → 2.5% | 33.3% | 1.2% → 0% | 0.7% → 0.2% | 66.7% |
+| Omaha | Short | 20.4% → 14.4% | 29.3% | 7.2% → 0% | 4.9% → 1.7% | 64.8% |
+| Manhattan | Short | 32.2% → 23.6% | 26.9% | 11.9% → 0% | 8.5% → 3.1% | 63.6% |
+
+Cómo leerlo:
+
+- **En Omaha y Manhattan el rival tiene la mano mucho más seguido**: con 3 del
+  mismo palo en la mesa, en Hold'em tiene color el 4% de las veces; en Omaha el
+  20–23% y en Manhattan el 32–34%.
+- **Tener el As del palo pesa más en nuestros juegos**: le sacás el color máximo
+  al rival, que en Manhattan Short lo tendría el 12% de las veces (en Hold'em,
+  1%).
+- **En proporción, una carta del palo bloquea menos cuando el rival tiene más
+  cartas** (Long: 20% en Hold'em, 15% en Manhattan), pero lo que bloquea es mucho
+  más en números absolutos.
+- **En Short una carta bloquea más** (hay 9 por palo en vez de 13): 27–33% contra
+  15–20%.
+- Tener uno de los K le baja el trío al rival a un tercio (−65%) en los tres
+  juegos.
+
+### Estudio 4: manos con varios jugadores
+
+Resultados: pendientes (corrida en curso).
+
 ## Próximos pasos propuestos
 
-1. Ejercicio exacto "¿Qué le queda?" (lecciones 210 y 325).
-2. Frecuencia de flops en mazo largo y corto (lección 127), exacta.
-3. Estudio 2: bloqueadores en Omaha y Manhattan.
-4. Estudio 3: con cuántos jugadores conviene cada tipo de mano, por juego.
+Hechos el 25/11: ejercicio "¿Qué le queda?" y estudios 2, 3 y 4.
+
+Ideas para seguir:
+
+1. Llevar los estudios 2 y 3 a la app: un ejercicio de bloqueadores ("¿qué
+   chance hay de que tenga color?") con los números exactos de cada juego.
+2. Estudio 5: qué tan seguido el que va adelante en el flop sigue adelante en el
+   river, según la textura y el juego (lecciones 35, 39, 61).
+3. Estudio 6: forma de la distribución de equity (pareja o polarizada) por juego
+   (lecciones 15, 153–181).

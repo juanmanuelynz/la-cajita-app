@@ -761,3 +761,40 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     ])
   })
 })
+
+describe("¿Qué le queda? (tres apuestas seguidas)", () => {
+  it("da los ejemplos del libro", async () => {
+    const { callDownLeft } = await import("../lib/poker/ev")
+    // Lección 210: 66%, 66% y 102% del pozo → paga todo el 18% del rango; 4,5% de colores → 25%.
+    const left = callDownLeft([0.66, 0.66, 1.02])
+    expect(left).toBeCloseTo(0.18, 2)
+    expect(0.045 / left).toBeCloseTo(0.25, 1)
+    // Lección 325: 33%, 33% y 52% → 37%; 28% de manos que no foldean → 75%.
+    const left2 = callDownLeft([0.33, 0.33, 0.52])
+    expect(left2).toBeCloseTo(0.37, 2)
+    expect(0.28 / left2).toBeCloseTo(0.75, 1)
+  })
+
+  it("4 opciones distintas, la respuesta entre ellas y la cuenta bien hecha", async () => {
+    const { makeCallDown, callDownLeft } = await import("../lib/poker/ev")
+    const rng = seededRng(14)
+    for (let i = 0; i < 300; i++) {
+      const d = makeCallDown({ game: "omaha", deck: "long" }, rng, i % 2 ? "strong" : "left")
+      expect(d.options).toHaveLength(4)
+      expect(new Set(d.options).size).toBe(4)
+      expect(d.options).toContain(d.answer)
+      expect(d.left).toBeCloseTo(callDownLeft(d.sizes.map((s) => s.frac)))
+      if (d.question === "left") expect(d.answer).toBe(Math.round(d.left * 100))
+      else {
+        expect(d.answer).toBe(Math.round((d.strong! / d.left) * 100))
+        expect(d.answer).toBeLessThanOrEqual(90)
+      }
+    }
+  })
+
+  it("entra al desafío desde el 27/11/2026", async () => {
+    const { dailyDrills } = await import("../lib/poker/training")
+    expect(dailyDrills("2026-11-26")).not.toContain("callDown")
+    expect(dailyDrills("2026-11-27")).toContain("callDown")
+  })
+})

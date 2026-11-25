@@ -3,9 +3,11 @@
 import { useState, type ReactNode } from "react"
 import {
   makeBetOrCheck,
+  makeCallDown,
   makeSemiBluff,
   makeShove,
   type BetOrCheckDrill as BetOrCheckData,
+  type CallDownDrill as CallDownData,
   type SemiBluffDrill as SemiBluffData,
   type ShoveDrill as ShoveData,
 } from "@/lib/poker/ev"
@@ -380,6 +382,121 @@ export function ShoveDrill(props: DrillProps<ShoveData>) {
           ))}
         </div>
       )}
+    </DrillShell>
+  )
+}
+
+// ── 4. ¿Qué le queda? ──────────────────────────────────────────────────────
+
+const STREET_LABELS = ["Flop", "Turn", "River"]
+
+export function CallDownDrill(props: DrillProps<CallDownData>) {
+  const { drill, verdict, score, answer, next, inChallenge } = useDrill("callDown", props, makeCallDown)
+  const [picked, setPicked] = useState<number | null>(null)
+
+  if (!drill) return null
+  const answered = verdict !== null
+  const { sizes, defends, left, question: q } = drill
+  const strong = drill.strong ?? 0
+
+  return (
+    <DrillShell
+      title="¿Qué le queda?"
+      score={inChallenge ? undefined : score}
+      nextLabel={props.nextLabel}
+      verdict={verdict}
+      onNext={() => {
+        setPicked(null)
+        next()
+      }}
+      question={
+        <div className="space-y-3">
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+            {sizes.map((s, i) => (
+              <Row key={i} label={`${STREET_LABELS[i]}: apostás`} value={s.name} />
+            ))}
+            <p className="text-xs text-muted-foreground pt-1">
+              El rival paga las tres y nunca sube. Supongamos que en cada calle sigue con lo justo: su defensa mínima.
+            </p>
+          </div>
+          <p>
+            {q === "left" ? (
+              <>
+                De todas las manos con las que llegó al flop, ¿qué parte <b>sigue en el river</b>?
+              </>
+            ) : (
+              <>
+                En el flop, el <b>{pct(strong, 0)}</b> de sus manos ya eran muy fuertes (por ejemplo, color hecho) y esas
+                nunca foldean. De lo que llega al river, ¿qué parte son <b>esas manos</b>?
+              </>
+            )}
+          </p>
+        </div>
+      }
+      headline={
+        <div className="space-y-3">
+          <Stats
+            items={[
+              { label: "llega al river", value: pct(left, 0), tone: q === "left" ? "good" : "neutral" },
+              ...(q === "strong" ? [{ label: "son manos fuertes", value: pct(strong / left, 0), tone: "good" as const }] : []),
+            ]}
+          />
+          {q === "strong" && (
+            <Split
+              left={strong / left}
+              right={1 - strong / left}
+              leftLabel={`Fuertes ${pct(strong / left, 0)}`}
+              rightLabel={`Resto ${pct(1 - strong / left, 0)}`}
+              leftClass="bg-rose-500/80"
+              rightClass="bg-emerald-500"
+            />
+          )}
+        </div>
+      }
+      feedback={
+        <div className="space-y-2">
+          <p>Contra cada apuesta, la defensa mínima es pozo ÷ (pozo + apuesta) = 1 ÷ (1 + tamaño):</p>
+          <ul className="list-disc space-y-0.5 pl-5">
+            {sizes.map((s, i) => (
+              <li key={i}>
+                {STREET_LABELS[i]}, {s.name}: sigue con el <b>{pct(defends[i], 0)}</b>
+              </li>
+            ))}
+          </ul>
+          <p>
+            Como cada calle se aplica sobre lo que quedó de la anterior, se multiplican: {defends.map((m) => pct(m, 0)).join(" × ")}{" "}
+            = <b>{pct(left, 0)}</b> de su rango del flop.
+          </p>
+          {q === "strong" && (
+            <p>
+              Las manos fuertes no se van nunca: siguen siendo el {pct(strong, 0)} del rango del flop, pero ahora sobre un
+              total de {pct(left, 0)}. {pct(strong, 0)} ÷ {pct(left, 0)} = <b>{pct(strong / left, 0)}</b> de lo que paga
+              todo.
+            </p>
+          )}
+          <p className="text-muted-foreground">
+            Por eso, cuando alguien paga tres apuestas grandes, casi nunca tiene una mano mediocre: el bluff del river
+            necesita que el rival tenga poco, y después de tres calles suele tener mucho. Vale igual en Hold&apos;em,
+            Omaha y Manhattan.
+          </p>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-2 gap-3">
+        {drill.options.map((o) => (
+          <AnswerButton
+            key={o}
+            tone={answerTone(answered, { correct: o === drill.answer, picked: picked === o })}
+            className="text-lg font-bold tabular-nums"
+            onClick={() => {
+              setPicked(o)
+              answer(o === drill.answer ? "right" : "wrong")
+            }}
+          >
+            {o}%
+          </AnswerButton>
+        ))}
+      </div>
     </DrillShell>
   )
 }

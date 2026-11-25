@@ -81,7 +81,7 @@ export function difficultyScore(d: Scored | CompareDrill | LuzDrill | { kind: st
 }
 
 /** Cuentas fijas: sin dificultad (GTO y las de valor esperado). */
-const NO_DIFFICULTY = new Set(["gto", "betOrCheck", "semiBluff", "shove"])
+const NO_DIFFICULTY = new Set(["gto", "betOrCheck", "semiBluff", "shove", "callDown"])
 
 const TARGET: Record<Exclude<Difficulty, "media">, number> = { facil: 0, dificil: 1 }
 const TRIES = 6

@@ -24,7 +24,7 @@ import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
 import { HandRankings } from "@/components/training/hand-rankings"
 import { GtoDrill } from "@/components/training/gto-drill"
-import { BetOrCheckDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
+import { BetOrCheckDrill, CallDownDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
 import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   ChevronsUp,
   DoorOpen,
+  Filter,
   Sigma,
   Calculator,
   Coins,
@@ -98,6 +99,7 @@ const GROUPS: { title: string; drills: DrillEntry[] }[] = [
       { id: "gto", label: "GTO river", icon: Sigma },
       { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
       { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
+      { id: "callDown", label: "¿Qué le queda?", icon: Filter, isNew: true },
     ],
   },
 ]
@@ -419,6 +421,7 @@ export function EntrenarTab({
                   {drill === "betOrCheck" && <BetOrCheckDrill variant={variant} />}
                   {drill === "semiBluff" && <SemiBluffDrill variant={variant} />}
                   {drill === "shove" && <ShoveDrill variant={variant} />}
+                  {drill === "callDown" && <CallDownDrill variant={variant} />}
                 </div>
               ) : (
                 <>

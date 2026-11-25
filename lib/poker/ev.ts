@@ -233,3 +233,70 @@ export function makeShove(_v: Variant, rng: Rng = Math.random, question?: ShoveQ
   }
   return d!
 }
+
+// ── 4. ¿Qué le queda? (tres apuestas seguidas) ──────────────────────────────
+// Lecciones 210 y 325: si apostás en flop, turn y river y el rival paga cada
+// vez justo su defensa mínima (P / (P + B) = 1 / (1 + tamaño)), lo que llega al
+// river es el producto de las tres. Las manos que nunca foldea (por ejemplo
+// los colores ya hechos) pasan a ser una parte mucho mayor de lo que queda.
+
+export type CallDownQuestion = "left" | "strong"
+
+export interface CallDownDrill {
+  kind: "callDown"
+  question: CallDownQuestion
+  /** Tamaño de cada apuesta como fracción del pozo, y cómo se dice. */
+  sizes: { frac: number; name: string }[]
+  /** Parte de su rango que sigue en cada calle (0–1). */
+  defends: number[]
+  /** Parte de su rango del flop que llega al river pagando todo (0–1). */
+  left: number
+  /** Solo en "strong": parte de su rango del flop que son manos que nunca foldea (0–1). */
+  strong?: number
+  options: number[]
+  answer: number
+}
+
+/** Lo que queda de su rango si paga justo la defensa mínima en cada calle. */
+export const callDownLeft = (fracs: readonly number[]) => fracs.reduce((a, f) => a / (1 + f), 1)
+
+export const CALL_DOWN_QUESTIONS: CallDownQuestion[] = ["left", "strong"]
+
+export function makeCallDown(_v: Variant, rng: Rng = Math.random, question?: CallDownQuestion): CallDownDrill {
+  const q = question ?? pick(CALL_DOWN_QUESTIONS, rng)
+  // Del tercio al pozo y medio: las tres apuestas de una mano normal.
+  const sizesPool = GTO_SIZES.filter((s) => s.frac <= 1.5)
+  let d: CallDownDrill | null = null
+  for (let tries = 0; tries < 200; tries++) {
+    const sizes = [pick(sizesPool, rng), pick(sizesPool, rng), pick(sizesPool, rng)]
+    const defends = sizes.map((s) => 1 / (1 + s.frac))
+    const left = callDownLeft(sizes.map((s) => s.frac))
+    const leftPct = Math.round(left * 100)
+    const lastPct = Math.round(defends[2] * 100)
+    if (q === "left") {
+      // Confusiones: quedarse con la última calle, o restar en vez de multiplicar.
+      const subtract = Math.round((1 - defends.reduce((a, m) => a + (1 - m), 0)) * 100)
+      d = { kind: "callDown", question: q, sizes, defends, left, options: percentOptions(leftPct, [lastPct, subtract], rng), answer: leftPct }
+      if (Math.abs(leftPct - lastPct) >= 4) break
+      continue
+    }
+    // "strong": entre 3% y 15% de su rango del flop que nunca foldea, y que no pase del 90% de lo que queda.
+    const strongPct = pick([3, 4, 5, 6, 8, 10, 12, 15], rng)
+    const answer = Math.round((strongPct / 100 / left) * 100)
+    if (answer > 90 || answer < 10) continue
+    // Confusiones: el porcentaje del flop tal cual, o dividir solo por la última calle.
+    const related = [strongPct, Math.round((strongPct / 100 / defends[2]) * 100)]
+    d = {
+      kind: "callDown",
+      question: q,
+      sizes,
+      defends,
+      left,
+      strong: strongPct / 100,
+      options: percentOptions(answer, related, rng),
+      answer,
+    }
+    break
+  }
+  return d!
+}
