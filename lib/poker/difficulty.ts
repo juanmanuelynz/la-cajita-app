@@ -20,6 +20,7 @@ import {
   type WhoWinsDrill,
 } from "./drills"
 import type { Variant } from "./variants"
+import { GAME_FREE_DRILLS } from "./drill-ids"
 
 export type Difficulty = "facil" | "media" | "dificil"
 
@@ -81,7 +82,7 @@ export function difficultyScore(d: Scored | CompareDrill | LuzDrill | { kind: st
 }
 
 /** Cuentas fijas: sin dificultad (GTO y las de valor esperado). */
-const NO_DIFFICULTY = new Set(["gto", "betOrCheck", "semiBluff", "shove", "callDown"])
+const NO_DIFFICULTY = new Set<string>(GAME_FREE_DRILLS)
 
 const TARGET: Record<Exclude<Difficulty, "media">, number> = { facil: 0, dificil: 1 }
 const TRIES = 6

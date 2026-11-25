@@ -9,9 +9,8 @@ import type { Variant } from "./variants"
 import { withDifficulty, type Difficulty } from "./difficulty"
 import { POSITIONS_BY_TABLE } from "./preflop"
 
-// Al final siempre: el desafío sortea por índice (ver dailyDrills).
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto", "preflopVs", "betOrCheck", "semiBluff", "shove", "callDown"] as const
-export type DrillId = (typeof DRILL_IDS)[number]
+import { DRILL_IDS, type DrillId } from "./drill-ids"
+export { DRILL_IDS, GAME_FREE_DRILLS, isGameFree, type DrillId } from "./drill-ids"
 
 export const DRILL_NAMES: Record<DrillId, string> = {
   usable: "¿Qué tenés?",
@@ -29,9 +28,6 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   callDown: "¿Qué le queda?",
 }
 
-/** Ejercicios de cuentas: valen igual en todos los juegos y mazos (no se elige juego). */
-export const GAME_FREE_DRILLS: readonly DrillId[] = ["gto", "betOrCheck", "semiBluff", "shove", "callDown"]
-export const isGameFree = (d: DrillId) => GAME_FREE_DRILLS.includes(d)
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
 export function dayStreak(dates: readonly string[], today: string): number {
@@ -80,7 +76,7 @@ const MAKERS = {
   semiBluff: (v: Variant, rng: Rng = Math.random) => makeSemiBluff(v, rng),
   shove: (v: Variant, rng: Rng = Math.random) => makeShove(v, rng),
   callDown: (v: Variant, rng: Rng = Math.random) => makeCallDown(v, rng),
-}
+} satisfies Record<DrillId, (v: Variant, rng?: Rng) => unknown>
 
 export type DailyQuestion =
   | { drill: "usable"; variant: Variant; data: ReturnType<typeof makeUsable> }

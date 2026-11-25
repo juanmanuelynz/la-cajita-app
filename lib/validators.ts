@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { DRILL_IDS } from "./poker/drill-ids"
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/
 
@@ -124,7 +125,7 @@ export type UpdateActiveMatchInput = z.infer<typeof UpdateActiveMatchSchema>
 
 export const TrainingAnswerSchema = z.object({
   playerId: z.string().uuid(),
-  drill: z.enum(["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto", "preflopVs", "betOrCheck", "semiBluff", "shove", "callDown"]),
+  drill: z.enum(DRILL_IDS),
   game: z.enum(["holdem", "omaha", "manhattan"]),
   deck: z.enum(["long", "short"]),
   correct: z.boolean(),

@@ -173,3 +173,21 @@ describe("TournamentNameSchema", () => {
     expect(TournamentNameSchema.safeParse("a".repeat(101)).success).toBe(false)
   })
 })
+
+describe("TrainingAnswerSchema acepta todos los ejercicios", () => {
+  it("cada id de DRILL_IDS pasa la validación (si no, esas respuestas no se guardan)", async () => {
+    const { TrainingAnswerSchema } = await import("../lib/validators")
+    const { DRILL_IDS } = await import("../lib/poker/drill-ids")
+    for (const drill of DRILL_IDS) {
+      const r = TrainingAnswerSchema.safeParse({
+        playerId: "00000000-0000-4000-8000-000000000001",
+        drill,
+        game: "holdem",
+        deck: "long",
+        correct: true,
+        localDate: "2026-11-25",
+      })
+      expect(r.success, drill).toBe(true)
+    }
+  })
+})

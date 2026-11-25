@@ -73,6 +73,11 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <ShoveDrill {...common} preset={q.data} />
     case "callDown":
       return <CallDownDrill {...common} preset={q.data} />
+    default: {
+      // Si se agrega un ejercicio y falta acá, TypeScript lo marca.
+      const missing: never = q
+      return missing
+    }
   }
 }
 

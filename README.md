@@ -28,3 +28,8 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+## Documentación
+
+- [docs/motor-entrenar.md](docs/motor-entrenar.md): el motor de póker de Entrenar (juegos y reglas de la casa, ejercicios y de dónde salen sus números, Desafío del día, cómo agregar un ejercicio, laboratorio).
+- [docs/playbook-daily-dose-gto.md](docs/playbook-daily-dose-gto.md): notas del ebook "Daily Dose of GTO" y estudios Hold'em → Omaha/Manhattan.
+- [CLAUDE.md](CLAUDE.md): guía técnica de todo el proyecto.
