@@ -13,8 +13,8 @@
 @layer base {
   :root {
     /* Lo que ocupa la barra flotante de abajo (alto + margen + zona del iPhone),
-       para que el contenido no quede tapado. */
-    --dock-space: calc(4rem + max(env(safe-area-inset-bottom), 0.75rem) + 0.75rem);
+       para que el contenido no quede tapado; incluye lo que asoma el botón del centro. */
+    --dock-space: calc(4rem + max(env(safe-area-inset-bottom), 0.75rem) + 2.5rem);
     --background: oklch(1 0 0);
     --foreground: oklch(0.1448 0 0);
     --card: oklch(1 0 0);

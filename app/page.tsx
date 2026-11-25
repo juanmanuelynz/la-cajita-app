@@ -72,6 +72,12 @@ ChartJS.register(
 
 type TabId = "ranking" | "partidas" | "estadisticas" | "entrenar" | "reglas"
 
+// Hueco de la barra para el botón de Partidas: el botón (56px) asoma 36px por
+// encima, así que su centro queda 8px arriba del borde de la barra. El hueco
+// deja 8px de aire alrededor del botón y apenas muerde la barra.
+const NOTCH = "radial-gradient(circle at 50% -8px, transparent 36px, #000 36.5px)"
+const NOTCH_MASK = { maskImage: NOTCH, WebkitMaskImage: NOTCH } as const
+
 // En el orden de la barra (y del deslizar entre pestañas). Partidas va al centro,
 // como botón grande: es lo que más se usa en una noche de juego.
 // Partidas, el botón grande del centro, va con una pica rellena.
@@ -736,13 +742,23 @@ function LaCajitaPoker() {
 
       {/* Barra flotante de vidrio: íconos + nombre; Partidas al centro, como botón grande que sobresale. */}
       <nav className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
-        <div
-          className={cn(
-            "pointer-events-auto relative mx-auto flex h-16 max-w-md items-stretch justify-around rounded-[2rem] px-1",
-            "border border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150",
-            "shadow-[0_12px_32px_-8px_rgb(0_0_0/0.55),inset_0_1px_0_rgb(255_255_255/0.08)]",
-          )}
-        >
+        <div className="pointer-events-auto relative isolate mx-auto flex h-16 max-w-md items-stretch justify-around px-1">
+          {/* El vidrio y su sombra van en capas aparte, con un hueco recortado
+              alrededor del botón del centro: queda aire entre la barra y el botón. */}
+          <div
+            aria-hidden
+            style={NOTCH_MASK}
+            className="absolute inset-x-5 top-6 -bottom-2 -z-10 rounded-[2rem] bg-black/25 blur-xl dark:bg-black/60"
+          />
+          <div
+            aria-hidden
+            style={NOTCH_MASK}
+            className={cn(
+              "absolute inset-0 -z-10 rounded-[2rem]",
+              "border border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150",
+              "shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]",
+            )}
+          />
           {tabs.map((tab) => {
             const active = activeTab === tab.id
             const Icon = tab.icon
@@ -762,7 +778,7 @@ function LaCajitaPoker() {
                 {center ? (
                   <span
                     className={cn(
-                      "absolute -top-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full",
+                      "absolute -top-9 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full",
                       "bg-primary text-primary-foreground ring-1 ring-white/25",
                       "shadow-[0_8px_20px_-4px_color-mix(in_oklch,var(--primary)_60%,transparent),inset_0_1px_0_rgb(255_255_255/0.25)]",
                       "transition-transform duration-200 active:scale-95",
