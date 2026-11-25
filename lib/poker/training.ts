@@ -102,13 +102,13 @@ export const GTO_IN_DAILY_FROM = "2026-11-25"
 /** Desde cuándo entran ¿Apostar o pasar?, Defender contra proyectos y ¿All-in o fold?. */
 export const EV_IN_DAILY_FROM = "2026-11-26"
 const EV_DRILLS: readonly DrillId[] = ["betOrCheck", "semiBluff", "shove"]
-/** Desde cuándo entra ¿Qué le queda?. */
-export const CALLDOWN_IN_DAILY_FROM = "2026-11-27"
+/** Ejercicios en Beta: se pueden practicar pero no entran al desafío. */
+export const BETA_DRILLS: readonly DrillId[] = ["callDown"]
 export function dailyDrills(date: string): readonly DrillId[] {
   // "Te suben" no entra nunca: es solo Hold'em largo y el desafío sortea el juego.
-  let drills = DRILL_IDS.filter((d) => d !== "preflopVs")
+  // Los Beta tampoco: todavía no están claros.
+  let drills = DRILL_IDS.filter((d) => d !== "preflopVs" && !BETA_DRILLS.includes(d))
   if (date < EV_IN_DAILY_FROM) drills = drills.filter((d) => !EV_DRILLS.includes(d))
-  if (date < CALLDOWN_IN_DAILY_FROM) drills = drills.filter((d) => d !== "callDown")
   return date < GTO_IN_DAILY_FROM ? drills.filter((d) => d !== "gto") : drills
 }
 

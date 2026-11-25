@@ -19,7 +19,7 @@ import {
   type UsableDrill,
   type WhoWinsDrill,
 } from "./drills"
-import type { ShoveDrill } from "./ev"
+import type { BetOrCheckDrill, ShoveDrill } from "./ev"
 import type { Variant } from "./variants"
 import { GAME_FREE_DRILLS } from "./drill-ids"
 
@@ -82,13 +82,18 @@ export function difficultyScore(d: Scored | CompareDrill | LuzDrill | { kind: st
       const sh = d as ShoveDrill
       return 1 - Math.min(1, Math.abs(sh.ev) / sh.pot)
     }
+    case "betOrCheck": {
+      // Diferencia entre apostar y pasar (parte del pozo): el mínimo es 5%; desde 35%, clarísimo.
+      const b = d as BetOrCheckDrill
+      return 1 - Math.min(1, (Math.abs(b.evBet - b.evCheck) / b.pot - 0.05) / 0.3)
+    }
     default:
       return 0.5 // ciegas y GTO: tabla y fórmulas fijas, sin dificultad
   }
 }
 
-/** Cuentas fijas: sin dificultad (GTO y las de valor esperado, menos el all-in). */
-const NO_DIFFICULTY = new Set<string>(GAME_FREE_DRILLS.filter((d) => d !== "shove"))
+/** Cuentas fijas: sin dificultad (GTO y las de valor esperado, menos all-in y apostar o pasar). */
+const NO_DIFFICULTY = new Set<string>(GAME_FREE_DRILLS.filter((d) => d !== "shove" && d !== "betOrCheck"))
 
 const TARGET: Record<Exclude<Difficulty, "media">, number> = { facil: 0, dificil: 1 }
 const TRIES = 6

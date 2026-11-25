@@ -73,7 +73,7 @@ Nivel de confianza (el mismo del [playbook](playbook-daily-dose-gto.md)):
 | GTO river (`gto`) | Cuentas GTO | Igual en todos | Exacto | Desde 25/11 |
 | ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
 | Defender proyectos (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
-| ¿Qué le queda? (`callDown`) | Cuentas GTO | Igual en todos | Exacto | Desde 27/11 |
+| ¿Qué le queda? (`callDown`) | Cuentas GTO | Igual en todos | Exacto | No (Beta) |
 
 Fuentes:
 
@@ -97,9 +97,11 @@ otro juego tiene que tener el error medido (`scripts/lab/`) o la etiqueta Beta.
 - Sortea ejercicio, juego y mazo. Nunca usa la dificultad por nivel.
 - **Los días pasados tienen que dar siempre las mismas preguntas** (se pueden
   volver a ver). Por eso cada ejercicio nuevo entra desde una fecha
-  (`GTO_IN_DAILY_FROM`, `EV_IN_DAILY_FROM`, `CALLDOWN_IN_DAILY_FROM`) y va **al
+  (`GTO_IN_DAILY_FROM`, `EV_IN_DAILY_FROM`) y va **al
   final** de la lista de ejercicios. Usar una fecha que todavía no llegó (mañana
   o después), así nadie lo jugó con otras preguntas.
+- Los ejercicios en `BETA_DRILLS` (hoy ¿Qué le queda?) no entran nunca; en el
+  menú llevan la etiqueta Beta.
 
 ## Cómo agregar un ejercicio
 
@@ -111,7 +113,7 @@ TypeScript y los tests avisan si falta alguno de los pasos marcados con ✔︎.
 2. **Lista**: agregar el id **al final** de `DRILL_IDS` en
    `lib/poker/drill-ids.ts`. Si vale igual en todos los juegos, sumarlo también
    a `GAME_FREE_DRILLS` (no muestra el selector de juego ni usa dificultad,
-   salvo ¿All-in o fold?, que sí la usa: ver `NO_DIFFICULTY`). La
+   salvo ¿All-in o fold? y ¿Apostar o pasar?, que sí la usan: ver `NO_DIFFICULTY`). La
    validación del servidor y la dificultad leen de acá.
 3. **En `training.ts`**:
    - ✔︎ Nombre en `DRILL_NAMES` y consejo en `DRILL_TIPS`.

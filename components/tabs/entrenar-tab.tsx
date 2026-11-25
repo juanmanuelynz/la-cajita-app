@@ -38,6 +38,7 @@ import {
   ChevronsUp,
   DoorOpen,
   Filter,
+  FlaskConical,
   Sigma,
   Calculator,
   Coins,
@@ -64,6 +65,8 @@ interface DrillEntry {
   label: string
   icon: LucideIcon
   isNew?: boolean
+  /** Todavía no está claro: etiqueta Beta y no entra al desafío (BETA_DRILLS). */
+  isBeta?: boolean
 }
 
 /** El menú de ejercicios, por tema y de lo más simple a lo más avanzado. */
@@ -99,7 +102,7 @@ const GROUPS: { title: string; drills: DrillEntry[] }[] = [
       { id: "gto", label: "GTO river", icon: Sigma },
       { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
       { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
-      { id: "callDown", label: "¿Qué le queda?", icon: Filter, isNew: true },
+      { id: "callDown", label: "¿Qué le queda?", icon: Filter, isBeta: true },
     ],
   },
 ]
@@ -179,6 +182,11 @@ function DrillMenu({ onOpen, progress }: { onOpen: (d: DrillChoice) => void; pro
                         {d.isNew && (
                           <span className="shrink-0 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
                             Nuevo
+                          </span>
+                        )}
+                        {d.isBeta && (
+                          <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 text-[9px] font-black uppercase leading-4 text-muted-foreground">
+                            <FlaskConical className="h-2.5 w-2.5" /> Beta
                           </span>
                         )}
                         <span className="truncate">

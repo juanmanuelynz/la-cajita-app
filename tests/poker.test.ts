@@ -544,16 +544,17 @@ describe("Dificultad según el nivel", () => {
     expect(a).toEqual(b)
   })
 
-  it.each(["usable", "whoWins", "outs", "potOdds", "shove"] as const)("%s: difícil sale más ajustado que fácil", async (kind) => {
+  it.each(["usable", "whoWins", "outs", "potOdds", "shove", "betOrCheck"] as const)("%s: difícil sale más ajustado que fácil", async (kind) => {
     const { withDifficulty, difficultyScore } = await import("../lib/poker/difficulty")
     const drills = await import("../lib/poker/drills")
-    const { makeShove } = await import("../lib/poker/ev")
+    const { makeShove, makeBetOrCheck } = await import("../lib/poker/ev")
     const make = {
       usable: drills.makeUsable,
       whoWins: drills.makeWhoWins,
       outs: drills.makeOuts,
       potOdds: drills.makePotOdds,
       shove: makeShove,
+      betOrCheck: makeBetOrCheck,
     }[kind] as (v: typeof OMAHA, rng?: () => number) => { kind: string }
     const avg = (d: "facil" | "dificil") => {
       const gen = withDifficulty(kind, make, d)
@@ -703,6 +704,8 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
   it("¿Apostar o pasar?: probabilidades que suman 1 y una opción claramente mejor", async () => {
     const { makeBetOrCheck, evBet, evCheck } = await import("../lib/poker/ev")
     const rng = seededRng(11)
+    let bets = 0
+    let byFold = 0
     for (let i = 0; i < 300; i++) {
       const d = makeBetOrCheck({ game: "holdem", deck: "long" }, rng)
       expect(d.fold + d.call + d.raise).toBeCloseTo(1)
@@ -713,7 +716,13 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
       expect(d.evCheck).toBeCloseTo(evCheck(d.pot, d.eqCheck))
       expect(d.shouldBet).toBe(d.evBet > d.evCheck)
       expect(Math.abs(d.evBet - d.evCheck)).toBeGreaterThanOrEqual(200)
+      if (d.shouldBet) bets++
+      if (d.shouldBet === d.fold > 0.6) byFold++
     }
+    // Apostar y pasar salen parecido, y "apuesto si foldea mucho" no alcanza.
+    expect(bets).toBeGreaterThan(105)
+    expect(bets).toBeLessThan(195)
+    expect(byFold).toBeLessThan(240)
   })
 
   it("Defender contra proyectos: 4 opciones, la respuesta entre ellas y distinta de la defensa de siempre", async () => {
@@ -799,9 +808,9 @@ describe("¿Qué le queda? (tres apuestas seguidas)", () => {
     }
   })
 
-  it("entra al desafío desde el 27/11/2026", async () => {
+  it("está en Beta: no entra al desafío", async () => {
     const { dailyDrills } = await import("../lib/poker/training")
     expect(dailyDrills("2026-11-26")).not.toContain("callDown")
-    expect(dailyDrills("2026-11-27")).toContain("callDown")
+    expect(dailyDrills("2027-06-01")).not.toContain("callDown")
   })
 })

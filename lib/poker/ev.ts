@@ -70,6 +70,8 @@ export function evBet(d: Pick<BetOrCheckDrill, "pot" | "bet" | "fold" | "call" |
 
 /** Diferencia mínima entre las dos opciones (parte del pozo): más cerca sería adivinar. */
 export const BET_OR_CHECK_GAP = 0.05
+const BET_OR_CHECK_KEEP_CHECK = 0.25
+const BET_OR_CHECK_KEEP_OBVIOUS = 0.2
 
 export function makeBetOrCheck(_v: Variant, rng: Rng = Math.random): BetOrCheckDrill {
   // Hasta el pozo: es una decisión de valor fino, no de overbet.
@@ -98,7 +100,13 @@ export function makeBetOrCheck(_v: Variant, rng: Rng = Math.random): BetOrCheckD
       shouldBet: eb > ec,
     }
     // Y al menos $200: los botones muestran el promedio redondeado a $100.
-    if (Math.abs(eb - ec) >= Math.max(BET_OR_CHECK_GAP * pot, 200)) break
+    if (Math.abs(eb - ec) < Math.max(BET_OR_CHECK_GAP * pot, 200)) continue
+    // Al azar, pasar gana 8 de cada 10: se descartan la mayoría para que
+    // apostar y pasar salgan parecido (si no, se aprende a tocar siempre pasar).
+    if (!d.shouldBet && rng() > BET_OR_CHECK_KEEP_CHECK) continue
+    // Y "apuesto si foldea mucho" no tiene que alcanzar: hay que hacer la cuenta.
+    if (d.shouldBet === d.fold > 0.5 && rng() > BET_OR_CHECK_KEEP_OBVIOUS) continue
+    break
   }
   return d!
 }
