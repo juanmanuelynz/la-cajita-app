@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
@@ -29,8 +29,13 @@ import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
+  ArrowUp,
   BookOpen,
+  ChevronLeft,
+  ChevronsUp,
+  DoorOpen,
   Sigma,
   Calculator,
   Coins,
@@ -49,22 +54,54 @@ import {
 type Subtab = "ejercicios" | "calculadora" | "manos"
 /** Cómo se pone plata antes de repartir: luz igual para todos (La Cajita) o ciegas (casino). */
 type Structure = "luz" | "ciegas"
-type BlindsMode = "abrir" | "vsOpen" | "vs3bet"
-/** "Antes del flop" muestra el ejercicio de luz o el de ciegas según la estructura elegida. */
-type DrillChoice = Exclude<DrillId, "luz" | "preflop" | "preflopVs"> | "antes"
+/** Lo que se elige en el menú. Te suben / te resuben guardan sus respuestas como `preflopVs`. */
+type DrillChoice = Exclude<DrillId, "preflopVs"> | "vsOpen" | "vs3bet"
 
-const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; isNew?: boolean }[] = [
-  { id: "usable", label: "¿Qué tenés?", icon: Layers },
-  { id: "whoWins", label: "¿Quién gana?", icon: Swords },
-  { id: "outs", label: "Outs", icon: Target },
-  { id: "potOdds", label: "¿Call o fold?", icon: Scale },
-  { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows },
-  { id: "antes", label: "Antes del flop", icon: Coins },
-  { id: "gto", label: "GTO river", icon: Sigma },
-  { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
-  { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
-  { id: "shove", label: "¿All-in o fold?", icon: Rocket, isNew: true },
+interface DrillEntry {
+  id: DrillChoice
+  label: string
+  icon: LucideIcon
+  isNew?: boolean
+}
+
+/** El menú de ejercicios, por tema y de lo más simple a lo más avanzado. */
+const GROUPS: { title: string; drills: DrillEntry[] }[] = [
+  {
+    title: "Leer la mano",
+    drills: [
+      { id: "usable", label: "¿Qué tenés?", icon: Layers },
+      { id: "whoWins", label: "¿Quién gana?", icon: Swords },
+      { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows },
+    ],
+  },
+  {
+    title: "Antes del flop",
+    drills: [
+      { id: "luz", label: "Con luz", icon: Coins },
+      { id: "preflop", label: "Abrir (ciegas)", icon: DoorOpen },
+      { id: "vsOpen", label: "Te suben", icon: ArrowUp },
+      { id: "vs3bet", label: "Te resuben", icon: ChevronsUp },
+    ],
+  },
+  {
+    title: "Pagar o no",
+    drills: [
+      { id: "outs", label: "Outs", icon: Target },
+      { id: "potOdds", label: "¿Call o fold?", icon: Scale },
+      { id: "shove", label: "¿All-in o fold?", icon: Rocket, isNew: true },
+    ],
+  },
+  {
+    title: "Cuentas GTO",
+    drills: [
+      { id: "gto", label: "GTO river", icon: Sigma },
+      { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
+      { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
+    ],
+  },
 ]
+const ENTRIES = GROUPS.flatMap((g) => g.drills)
+const toDrillId = (id: DrillChoice): DrillId => (id === "vsOpen" || id === "vs3bet" ? "preflopVs" : id)
 
 const STORAGE_KEY = "la-cajita:entrenar"
 
@@ -96,75 +133,88 @@ function Segmented<T extends string>({
   )
 }
 
-/** Aciertos de un ejercicio (Antes del flop junta luz y ciegas). */
+/** Aciertos de un ejercicio (Te suben y Te resuben se guardan juntos). */
 function drillTally(p: TrainingProgress | null, id: DrillChoice) {
-  if (!p) return null
-  const ids: DrillId[] = id === "antes" ? ["luz", "preflop", "preflopVs"] : [id]
-  return ids.reduce(
-    (a, d) => ({ right: a.right + (p.byDrill[d]?.right ?? 0), total: a.total + (p.byDrill[d]?.total ?? 0) }),
-    { right: 0, total: 0 },
-  )
+  const t = p?.byDrill[toDrillId(id)]
+  return t ? { right: t.right, total: t.total } : null
 }
 
 /**
- * Tarjetas para elegir el ejercicio, en una tira que se desliza de costado:
- * ícono, nombre y cómo te va (barra de aciertos).
+ * Menú de ejercicios: una grilla por tema. Cada tarjeta muestra cómo te va
+ * (% de aciertos y la barrita) y si vale para todos los juegos.
  */
-function DrillPicker({
-  value,
-  onChange,
-  progress,
-}: {
-  value: DrillChoice
-  onChange: (d: DrillChoice) => void
-  progress: TrainingProgress | null
-}) {
+function DrillMenu({ onOpen, progress }: { onOpen: (d: DrillChoice) => void; progress: TrainingProgress | null }) {
   return (
-    <div
-      className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {DRILLS.map((d) => {
-        const t = drillTally(progress, d.id)
-        const ratio = t?.total ? t.right / t.total : 0
-        const active = value === d.id
-        const Icon = d.icon
-        return (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => onChange(d.id)}
-            className={cn(
-              "relative flex min-h-[3.75rem] shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-2xl border-2 py-3 pl-2.5 pr-3.5 text-left transition-all active:scale-[0.97]",
-              active ? "border-primary bg-primary/10" : "border-border bg-card",
-            )}
-          >
-            {d.isNew && (
-              <span className="absolute right-1 top-0.5 rounded-full bg-primary px-1 text-[8px] font-black uppercase leading-3 text-primary-foreground">
-                Nuevo
-              </span>
-            )}
-            <div
-              className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-              )}
-            >
-              <Icon className="h-[18px] w-[18px]" />
-            </div>
-            <div className={cn("whitespace-nowrap text-sm font-semibold leading-tight", !active && "text-muted-foreground")}>
-              {d.label}
-            </div>
-            {/* Cómo te va: una línea fina abajo de la tarjeta. */}
-            <div className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-muted">
-              {t && t.total > 0 && (
-                <div
-                  className={cn("h-full", ratio >= 0.8 ? "bg-emerald-500" : ratio >= 0.5 ? "bg-amber-500" : "bg-rose-500")}
-                  style={{ width: `${ratio * 100}%` }}
-                />
-              )}
-            </div>
-          </button>
-        )
-      })}
+    <div className="space-y-4 pt-1">
+      {GROUPS.map((g) => (
+        <section key={g.title} className="space-y-2">
+          <h3 className="px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.title}</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {g.drills.map((d, i) => {
+              const t = drillTally(progress, d.id)
+              const ratio = t?.total ? t.right / t.total : 0
+              const Icon = d.icon
+              const free = isGameFree(toDrillId(d.id))
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => onOpen(d.id)}
+                  className={cn(
+                    "relative flex min-h-[3.75rem] items-center gap-2.5 overflow-hidden rounded-2xl border-2 border-border bg-card py-2.5 pl-2.5 pr-2 text-left transition-all active:scale-[0.97] active:bg-muted",
+                    // Si el grupo es impar, la última ocupa toda la fila (sin hueco).
+                    g.drills.length % 2 === 1 && i === g.drills.length - 1 && "col-span-2",
+                  )}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <Icon className="h-[18px] w-[18px]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold leading-tight">{d.label}</div>
+                    <div className="mt-0.5 flex items-center justify-between gap-1 text-[11px] leading-tight text-muted-foreground">
+                      <span className="flex min-w-0 items-center gap-1">
+                        {d.isNew && (
+                          <span className="shrink-0 rounded-full bg-primary px-1.5 text-[9px] font-black uppercase leading-4 text-primary-foreground">
+                            Nuevo
+                          </span>
+                        )}
+                        <span className="truncate">
+                          {free
+                            ? "Todos los juegos"
+                            : d.id === "vsOpen" || d.id === "vs3bet"
+                              ? "Solo Hold'em Long"
+                              : t?.total
+                                ? `${t.total} respuestas`
+                                : "Sin jugar"}
+                        </span>
+                      </span>
+                      {t && t.total > 0 && (
+                        <span
+                          className={cn(
+                            "font-semibold tabular-nums",
+                            ratio >= 0.8 ? "text-emerald-500" : ratio >= 0.5 ? "text-amber-500" : "text-rose-500",
+                          )}
+                        >
+                          {Math.round(ratio * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Cómo te va: una línea fina abajo de la tarjeta. */}
+                  <div className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-muted">
+                    {t && t.total > 0 && (
+                      <div
+                        className={cn("h-full", ratio >= 0.8 ? "bg-emerald-500" : ratio >= 0.5 ? "bg-amber-500" : "bg-rose-500")}
+                        style={{ width: `${ratio * 100}%` }}
+                      />
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }
@@ -189,10 +239,10 @@ export function EntrenarTab({
   const [game, setGame] = useState<GameId>("holdem")
   const [deck, setDeck] = useState<DeckType>("long")
   const [subtab, setSubtab] = useState<Subtab>("ejercicios")
-  const [drill, setDrill] = useState<DrillChoice>("usable")
+  /** Ejercicio abierto en pantalla propia (null: el menú). */
+  const [drill, setDrill] = useState<DrillChoice | null>(null)
+  const topRef = useRef<HTMLDivElement>(null)
   const [structure, setStructure] = useState<Structure>("luz")
-  /** Con ciegas: abrir (nadie subió), te suben o te resuben. */
-  const [blindsMode, setBlindsMode] = useState<BlindsMode>("abrir")
   const [playerId, setPlayerId] = useState<string | null>(null)
   /** Práctica de "lo que más fallo" en curso (reemplaza la pantalla de ejercicios). */
   const [practice, setPractice] = useState<WeakSpot[] | null>(null)
@@ -206,7 +256,6 @@ export function EntrenarTab({
       if (saved?.game in GAMES) setGame(saved.game)
       if (saved?.deck === "long" || saved?.deck === "short") setDeck(saved.deck)
       if (saved?.structure === "luz" || saved?.structure === "ciegas") setStructure(saved.structure)
-      if (["abrir", "vsOpen", "vs3bet"].includes(saved?.blindsMode)) setBlindsMode(saved.blindsMode)
       setPlayerId(localStorage.getItem(PLAYER_KEY))
     } catch {
       // sin storage: arrancamos con Hold'em Long y sin jugador
@@ -214,11 +263,11 @@ export function EntrenarTab({
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure, blindsMode }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure }))
     } catch {
       // ignorar
     }
-  }, [game, deck, structure, blindsMode])
+  }, [game, deck, structure])
 
   // Si el jugador guardado ya no existe (se borró), olvidarlo.
   useEffect(() => {
@@ -266,6 +315,38 @@ export function EntrenarTab({
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
 
+  // Cada ejercicio es una pantalla propia: entra al historial para que el
+  // "atrás" del celular vuelva al menú en vez de salir de la app.
+  const openDrill = (d: DrillChoice) => {
+    setDrill(d)
+    try {
+      history.pushState({ entrenarDrill: d }, "")
+    } catch {
+      // sin historial: igual funciona el botón Volver
+    }
+  }
+  const closeDrill = () => {
+    if (history.state?.entrenarDrill) history.back()
+    else setDrill(null)
+  }
+  useEffect(() => {
+    const onPop = () => setDrill(null)
+    window.addEventListener("popstate", onPop)
+    return () => window.removeEventListener("popstate", onPop)
+  }, [])
+  // Al entrar o salir de un ejercicio, arrancar desde arriba.
+  const firstScroll = useRef(true)
+  useEffect(() => {
+    if (firstScroll.current) {
+      firstScroll.current = false
+      return
+    }
+    topRef.current?.scrollIntoView({ block: "start" })
+  }, [drill])
+
+  const entry = drill ? ENTRIES.find((e) => e.id === drill)! : null
+  const vsSituation = drill === "vsOpen" || drill === "vs3bet" ? drill : null
+
   const structurePicker = (
     <Segmented
       value={structure}
@@ -311,51 +392,33 @@ export function EntrenarTab({
         </div>
 
         <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
+          <div ref={topRef} className="scroll-mt-24" />
           {practice ? (
             <PracticeSession spots={practice} onExit={() => setPractice(null)} />
           ) : (
             <>
-              {!challengeActive && (
-                <TrainerCard
-                  players={players}
-                  playerId={playerId}
-                  onPlayerChange={changePlayer}
-                  onCreatePlayer={onCreatePlayer}
-                  progress={progress}
-                  onPractice={setPractice}
-                />
-              )}
-              <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
-              {!challengeActive && (
-                <>
-                  <div className="pt-1 space-y-3">
-                    <DrillPicker value={drill} onChange={setDrill} progress={progress} />
-                    {(drill === "antes" || !isGameFree(drill)) && picker}
-                    {drill === "antes" && structurePicker}
-                    {drill === "antes" && structure === "ciegas" && (
-                      <Segmented
-                        value={blindsMode}
-                        onChange={setBlindsMode}
-                        options={[
-                          { id: "abrir", label: "Abrir" },
-                          { id: "vsOpen", label: "Te suben" },
-                          { id: "vs3bet", label: "Te resuben" },
-                        ]}
-                      />
-                    )}
+              {drill && entry ? (
+                <div className="animate-fade-in space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="-ml-2 gap-1 px-2" onClick={closeDrill}>
+                      <ChevronLeft className="h-4 w-4" />
+                      Volver
+                    </Button>
+                    <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">
+                      {GROUPS.find((g) => g.drills.includes(entry))!.title} · {entry.label}
+                    </div>
                   </div>
+                  {!isGameFree(toDrillId(drill)) && picker}
                   {drill === "usable" && <UsableDrill variant={variant} />}
                   {drill === "whoWins" && <WhoWinsDrill variant={variant} />}
                   {drill === "outs" && <OutsDrill variant={variant} />}
                   {drill === "potOdds" && <PotOddsDrill variant={variant} />}
                   {drill === "compare" && <CompareDrill variant={variant} />}
-                  {drill === "antes" && structure === "luz" && <LuzDrill variant={variant} />}
-                  {drill === "antes" && structure === "ciegas" && blindsMode === "abrir" && <PreflopDrill variant={variant} />}
-                  {drill === "antes" &&
-                    structure === "ciegas" &&
-                    blindsMode !== "abrir" &&
+                  {drill === "luz" && <LuzDrill variant={variant} />}
+                  {drill === "preflop" && <PreflopDrill variant={variant} />}
+                  {vsSituation &&
                     (game === "holdem" && deck === "long" ? (
-                      <PreflopVsDrill variant={variant} situation={blindsMode} />
+                      <PreflopVsDrill variant={variant} situation={vsSituation} />
                     ) : (
                       // Sin fuente para otros juegos y no inventamos (ver preflop-vs.ts).
                       <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
@@ -368,6 +431,21 @@ export function EntrenarTab({
                   {drill === "betOrCheck" && <BetOrCheckDrill variant={variant} />}
                   {drill === "semiBluff" && <SemiBluffDrill variant={variant} />}
                   {drill === "shove" && <ShoveDrill variant={variant} />}
+                </div>
+              ) : (
+                <>
+                  {!challengeActive && (
+                    <TrainerCard
+                      players={players}
+                      playerId={playerId}
+                      onPlayerChange={changePlayer}
+                      onCreatePlayer={onCreatePlayer}
+                      progress={progress}
+                      onPractice={setPractice}
+                    />
+                  )}
+                  <DailyChallenge playerId={playerId} onActiveChange={setChallengeActive} />
+                  {!challengeActive && <DrillMenu onOpen={openDrill} progress={progress} />}
                 </>
               )}
             </>
