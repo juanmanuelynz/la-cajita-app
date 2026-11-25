@@ -335,6 +335,7 @@ export function EntrenarTab({
   }, [drill])
 
   const entry = drill ? ENTRIES.find((e) => e.id === drill)! : null
+  const inExercise = subtab === "ejercicios" && (!!drill || !!practice || challengeActive)
   const vsSituation = drill === "vsOpen" || drill === "vs3bet" ? drill : null
 
   const structurePicker = (
@@ -371,17 +372,20 @@ export function EntrenarTab({
   return (
     <TrainingContext.Provider value={ctx}>
       <Tabs value={subtab} onValueChange={(v) => setSubtab(v as Subtab)} className="w-full">
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
-          <IconTabsList
-            tabs={[
-              { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },
-              { value: "calculadora", label: "Calc", icon: Calculator },
-              { value: "manos", label: "Jugadas", icon: BookOpen },
-            ]}
-          />
-        </div>
+        {/* Dentro de un ejercicio (o el Desafío, o "Lo que más fallás") se sacan las pestañas: de lleno en el ejercicio; se vuelve con "Volver". */}
+        {!inExercise && (
+          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-3 pb-2 -mx-1 px-1">
+            <IconTabsList
+              tabs={[
+                { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },
+                { value: "calculadora", label: "Calc", icon: Calculator },
+                { value: "manos", label: "Jugadas", icon: BookOpen },
+              ]}
+            />
+          </div>
+        )}
 
-        <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
+        <TabsContent value="ejercicios" className={cn("pb-8 space-y-3 mt-0", inExercise ? "pt-3" : "pt-1")}>
           <div ref={topRef} className="scroll-mt-24" />
           {practice ? (
             <PracticeSession spots={practice} onExit={closePractice} />
