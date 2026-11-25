@@ -679,3 +679,85 @@ describe("Antes del flop: te suben / te resuben (PokerStrategy)", () => {
     expect(defended / N).toBeLessThan(0.8)
   })
 })
+
+describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
+  it("las fórmulas dan los ejemplos del libro", async () => {
+    const { evBet, evCheck, semiBluffDefense, shoveNeeded } = await import("../lib/poker/ev")
+    // Lección 51: pozo 10, apuesta del pozo, fold 50% / call 30% / raise 20%, 55% cuando pagan, 70% pasando.
+    expect(evCheck(10, 0.7)).toBeCloseTo(7)
+    expect(evBet({ pot: 10, bet: 10, fold: 0.5, call: 0.3, raise: 0.2, eqCall: 0.55 })).toBeCloseTo(4.95)
+    // Lección 130: all-in del pozo, el bluff ganaría 20% pasando → pagar 40%.
+    expect(semiBluffDefense(100, 100, 0.2, 0)).toBeCloseTo(0.4)
+    // Lección 131: el bluff es un proyecto de 20% → pagar 57%.
+    expect(semiBluffDefense(100, 100, 0.2, 0.2)).toBeCloseTo(4 / 7)
+    // Sin chances es la defensa mínima de siempre.
+    expect(semiBluffDefense(100, 50, 0, 0)).toBeCloseTo(2 / 3)
+    // All-in con luz: si nunca foldean son las pot odds de siempre.
+    expect(shoveNeeded(400, 1000, 1)).toBeCloseTo(1000 / 2400)
+    // Pozo 500, all-in 1000, pagan la mitad: (500 − 250) / (0,5 × 2500) = 20%.
+    expect(shoveNeeded(500, 1000, 0.5)).toBeCloseTo(0.2)
+  })
+
+  it("¿Apostar o pasar?: probabilidades que suman 1 y una opción claramente mejor", async () => {
+    const { makeBetOrCheck, evBet, evCheck } = await import("../lib/poker/ev")
+    const rng = seededRng(11)
+    for (let i = 0; i < 300; i++) {
+      const d = makeBetOrCheck({ game: "holdem", deck: "long" }, rng)
+      expect(d.fold + d.call + d.raise).toBeCloseTo(1)
+      expect(d.eqCall).toBeLessThan(d.eqCheck)
+      expect(d.pot % 100).toBe(0)
+      expect(d.bet % 100).toBe(0)
+      expect(d.evBet).toBeCloseTo(evBet(d))
+      expect(d.evCheck).toBeCloseTo(evCheck(d.pot, d.eqCheck))
+      expect(d.shouldBet).toBe(d.evBet > d.evCheck)
+      expect(Math.abs(d.evBet - d.evCheck)).toBeGreaterThanOrEqual(200)
+    }
+  })
+
+  it("Defender contra proyectos: 4 opciones, la respuesta entre ellas y distinta de la defensa de siempre", async () => {
+    const { makeSemiBluff } = await import("../lib/poker/ev")
+    const rng = seededRng(12)
+    for (let i = 0; i < 300; i++) {
+      const d = makeSemiBluff({ game: "omaha", deck: "short" }, rng, i % 2 ? "draw" : "showdown")
+      expect(d.options).toHaveLength(4)
+      expect(new Set(d.options).size).toBe(4)
+      expect(d.options).toContain(d.answer)
+      expect(d.answer).toBe(Math.round(d.defend * 100))
+      expect(Math.abs(d.answer - Math.round(d.plainMdf * 100))).toBeGreaterThanOrEqual(4)
+      expect(d.street).toBe(d.type === "draw" ? "turn" : "river")
+      if (d.type === "showdown") expect(d.defend).toBeCloseTo((1 - d.checkShare) * d.plainMdf)
+      expect(d.bet % 100).toBe(0)
+    }
+  })
+
+  it("¿All-in o fold?: lo necesario es donde el all-in empata con el fold", async () => {
+    const { makeShove, shoveEv } = await import("../lib/poker/ev")
+    const rng = seededRng(13)
+    for (let i = 0; i < 300; i++) {
+      const d = makeShove({ game: "manhattan", deck: "long" }, rng, i % 2 ? "decide" : "needed")
+      expect(shoveEv(d.pot, d.stack, d.callChance, d.needed)).toBeCloseTo(0)
+      expect(d.needed).toBeGreaterThanOrEqual(0.15)
+      expect(d.needed).toBeLessThanOrEqual(0.48)
+      expect(d.stack % 100).toBe(0)
+      if (d.question === "needed") {
+        expect(new Set(d.options).size).toBe(4)
+        expect(d.options).toContain(d.answer)
+      } else {
+        expect(d.shouldShove).toBe(d.equity! > d.needed)
+        expect(Math.abs(d.ev!)).toBeGreaterThanOrEqual(50)
+      }
+    }
+  })
+
+  it("entran al desafío desde el 26/11/2026 sin cambiar los días anteriores", async () => {
+    const { dailyChallenge, dailyDrills, EV_IN_DAILY_FROM } = await import("../lib/poker/training")
+    expect(EV_IN_DAILY_FROM).toBe("2026-11-26")
+    expect(dailyDrills("2026-11-25")).not.toContain("shove")
+    expect(dailyDrills("2026-11-26")).toEqual(expect.arrayContaining(["betOrCheck", "semiBluff", "shove"]))
+    expect(dailyDrills("2026-11-26")).not.toContain("preflopVs")
+    // Mismas preguntas que antes de sumarlos (hoy ya pudo haberse jugado).
+    expect(dailyChallenge("2026-11-23").map((q) => q.drill)).toEqual([
+      "usable", "preflop", "potOdds", "usable", "usable", "preflop", "preflop", "outs", "whoWins", "outs",
+    ])
+  })
+})

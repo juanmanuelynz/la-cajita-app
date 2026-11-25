@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import type { Player } from "@/lib/types"
-import { levelFor, type DrillId, type TrainingSeat, type TrainingStreet, type WeakSpot } from "@/lib/poker/training"
+import { isGameFree, levelFor, type DrillId, type TrainingSeat, type TrainingStreet, type WeakSpot } from "@/lib/poker/training"
 import { difficultyForLevel, type Difficulty } from "@/lib/poker/difficulty"
 import { TrainingContext } from "@/components/training/drill-shell"
 import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
@@ -24,6 +24,7 @@ import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
 import { HandRankings } from "@/components/training/hand-rankings"
 import { GtoDrill } from "@/components/training/gto-drill"
+import { BetOrCheckDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
 import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
@@ -36,6 +37,9 @@ import {
   Dumbbell,
   GitCompareArrows,
   Layers,
+  Rocket,
+  ShieldHalf,
+  TrendingUp,
   Scale,
   Swords,
   Target,
@@ -56,7 +60,10 @@ const DRILLS: { id: DrillChoice; label: string; icon: LucideIcon; isNew?: boolea
   { id: "potOdds", label: "¿Call o fold?", icon: Scale },
   { id: "compare", label: "¿Cuál es mejor?", icon: GitCompareArrows },
   { id: "antes", label: "Antes del flop", icon: Coins },
-  { id: "gto", label: "GTO river", icon: Sigma, isNew: true },
+  { id: "gto", label: "GTO river", icon: Sigma },
+  { id: "betOrCheck", label: "¿Apostar o pasar?", icon: TrendingUp, isNew: true },
+  { id: "semiBluff", label: "Defender proyectos", icon: ShieldHalf, isNew: true },
+  { id: "shove", label: "¿All-in o fold?", icon: Rocket, isNew: true },
 ]
 
 const STORAGE_KEY = "la-cajita:entrenar"
@@ -323,7 +330,7 @@ export function EntrenarTab({
                 <>
                   <div className="pt-1 space-y-3">
                     <DrillPicker value={drill} onChange={setDrill} progress={progress} />
-                    {drill !== "gto" && picker}
+                    {(drill === "antes" || !isGameFree(drill)) && picker}
                     {drill === "antes" && structurePicker}
                     {drill === "antes" && structure === "ciegas" && (
                       <Segmented
@@ -358,6 +365,9 @@ export function EntrenarTab({
                       </p>
                     ))}
                   {drill === "gto" && <GtoDrill variant={variant} />}
+                  {drill === "betOrCheck" && <BetOrCheckDrill variant={variant} />}
+                  {drill === "semiBluff" && <SemiBluffDrill variant={variant} />}
+                  {drill === "shove" && <ShoveDrill variant={variant} />}
                 </>
               )}
             </>

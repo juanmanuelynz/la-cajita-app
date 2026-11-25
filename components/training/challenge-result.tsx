@@ -8,7 +8,7 @@ import { ChipRain } from "@/components/chip-rain"
 import { useCountUp } from "@/hooks/use-count-up"
 import { formatDate } from "@/lib/formatters"
 import { playSound } from "@/lib/sounds"
-import { DRILL_NAMES, DRILL_TIPS, summarizeDaily, type DailyQuestion } from "@/lib/poker/training"
+import { DRILL_NAMES, DRILL_TIPS, isGameFree, summarizeDaily, type DailyQuestion } from "@/lib/poker/training"
 import { GAMES } from "@/lib/poker/variants"
 import type { DailyResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -103,7 +103,9 @@ function ResultContent({
                     {q.drill === "luz" || q.drill === "preflop" ? "Antes del flop" : DRILL_NAMES[q.drill]}
                   </div>
                   <div className="truncate text-[11px] text-muted-foreground">
-                    {GAMES[q.variant.game].name} · {q.variant.deck === "short" ? "Short" : "Long"}
+                    {isGameFree(q.drill)
+                      ? "Todos los juegos"
+                      : `${GAMES[q.variant.game].name} · ${q.variant.deck === "short" ? "Short" : "Long"}`}
                     {q.drill === "luz" ? " · luz" : q.drill === "preflop" ? " · ciegas" : ""}
                   </div>
                 </div>

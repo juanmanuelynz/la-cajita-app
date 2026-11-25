@@ -1,0 +1,235 @@
+// Cuentas de valor esperado (EV) que no dependen del juego ni del mazo: valen
+// igual en Hold'em, Omaha y Manhattan. Las ideas vienen del libro "Daily Dose
+// of GTO" (GTO Wizard, 2024); las preguntas y los números son nuestros.
+//
+// Todo se mide "desde ahora": lo que ya está en el pozo no es de nadie, así
+// que hacer fold (o pasar sin ganar) vale 0 y ganar el pozo vale el pozo.
+//
+// 1. ¿Apostar o pasar? (river, el rival pasó)
+//    Pasar:   EV = e_pasar × P
+//    Apostar: EV = fold × P + call × (e_call × (P + 2B) − B) − raise × B
+//             (si te sube, foldeás y perdés la apuesta)
+//
+// 2. Defensa contra bluffs que no son puros. Si el bluff del rival, en vez de
+//    apostar, pasara y se llevara en promedio s × P, y cuando lo pagás gana una
+//    parte q del pozo final, le da lo mismo apostar que pasar cuando seguís con
+//         c = (1 − s) × P / (P + B − q × (P + 2B))
+//    Con s = q = 0 es la defensa mínima de siempre, P / (P + B).
+//
+// 3. All-in con pocas fichas (con luz). Pozo P (las luces), te quedan A fichas.
+//    Si nadie paga ganás P; si paga uno (chance c) jugás por P + 2A:
+//         EV = (1 − c) × P + c × (w × (P + 2A) − A)
+//    Lo que necesitás ganar cuando te pagan: w = (c × A − (1 − c) × P) / (c × (P + 2A))
+
+import type { Rng } from "./cards"
+import type { Variant } from "./variants"
+import { GTO_SIZES, mdf } from "./gto"
+import { LUZ } from "./drills"
+
+const pick = <T,>(xs: readonly T[], rng: Rng): T => xs[Math.floor(rng() * xs.length)]
+/** Entero al azar entre min y max (inclusive) en pasos de `step`. */
+const stepInt = (min: number, max: number, step: number, rng: Rng) =>
+  min + step * Math.floor(rng() * (Math.floor((max - min) / step) + 1))
+
+/** 4 porcentajes enteros distintos (separados por al menos `gap`), con la respuesta y las confusiones típicas. */
+function percentOptions(answer: number, related: number[], rng: Rng, gap = 4): number[] {
+  const opts = [answer]
+  const ok = (x: number) => x > 0 && x < 100 && opts.every((o) => Math.abs(o - x) >= gap)
+  for (const r of related) if (opts.length < 4 && ok(r)) opts.push(r)
+  const spread = [-20, -15, -10, -8, 8, 10, 15, 20]
+  for (let tries = 0; opts.length < 4 && tries < 100; tries++) {
+    const x = answer + pick(spread, rng)
+    if (ok(x)) opts.push(x)
+  }
+  return opts.sort((a, b) => a - b)
+}
+
+// ── 1. ¿Apostar o pasar? ────────────────────────────────────────────────────
+
+export interface BetOrCheckDrill {
+  kind: "betOrCheck"
+  pot: number
+  bet: number
+  sizeName: string
+  /** Partes (0–1) de cómo responde el rival a tu apuesta: suman 1. */
+  fold: number
+  call: number
+  raise: number
+  /** Cuánto ganás si pasás (vas al showdown) y si te pagan la apuesta. */
+  eqCheck: number
+  eqCall: number
+  evCheck: number
+  evBet: number
+  shouldBet: boolean
+}
+
+export const evCheck = (pot: number, eqCheck: number) => eqCheck * pot
+export function evBet(d: Pick<BetOrCheckDrill, "pot" | "bet" | "fold" | "call" | "raise" | "eqCall">) {
+  return d.fold * d.pot + d.call * (d.eqCall * (d.pot + 2 * d.bet) - d.bet) - d.raise * d.bet
+}
+
+/** Diferencia mínima entre las dos opciones (parte del pozo): más cerca sería adivinar. */
+export const BET_OR_CHECK_GAP = 0.05
+
+export function makeBetOrCheck(_v: Variant, rng: Rng = Math.random): BetOrCheckDrill {
+  // Hasta el pozo: es una decisión de valor fino, no de overbet.
+  const sizes = GTO_SIZES.filter((s) => s.frac <= 1)
+  let d: BetOrCheckDrill | null = null
+  for (let tries = 0; tries < 200; tries++) {
+    const size = pick(sizes, rng)
+    const pot = (1 + Math.floor(rng() * 5)) * 1200
+    const bet = pot * size.frac
+    const raise = stepInt(0, 25, 5, rng)
+    const fold = stepInt(10, 85 - raise, 5, rng)
+    const call = 100 - fold - raise
+    const eqCheck = stepInt(40, 85, 5, rng)
+    // Cuando te pagan estás peor que en el showdown sin apostar: pagan las mejores.
+    const eqCall = Math.max(5, eqCheck - stepInt(10, 35, 5, rng))
+    const base = { pot, bet, fold: fold / 100, call: call / 100, raise: raise / 100, eqCall: eqCall / 100 }
+    const ec = evCheck(pot, eqCheck / 100)
+    const eb = evBet(base)
+    d = {
+      kind: "betOrCheck",
+      ...base,
+      sizeName: size.name,
+      eqCheck: eqCheck / 100,
+      evCheck: ec,
+      evBet: eb,
+      shouldBet: eb > ec,
+    }
+    // Y al menos $200: los botones muestran el promedio redondeado a $100.
+    if (Math.abs(eb - ec) >= Math.max(BET_OR_CHECK_GAP * pot, 200)) break
+  }
+  return d!
+}
+
+// ── 2. Defensa contra bluffs con chances ───────────────────────────────────
+
+export type SemiBluffKind = "showdown" | "draw"
+
+export interface SemiBluffDrill {
+  kind: "semiBluff"
+  /** showdown: river, su bluff ganaría a veces si pasara. draw: turn, su bluff es un proyecto. */
+  type: SemiBluffKind
+  street: "turn" | "river"
+  pot: number
+  /** All-in del rival: no se puede subir. */
+  bet: number
+  sizeName: string
+  /** Parte del pozo que su bluff se llevaría pasando (s) y su chance de ganar si lo pagás (q). */
+  checkShare: number
+  drawEquity: number
+  /** Defensa mínima de siempre (para comparar). */
+  plainMdf: number
+  /** Parte de tus manos con la que hay que seguir (0–1) y las opciones en % enteros. */
+  defend: number
+  options: number[]
+  answer: number
+}
+
+export function semiBluffDefense(pot: number, bet: number, checkShare: number, drawEquity: number) {
+  return ((1 - checkShare) * pot) / (pot + bet - drawEquity * (pot + 2 * bet))
+}
+
+export function makeSemiBluff(_v: Variant, rng: Rng = Math.random, type?: SemiBluffKind): SemiBluffDrill {
+  const t: SemiBluffKind = type ?? (rng() < 0.5 ? "showdown" : "draw")
+  let d: SemiBluffDrill | null = null
+  for (let tries = 0; tries < 200; tries++) {
+    const size = pick(GTO_SIZES, rng)
+    const pot = (1 + Math.floor(rng() * 5)) * 1200
+    const bet = pot * size.frac
+    const s = stepInt(10, 30, 5, rng) / 100
+    // Con un proyecto, pasar le deja más o menos su chance de ganar ese pozo.
+    const checkShare = s
+    const drawEquity = t === "draw" ? s : 0
+    const defend = semiBluffDefense(pot, bet, checkShare, drawEquity)
+    const plain = mdf(pot, bet)
+    const answer = Math.round(defend * 100)
+    const plainPct = Math.round(plain * 100)
+    // Confusiones típicas: la defensa de siempre y restarle la chance del bluff.
+    const related = [plainPct, Math.round((plain - s) * 100)]
+    d = {
+      kind: "semiBluff",
+      type: t,
+      street: t === "draw" ? "turn" : "river",
+      pot,
+      bet,
+      sizeName: size.name,
+      checkShare,
+      drawEquity,
+      plainMdf: plain,
+      defend,
+      options: percentOptions(answer, related, rng),
+      answer,
+    }
+    // Que se note la diferencia con la defensa de siempre (si no, la pregunta no enseña nada).
+    if (Math.abs(answer - plainPct) >= 4 && answer > 0 && answer < 100) break
+  }
+  return d!
+}
+
+// ── 3. All-in con pocas fichas ─────────────────────────────────────────────
+
+export type ShoveQuestion = "needed" | "decide"
+
+export interface ShoveDrill {
+  kind: "shove"
+  question: ShoveQuestion
+  players: number
+  luz: number
+  /** Pozo: la luz de todos. */
+  pot: number
+  /** Tus fichas además de la luz (lo que mandás all-in). */
+  stack: number
+  /** Chance de que alguien te pague (0–1). */
+  callChance: number
+  /** Lo que necesitás ganar cuando te pagan para que el all-in no pierda (0–1). */
+  needed: number
+  /** Solo en "decide": cuánto ganás cuando te pagan. */
+  equity?: number
+  /** EV del all-in con `equity` (en "decide"). Fold vale 0. */
+  ev?: number
+  shouldShove?: boolean
+  /** Solo en "needed": opciones en % enteros. */
+  options?: number[]
+  answer?: number
+}
+
+export function shoveNeeded(pot: number, stack: number, callChance: number) {
+  return (callChance * stack - (1 - callChance) * pot) / (callChance * (pot + 2 * stack))
+}
+export const shoveEv = (pot: number, stack: number, callChance: number, equity: number) =>
+  (1 - callChance) * pot + callChance * (equity * (pot + 2 * stack) - stack)
+
+export const SHOVE_QUESTIONS: ShoveQuestion[] = ["needed", "decide"]
+
+export function makeShove(_v: Variant, rng: Rng = Math.random, question?: ShoveQuestion): ShoveDrill {
+  const q = question ?? pick(SHOVE_QUESTIONS, rng)
+  let d: ShoveDrill | null = null
+  for (let tries = 0; tries < 200; tries++) {
+    const players = 4 + Math.floor(rng() * 3)
+    const pot = players * LUZ
+    const stack = stepInt(300, 2000, 100, rng)
+    const callChance = stepInt(20, 70, 10, rng) / 100
+    const needed = shoveNeeded(pot, stack, callChance)
+    // Entre 15% y 48%: con menos, cualquier mano sirve; con más, ninguna.
+    if (needed < 0.15 || needed > 0.48) continue
+    const base = { kind: "shove" as const, question: q, players, luz: LUZ, pot, stack, callChance, needed }
+    if (q === "needed") {
+      const answer = Math.round(needed * 100)
+      // Confusiones: las pot odds sin contar los folds, y la chance de que paguen.
+      const potOdds = Math.round((stack / (pot + 2 * stack)) * 100)
+      d = { ...base, options: percentOptions(answer, [potOdds], rng), answer }
+      if (Math.abs(potOdds - answer) >= 4) break
+      continue
+    }
+    const offset = (rng() < 0.5 ? -1 : 1) * stepInt(5, 15, 1, rng)
+    const equity = Math.round(needed * 100 + offset) / 100
+    if (equity <= 0.05 || equity >= 0.95) continue
+    const ev = shoveEv(pot, stack, callChance, equity)
+    d = { ...base, equity, ev, shouldShove: ev > 0 }
+    // El botón muestra el promedio redondeado a $100: que no diga "≈ $0".
+    if (Math.abs(ev) >= 50) break
+  }
+  return d!
+}

@@ -7,7 +7,7 @@ import { ChipSpinner } from "@/components/poker-chip"
 import * as db from "@/lib/database"
 import { getTodayLocalDate } from "@/lib/formatters"
 import { playSound } from "@/lib/sounds"
-import { DAILY_LENGTH, dailyChallenge, type DailyQuestion } from "@/lib/poker/training"
+import { DAILY_LENGTH, DRILL_NAMES, dailyChallenge, isGameFree, type DailyQuestion } from "@/lib/poker/training"
 import { GAMES } from "@/lib/poker/variants"
 import type { DailyResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -22,6 +22,7 @@ import { ChallengeResult } from "./challenge-result"
 import { LuzDrill } from "./luz-drill"
 import { GtoDrill } from "./gto-drill"
 import { PreflopVsDrill } from "./preflop-vs-drill"
+import { BetOrCheckDrill, SemiBluffDrill, ShoveDrill } from "./ev-drills"
 
 const storageKey = (playerId: string, date: string) => `la-cajita:desafio:${playerId}:${date}`
 
@@ -63,6 +64,12 @@ function Question({ q, onNext, last }: { q: DailyQuestion; onNext: () => void; l
       return <GtoDrill {...common} preset={q.data} />
     case "preflopVs":
       return <PreflopVsDrill {...common} preset={q.data} />
+    case "betOrCheck":
+      return <BetOrCheckDrill {...common} preset={q.data} />
+    case "semiBluff":
+      return <SemiBluffDrill {...common} preset={q.data} />
+    case "shove":
+      return <ShoveDrill {...common} preset={q.data} />
   }
 }
 
@@ -382,13 +389,13 @@ export function QuestionSession({
       <div key={`v${current}`} className="animate-fade-in flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5">
         <div className="min-w-0 flex-1">
           <div className="text-lg font-bold leading-tight">
-            {q.drill === "gto" ? "GTO en el river" : GAMES[q.variant.game].name}
+            {isGameFree(q.drill) ? DRILL_NAMES[q.drill] : GAMES[q.variant.game].name}
           </div>
           <div className="text-xs text-muted-foreground">
-            {q.drill === "gto" ? "Vale igual para todos los juegos" : GAMES[q.variant.game].short}
+            {isGameFree(q.drill) ? "Vale igual para todos los juegos" : GAMES[q.variant.game].short}
           </div>
         </div>
-        <div className={cn("flex flex-col items-end gap-1", q.drill === "gto" && "hidden")}>
+        <div className={cn("flex flex-col items-end gap-1", isGameFree(q.drill) && "hidden")}>
           <span
             className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
           >

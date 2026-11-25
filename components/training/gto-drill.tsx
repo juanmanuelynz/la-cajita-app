@@ -11,7 +11,7 @@ const TITLES: Record<GtoData["question"], string> = {
   bluffCombos: "Armá el equilibrio",
 }
 
-function Split({ left, right, leftLabel, rightLabel, leftClass, rightClass }: {
+export function Split({ left, right, leftLabel, rightLabel, leftClass, rightClass }: {
   left: number
   right: number
   leftLabel: string
@@ -31,6 +31,17 @@ function Split({ left, right, leftLabel, rightLabel, leftClass, rightClass }: {
         <span>{rightLabel}</span>
       </div>
     </div>
+  )
+}
+
+/** Recordatorio de cuándo la defensa mínima NO manda (lección "MDF vs pot odds"). */
+export function MdfVsPotOdds() {
+  return (
+    <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-muted-foreground">
+      <b className="text-foreground">Ojo:</b> la defensa mínima sirve contra alguien que podría farolear de más. Si sabés
+      que el rival farolea poco, no pagues para cumplirla: mirá tus pot odds. Si tu mano no gana lo suficiente seguido,
+      el fold es lo correcto.
+    </p>
   )
 }
 
@@ -172,6 +183,7 @@ export function GtoDrill(props: DrillProps<GtoData>) {
             Regla: cuanto más grande la apuesta, menos tenés que defender y más bluffs puede tener quien apuesta. Vale
             igual en Hold&apos;em, Omaha y Manhattan.
           </p>
+          {q === "defend" && <MdfVsPotOdds />}
         </div>
       }
     >

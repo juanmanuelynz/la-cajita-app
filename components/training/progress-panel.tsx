@@ -11,6 +11,7 @@ import {
   DAILY_GOAL,
   DRILL_IDS,
   DRILL_NAMES,
+  isGameFree,
   SEATS,
   SEAT_NAMES,
   STREETS,
@@ -317,7 +318,7 @@ function WeeklyBars({ byWeek }: { byWeek: (TrainingTally & { week: string })[] }
 
 /** "¿Call o fold? · Omaha Short" (GTO vale igual para todos los juegos: sin juego). */
 function spotName(s: WeakSpot) {
-  if (s.drill === "gto") return DRILL_NAMES.gto
+  if (isGameFree(s.drill)) return DRILL_NAMES[s.drill]
   return `${DRILL_NAMES[s.drill]} · ${GAMES[s.variant.game].name} ${s.variant.deck === "short" ? "Short" : "Long"}`
 }
 

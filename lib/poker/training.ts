@@ -3,13 +3,14 @@
 import { seededRng, type Rng } from "./cards"
 import { makePreflopVs } from "./preflop-vs"
 import { makeGto } from "./gto"
+import { makeBetOrCheck, makeSemiBluff, makeShove } from "./ev"
 import { makeCompare, makeLuz, makeOuts, makePotOdds, makePreflop, makeUsable, makeWhoWins } from "./drills"
 import type { Variant } from "./variants"
 import { withDifficulty, type Difficulty } from "./difficulty"
 import { POSITIONS_BY_TABLE } from "./preflop"
 
 // Al final siempre: el desafío sortea por índice (ver dailyDrills).
-export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto", "preflopVs"] as const
+export const DRILL_IDS = ["usable", "whoWins", "outs", "potOdds", "compare", "preflop", "luz", "gto", "preflopVs", "betOrCheck", "semiBluff", "shove"] as const
 export type DrillId = (typeof DRILL_IDS)[number]
 
 export const DRILL_NAMES: Record<DrillId, string> = {
@@ -22,7 +23,14 @@ export const DRILL_NAMES: Record<DrillId, string> = {
   luz: "Antes del flop (luz)",
   gto: "GTO en el river",
   preflopVs: "Antes del flop (te suben)",
+  betOrCheck: "¿Apostar o pasar?",
+  semiBluff: "Defender contra proyectos",
+  shove: "¿All-in o fold?",
 }
+
+/** Ejercicios de cuentas: valen igual en todos los juegos y mazos (no se elige juego). */
+export const GAME_FREE_DRILLS: readonly DrillId[] = ["gto", "betOrCheck", "semiBluff", "shove"]
+export const isGameFree = (d: DrillId) => GAME_FREE_DRILLS.includes(d)
 
 /** Días seguidos entrenando, contando hasta hoy (o hasta ayer si hoy todavía no). */
 export function dayStreak(dates: readonly string[], today: string): number {
@@ -67,6 +75,9 @@ const MAKERS = {
   gto: makeGto,
   // Solo Hold'em largo (la fuente): el juego no cambia nada. Mitad "te suben", mitad "te resuben".
   preflopVs: (_v: Variant, rng: Rng = Math.random) => makePreflopVs(rng() < 0.5 ? "vsOpen" : "vs3bet", rng),
+  betOrCheck: makeBetOrCheck,
+  semiBluff: (v: Variant, rng: Rng = Math.random) => makeSemiBluff(v, rng),
+  shove: (v: Variant, rng: Rng = Math.random) => makeShove(v, rng),
 }
 
 export type DailyQuestion =
@@ -79,6 +90,9 @@ export type DailyQuestion =
   | { drill: "luz"; variant: Variant; data: ReturnType<typeof makeLuz> }
   | { drill: "gto"; variant: Variant; data: ReturnType<typeof makeGto> }
   | { drill: "preflopVs"; variant: Variant; data: ReturnType<typeof makePreflopVs> }
+  | { drill: "betOrCheck"; variant: Variant; data: ReturnType<typeof makeBetOrCheck> }
+  | { drill: "semiBluff"; variant: Variant; data: ReturnType<typeof makeSemiBluff> }
+  | { drill: "shove"; variant: Variant; data: ReturnType<typeof makeShove> }
 
 /**
  * Ejercicios que entran en el desafío de una fecha. GTO se sumó después: los
@@ -86,9 +100,13 @@ export type DailyQuestion =
  * se vuelve a generar desde la semilla al tocar "Ver").
  */
 export const GTO_IN_DAILY_FROM = "2026-11-25"
+/** Desde cuándo entran ¿Apostar o pasar?, Defender contra proyectos y ¿All-in o fold?. */
+export const EV_IN_DAILY_FROM = "2026-11-26"
+const EV_DRILLS: readonly DrillId[] = ["betOrCheck", "semiBluff", "shove"]
 export function dailyDrills(date: string): readonly DrillId[] {
   // "Te suben" no entra nunca: es solo Hold'em largo y el desafío sortea el juego.
-  const drills = DRILL_IDS.filter((d) => d !== "preflopVs")
+  let drills = DRILL_IDS.filter((d) => d !== "preflopVs")
+  if (date < EV_IN_DAILY_FROM) drills = drills.filter((d) => !EV_DRILLS.includes(d))
   return date < GTO_IN_DAILY_FROM ? drills.filter((d) => d !== "gto") : drills
 }
 
@@ -128,6 +146,12 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   gto: "Si el rival apuesta B con pozo P, tenés que seguir con al menos P ÷ (P + B) de tus manos. Y al apostar, cuanto más grande la apuesta, más bluffs podés tener.",
   preflop:
     "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
+  betOrCheck:
+    "Antes de apostar, sumá lo que ganás cuando foldea, lo que ganás o perdés cuando paga y lo que perdés cuando sube. Si pasando ya ganás seguido, apostar solo conviene si te pagan peores.",
+  semiBluff:
+    "Si el bluff del rival igual tiene chances (gana a veces en el showdown o es un proyecto), no hace falta defender tanto como la defensa mínima. Y si sabés que farolea poco, olvidate de la defensa mínima: mirá tus pot odds.",
+  shove:
+    "Con pocas fichas, el all-in gana también cuando todos foldean: cuanto más seguido foldean, menos tenés que ganar cuando te pagan.",
   preflopVs:
     "Contra una subida de los primeros lugares se paga y se resube con poco; contra el que reparte o la ciega chica, con mucho más. Y con algunos ases y reyes se paga a propósito, para disimular.",
 }
@@ -233,6 +257,8 @@ export const FIXED_STREET: Partial<Record<DrillId, TrainingStreet>> = {
   preflop: "preflop",
   luz: "preflop",
   preflopVs: "preflop",
+  betOrCheck: "river",
+  shove: "preflop",
 }
 
 /** Calle y lugar de una situación ya generada, para guardarlos con la respuesta. */
@@ -248,7 +274,7 @@ export function answerContext(data: unknown): { street: TrainingStreet | null; s
   }
   const kind = d?.kind as DrillId | undefined
   if (!kind) return { street: null, seat: null }
-  if (kind === "outs" || kind === "potOdds") {
+  if (kind === "outs" || kind === "potOdds" || kind === "semiBluff") {
     return { street: d.street === "flop" || d.street === "turn" ? d.street : null, seat: null }
   }
   const street = FIXED_STREET[kind] ?? null

@@ -80,6 +80,9 @@ export function difficultyScore(d: Scored | CompareDrill | LuzDrill | { kind: st
   }
 }
 
+/** Cuentas fijas: sin dificultad (GTO y las de valor esperado). */
+const NO_DIFFICULTY = new Set(["gto", "betOrCheck", "semiBluff", "shove"])
+
 const TARGET: Record<Exclude<Difficulty, "media">, number> = { facil: 0, dificil: 1 }
 const TRIES = 6
 
@@ -92,7 +95,7 @@ export function withDifficulty<T extends { kind: string }>(
   make: (v: Variant, rng?: Rng) => T,
   difficulty: Difficulty,
 ): (v: Variant, rng?: Rng) => T {
-  if (difficulty === "media" || kind === "preflop" || kind === "preflopVs" || kind === "gto") return make
+  if (difficulty === "media" || kind === "preflop" || kind === "preflopVs" || NO_DIFFICULTY.has(kind)) return make
   const easy = difficulty === "facil"
   // Los caros: el rango va directo al generador.
   if (kind === "compare")
