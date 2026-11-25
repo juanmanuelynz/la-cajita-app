@@ -319,6 +319,9 @@ export function EntrenarTab({
   // Cada ejercicio es una pantalla propia: el "atrás" del celular vuelve al menú.
   const closeDrill = useCallback(() => setDrill(null), [])
   useBackToClose(drill !== null, closeDrill, "entrenar-ejercicio")
+  // "Lo que más fallás" también: atrás vuelve a Entrenar.
+  const closePractice = useCallback(() => setPractice(null), [])
+  useBackToClose(practice !== null, closePractice, "entrenar-practica")
   // Al entrar o salir de un ejercicio, arrancar desde arriba.
   const firstScroll = useRef(true)
   useEffect(() => {
@@ -379,7 +382,7 @@ export function EntrenarTab({
         <TabsContent value="ejercicios" className="pt-1 pb-8 space-y-3 mt-0">
           <div ref={topRef} className="scroll-mt-24" />
           {practice ? (
-            <PracticeSession spots={practice} onExit={() => setPractice(null)} />
+            <PracticeSession spots={practice} onExit={closePractice} />
           ) : (
             <>
               {drill && entry ? (
