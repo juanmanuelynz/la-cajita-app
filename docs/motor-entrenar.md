@@ -69,7 +69,7 @@ Nivel de confianza (el mismo del [playbook](playbook-daily-dose-gto.md)):
 | Te suben / Te resuben (`preflopVs`) | Antes del flop | Solo Hold'em Long | Fuente | No |
 | Outs (`outs`) | Pagar o no | Todos | Exacto | Sí |
 | ¿Call o fold? (`potOdds`) | Pagar o no | Todos | Exacto | Sí |
-| ¿All-in o fold? (`shove`) | Pagar o no | Igual en todos | Exacto | Desde 26/11 |
+| ¿All-in o fold? (`shove`) | Pagar o no | Igual en todos | Exacto (contado en 10 all-ins) | Desde 26/11 |
 | GTO river (`gto`) | Cuentas GTO | Igual en todos | Exacto | Desde 25/11 |
 | ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
 | Defender proyectos (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
@@ -110,7 +110,8 @@ TypeScript y los tests avisan si falta alguno de los pasos marcados con ✔︎.
    múltiplos de $100.
 2. **Lista**: agregar el id **al final** de `DRILL_IDS` en
    `lib/poker/drill-ids.ts`. Si vale igual en todos los juegos, sumarlo también
-   a `GAME_FREE_DRILLS` (no muestra el selector de juego ni usa dificultad). La
+   a `GAME_FREE_DRILLS` (no muestra el selector de juego ni usa dificultad,
+   salvo ¿All-in o fold?, que sí la usa: ver `NO_DIFFICULTY`). La
    validación del servidor y la dificultad leen de acá.
 3. **En `training.ts`**:
    - ✔︎ Nombre en `DRILL_NAMES` y consejo en `DRILL_TIPS`.

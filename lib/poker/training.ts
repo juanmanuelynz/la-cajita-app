@@ -153,7 +153,7 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   semiBluff:
     "Si el bluff del rival igual tiene chances (gana a veces en el showdown o es un proyecto), no hace falta defender tanto como la defensa mínima. Y si sabés que farolea poco, olvidate de la defensa mínima: mirá tus pot odds.",
   shove:
-    "Con pocas fichas, el all-in gana también cuando todos foldean: cuanto más seguido foldean, menos tenés que ganar cuando te pagan.",
+    "Contá 10 all-ins: sumá las luces de las veces que foldean todos y lo que ganás cuando te pagan, y restá lo que perdés. Si da positivo, all-in; si no, fold (que da $0).",
   callDown:
     "Multiplicá la defensa de cada calle: si paga justo lo necesario contra tres apuestas, al river llega poco de su rango. Y las manos que nunca foldea pasan a ser casi todo lo que queda.",
   preflopVs:

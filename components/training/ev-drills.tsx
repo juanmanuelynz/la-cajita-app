@@ -268,17 +268,15 @@ export function ShoveDrill(props: DrillProps<ShoveData>) {
 
   if (!drill) return null
   const answered = verdict !== null
-  const { pot, stack, callChance: c, needed, question: q } = drill
-  const foldChance = 1 - c
-
-  const pick = (id: string, ok: boolean) => {
-    setPicked(id)
-    answer(ok ? "right" : "wrong")
-  }
+  const { pot, stack, calls, wins, total } = drill
+  const folds = 10 - calls
+  const losses = calls - wins
+  const signed = (n: number) => (n < 0 ? `−${pesos(-n)}` : `+${pesos(n)}`)
+  const veces = (n: number) => `${n} ${n === 1 ? "vez" : "veces"}`
 
   return (
     <DrillShell
-      title={q === "needed" ? "¿Cuánto tenés que ganar?" : "¿All-in o fold?"}
+      title="¿All-in o fold?"
       score={inChallenge ? undefined : score}
       nextLabel={props.nextLabel}
       verdict={verdict}
@@ -289,99 +287,75 @@ export function ShoveDrill(props: DrillProps<ShoveData>) {
       question={
         <div className="space-y-3">
           <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-            <Row label={`Luz de ${drill.players} jugadores`} value={pesos(pot)} />
-            <Row label="Te quedan (además de tu luz)" value={pesos(stack)} />
+            <Row label={`Luces en el pozo (${drill.players} × ${pesos(drill.luz)})`} value={pesos(pot)} />
+            <Row label="Tus fichas (sin contar tu luz)" value={pesos(stack)} />
             <p className="text-xs text-muted-foreground pt-1">
-              Antes del flop. Nadie apostó todavía y vas all-in por {pesos(stack)}.
+              Antes del flop y nadie apostó. Fold no te cuesta nada: tu luz ya está en el pozo.
             </p>
           </div>
-          <p>
-            Foldean todos el <b>{pct(foldChance, 0)}</b> de las veces. El resto, te paga uno
-            {q === "decide" && drill.equity !== undefined && (
-              <>
-                {" "}
-                y contra sus manos ganás el <b>{pct(drill.equity, 0)}</b>
-              </>
-            )}
-            .
-          </p>
-          <p>
-            {q === "needed" ? (
-              <>
-                ¿Qué % de las veces tenés que ganar <b>cuando te pagan</b> para que el all-in no pierda plata?
-              </>
-            ) : (
-              <>¿All-in o fold?</>
-            )}
-          </p>
+          <div className="rounded-lg border p-3 space-y-1.5">
+            <div className="font-semibold">Si vas all-in, de cada 10 veces:</div>
+            <Row label={`${veces(folds)} foldean todos`} value={`+${pesos(pot)}`} />
+            <Row
+              label={
+                <>
+                  {veces(wins)} te pagan y ganás{" "}
+                  <span className="text-muted-foreground">(luces + sus fichas)</span>
+                </>
+              }
+              value={`+${pesos(pot + stack)}`}
+            />
+            <Row label={`${veces(losses)} te pagan y perdés`} value={`−${pesos(stack)}`} />
+          </div>
+          <p>Sumando las 10 veces, ¿te conviene el all-in o el fold?</p>
         </div>
       }
       headline={
         <Stats
           items={[
-            { label: "necesitás ganar", value: pct(needed, 0), tone: q === "needed" ? "good" : "neutral" },
-            ...(q === "decide" && drill.equity !== undefined
-              ? [{ label: "ganás", value: pct(drill.equity, 0), tone: drill.shouldShove ? ("good" as const) : ("bad" as const) }]
-              : [{ label: "pot odds sin folds", value: pct(stack / (pot + 2 * stack), 0) }]),
+            { label: "en 10 all-ins", value: signed(total), tone: drill.shouldShove ? "good" : "bad" },
+            { label: "con fold", value: pesos(0) },
           ]}
         />
       }
       feedback={
         <div className="space-y-2">
-          <p>Hacer fold vale $0 (tu luz ya está en el pozo). El all-in tiene tres finales:</p>
-          <ul className="list-disc space-y-0.5 pl-5">
-            <li>
-              Foldean todos ({pct(foldChance, 0)}): ganás las luces, +{pesos(pot)}
-            </li>
-            <li>
-              Te pagan y ganás: +{pesos(pot + stack)} (las luces y sus fichas)
-            </li>
-            <li>Te pagan y perdés: −{pesos(stack)}</li>
-          </ul>
-          <p>
-            Para no perder plata: {pct(foldChance, 0)} × {pesos(pot)} + {pct(c, 0)} × (ganás × {pesos(pot + 2 * stack)} −{" "}
-            {pesos(stack)}) = 0 → ganás = <b>{pct(needed, 0)}</b>.
+          <p>Sumá lo que pasa en las 10 veces:</p>
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+            <Row label={`${folds} × +${pesos(pot)}`} value={signed(folds * pot)} />
+            <Row label={`${wins} × +${pesos(pot + stack)}`} value={signed(wins * (pot + stack))} />
+            <Row label={`${losses} × −${pesos(stack)}`} value={signed(-losses * stack)} />
+            <div className="border-t pt-1">
+              <Row label="Total" value={signed(total)} />
+            </div>
+          </div>
+          <p className="font-medium">
+            {drill.shouldShove
+              ? `Da positivo: conviene el all-in (${avg(drill.ev)} por vez, en promedio). El fold da $0.`
+              : `Da negativo: conviene el fold, que da $0. El all-in pierde ${avg(-drill.ev)} por vez, en promedio.`}
           </p>
-          {q === "decide" && drill.equity !== undefined && drill.ev !== undefined && (
-            <p className="font-medium">
-              {pct(drill.equity, 0)} {drill.shouldShove ? "≥" : "<"} {pct(needed, 0)} →{" "}
-              {drill.shouldShove ? "conviene el all-in" : "conviene fold"} (el all-in da {avg(drill.ev)} en promedio).
-            </p>
-          )}
           <p className="text-muted-foreground">
-            Sin los folds necesitarías {pesos(stack)} ÷ {pesos(pot + 2 * stack)} = {pct(stack / (pot + 2 * stack), 0)}: las
-            veces que foldean todos bajan lo que tenés que ganar. Cuanto menos fichas te quedan, más pesan las luces.
+            Las veces que foldean todos ganás sin mostrar las cartas. Por eso, cuanto más seguido foldean, menos
+            necesitás ganar cuando te pagan.
           </p>
         </div>
       }
     >
-      {q === "needed" ? (
-        <div className="grid grid-cols-2 gap-3">
-          {drill.options!.map((o) => (
-            <AnswerButton
-              key={o}
-              tone={answerTone(answered, { correct: o === drill.answer, picked: picked === String(o) })}
-              className="text-lg font-bold tabular-nums"
-              onClick={() => pick(String(o), o === drill.answer)}
-            >
-              {o}%
-            </AnswerButton>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {(["fold", "shove"] as const).map((id) => (
-            <AnswerButton
-              key={id}
-              tone={answerTone(answered, { correct: (id === "shove") === drill.shouldShove, picked: picked === id })}
-              amount={id === "shove" ? drill.ev : 0}
-              onClick={() => pick(id, (id === "shove") === drill.shouldShove)}
-            >
-              {id === "shove" ? `All-in ${pesos(stack)}` : "Fold"}
-            </AnswerButton>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-3">
+        {(["fold", "shove"] as const).map((id) => (
+          <AnswerButton
+            key={id}
+            tone={answerTone(answered, { correct: (id === "shove") === drill.shouldShove, picked: picked === id })}
+            amount={id === "shove" ? drill.ev : 0}
+            onClick={() => {
+              setPicked(id)
+              answer((id === "shove") === drill.shouldShove ? "right" : "wrong")
+            }}
+          >
+            {id === "shove" ? `All-in ${pesos(stack)}` : "Fold"}
+          </AnswerButton>
+        ))}
+      </div>
     </DrillShell>
   )
 }

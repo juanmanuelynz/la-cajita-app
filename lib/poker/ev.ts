@@ -170,66 +170,52 @@ export function makeSemiBluff(_v: Variant, rng: Rng = Math.random, type?: SemiBl
 
 // ── 3. All-in con pocas fichas ─────────────────────────────────────────────
 
-export type ShoveQuestion = "needed" | "decide"
-
 export interface ShoveDrill {
   kind: "shove"
-  question: ShoveQuestion
   players: number
   luz: number
   /** Pozo: la luz de todos. */
   pot: number
   /** Tus fichas además de la luz (lo que mandás all-in). */
   stack: number
-  /** Chance de que alguien te pague (0–1). */
-  callChance: number
-  /** Lo que necesitás ganar cuando te pagan para que el all-in no pierda (0–1). */
-  needed: number
-  /** Solo en "decide": cuánto ganás cuando te pagan. */
-  equity?: number
-  /** EV del all-in con `equity` (en "decide"). Fold vale 0. */
-  ev?: number
-  shouldShove?: boolean
-  /** Solo en "needed": opciones en % enteros. */
-  options?: number[]
-  answer?: number
+  /** De cada 10 all-ins, cuántas veces te paga uno (el resto foldean todos). */
+  calls: number
+  /** De esas `calls` veces, cuántas ganás. */
+  wins: number
+  /** Lo que ganás (o perdés) en total en 10 all-ins. Fold vale 0. */
+  total: number
+  /** Promedio por all-in (total ÷ 10). */
+  ev: number
+  shouldShove: boolean
 }
 
+/** Lo que tenés que ganar cuando te pagan para que el all-in empate con el fold. */
 export function shoveNeeded(pot: number, stack: number, callChance: number) {
   return (callChance * stack - (1 - callChance) * pot) / (callChance * (pot + 2 * stack))
 }
 export const shoveEv = (pot: number, stack: number, callChance: number, equity: number) =>
   (1 - callChance) * pot + callChance * (equity * (pot + 2 * stack) - stack)
 
-export const SHOVE_QUESTIONS: ShoveQuestion[] = ["needed", "decide"]
-
-export function makeShove(_v: Variant, rng: Rng = Math.random, question?: ShoveQuestion): ShoveDrill {
-  const q = question ?? pick(SHOVE_QUESTIONS, rng)
+/**
+ * Todo contado "de cada 10 all-ins", con números enteros, para que se pueda
+ * sumar de cabeza: las veces que foldean todos ganás las luces; cuando te paga
+ * uno, ganás las luces y sus fichas o perdés las tuyas.
+ */
+export function makeShove(_v: Variant, rng: Rng = Math.random): ShoveDrill {
   let d: ShoveDrill | null = null
   for (let tries = 0; tries < 200; tries++) {
     const players = 4 + Math.floor(rng() * 3)
     const pot = players * LUZ
     const stack = stepInt(300, 2000, 100, rng)
-    const callChance = stepInt(20, 70, 10, rng) / 100
-    const needed = shoveNeeded(pot, stack, callChance)
-    // Entre 15% y 48%: con menos, cualquier mano sirve; con más, ninguna.
-    if (needed < 0.15 || needed > 0.48) continue
-    const base = { kind: "shove" as const, question: q, players, luz: LUZ, pot, stack, callChance, needed }
-    if (q === "needed") {
-      const answer = Math.round(needed * 100)
-      // Confusiones: las pot odds sin contar los folds, y la chance de que paguen.
-      const potOdds = Math.round((stack / (pot + 2 * stack)) * 100)
-      d = { ...base, options: percentOptions(answer, [potOdds], rng), answer }
-      if (Math.abs(potOdds - answer) >= 4) break
-      continue
-    }
-    const offset = (rng() < 0.5 ? -1 : 1) * stepInt(5, 15, 1, rng)
-    const equity = Math.round(needed * 100 + offset) / 100
-    if (equity <= 0.05 || equity >= 0.95) continue
-    const ev = shoveEv(pot, stack, callChance, equity)
-    d = { ...base, equity, ev, shouldShove: ev > 0 }
+    const calls = stepInt(2, 7, 1, rng)
+    const wins = stepInt(1, calls - 1, 1, rng)
+    const total = (10 - calls) * pot + wins * (pot + stack) - (calls - wins) * stack
     // El botón muestra el promedio redondeado a $100: que no diga "≈ $0".
-    if (Math.abs(ev) >= 50) break
+    if (Math.abs(total) < 500) continue
+    d = { kind: "shove", players, luz: LUZ, pot, stack, calls, wins, total, ev: total / 10, shouldShove: total > 0 }
+    // Al azar, 9 de cada 10 dan all-in: se descartan la mayoría para que
+    // all-in y fold salgan parecido (si no, se aprende a tocar siempre all-in).
+    if (!d.shouldShove || rng() < 0.12) break
   }
   return d!
 }

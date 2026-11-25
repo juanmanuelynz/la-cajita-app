@@ -19,6 +19,7 @@ import {
   type UsableDrill,
   type WhoWinsDrill,
 } from "./drills"
+import type { ShoveDrill } from "./ev"
 import type { Variant } from "./variants"
 import { GAME_FREE_DRILLS } from "./drill-ids"
 
@@ -76,13 +77,18 @@ export function difficultyScore(d: Scored | CompareDrill | LuzDrill | { kind: st
       const l = d as LuzDrill
       return l.bet ? marginScore(Math.abs(l.bet.equity - l.bet.needed), 0.03) : 0.2
     }
+    case "shove": {
+      // Cuánto da el all-in por vez comparado con las luces: lejos de $0 es claro.
+      const sh = d as ShoveDrill
+      return 1 - Math.min(1, Math.abs(sh.ev) / sh.pot)
+    }
     default:
       return 0.5 // ciegas y GTO: tabla y fórmulas fijas, sin dificultad
   }
 }
 
-/** Cuentas fijas: sin dificultad (GTO y las de valor esperado). */
-const NO_DIFFICULTY = new Set<string>(GAME_FREE_DRILLS)
+/** Cuentas fijas: sin dificultad (GTO y las de valor esperado, menos el all-in). */
+const NO_DIFFICULTY = new Set<string>(GAME_FREE_DRILLS.filter((d) => d !== "shove"))
 
 const TARGET: Record<Exclude<Difficulty, "media">, number> = { facil: 0, dificil: 1 }
 const TRIES = 6

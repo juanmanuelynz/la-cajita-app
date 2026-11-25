@@ -544,14 +544,16 @@ describe("Dificultad según el nivel", () => {
     expect(a).toEqual(b)
   })
 
-  it.each(["usable", "whoWins", "outs", "potOdds"] as const)("%s: difícil sale más ajustado que fácil", async (kind) => {
+  it.each(["usable", "whoWins", "outs", "potOdds", "shove"] as const)("%s: difícil sale más ajustado que fácil", async (kind) => {
     const { withDifficulty, difficultyScore } = await import("../lib/poker/difficulty")
     const drills = await import("../lib/poker/drills")
+    const { makeShove } = await import("../lib/poker/ev")
     const make = {
       usable: drills.makeUsable,
       whoWins: drills.makeWhoWins,
       outs: drills.makeOuts,
       potOdds: drills.makePotOdds,
+      shove: makeShove,
     }[kind] as (v: typeof OMAHA, rng?: () => number) => { kind: string }
     const avg = (d: "facil" | "dificil") => {
       const gen = withDifficulty(kind, make, d)
@@ -730,23 +732,28 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     }
   })
 
-  it("¿All-in o fold?: lo necesario es donde el all-in empata con el fold", async () => {
+  it("¿All-in o fold?: se cuenta en 10 all-ins con números enteros", async () => {
     const { makeShove, shoveEv } = await import("../lib/poker/ev")
     const rng = seededRng(13)
+    let shoves = 0
     for (let i = 0; i < 300; i++) {
-      const d = makeShove({ game: "manhattan", deck: "long" }, rng, i % 2 ? "decide" : "needed")
-      expect(shoveEv(d.pot, d.stack, d.callChance, d.needed)).toBeCloseTo(0)
-      expect(d.needed).toBeGreaterThanOrEqual(0.15)
-      expect(d.needed).toBeLessThanOrEqual(0.48)
+      const d = makeShove({ game: "manhattan", deck: "long" }, rng)
       expect(d.stack % 100).toBe(0)
-      if (d.question === "needed") {
-        expect(new Set(d.options).size).toBe(4)
-        expect(d.options).toContain(d.answer)
-      } else {
-        expect(d.shouldShove).toBe(d.equity! > d.needed)
-        expect(Math.abs(d.ev!)).toBeGreaterThanOrEqual(50)
-      }
+      expect(d.calls).toBeGreaterThanOrEqual(2)
+      expect(d.calls).toBeLessThanOrEqual(7)
+      expect(d.wins).toBeGreaterThanOrEqual(1)
+      expect(d.wins).toBeLessThan(d.calls)
+      const folds = 10 - d.calls
+      expect(d.total).toBe(folds * d.pot + d.wins * (d.pot + d.stack) - (d.calls - d.wins) * d.stack)
+      // El conteo de 10 coincide con la fórmula del valor esperado.
+      expect(d.ev).toBeCloseTo(shoveEv(d.pot, d.stack, d.calls / 10, d.wins / d.calls))
+      expect(d.shouldShove).toBe(d.total > 0)
+      expect(Math.abs(d.ev)).toBeGreaterThanOrEqual(50)
+      if (d.shouldShove) shoves++
     }
+    // Ni siempre all-in ni siempre fold.
+    expect(shoves).toBeGreaterThan(90)
+    expect(shoves).toBeLessThan(210)
   })
 
   it("entran al desafío desde el 26/11/2026 sin cambiar los días anteriores", async () => {
