@@ -71,9 +71,9 @@ Nivel de confianza (el mismo del [playbook](playbook-daily-dose-gto.md)):
 | ¿Call o fold? (`potOdds`) | Pagar o no | Todos | Exacto | Sí |
 | ¿All-in o fold? (`shove`) | Pagar o no | Igual en todos | Exacto (contado en 10 all-ins) | Desde 26/11 |
 | GTO river (`gto`) | Cuentas GTO | Igual en todos | Exacto | Desde 25/11 |
-| ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
-| Defender proyectos (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto | Desde 26/11 |
-| ¿Qué le queda? (`callDown`) | Cuentas GTO | Igual en todos | Exacto | No (Beta) |
+| ¿Apostar o pasar? (`betOrCheck`) | Cuentas GTO | Igual en todos | Exacto (contado en 10 manos) | Desde 26/11 |
+| Defender proyectos (`semiBluff`) | Cuentas GTO | Igual en todos | Exacto (de 100 manos, solo river) | Desde 26/11 |
+| ¿Qué le queda? (`callDown`) | Cuentas GTO | Igual en todos | De 100 manos, redondeando cada calle (±1) | No (Beta) |
 
 Fuentes:
 

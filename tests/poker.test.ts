@@ -709,6 +709,13 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     for (let i = 0; i < 300; i++) {
       const d = makeBetOrCheck({ game: "holdem", deck: "long" }, rng)
       expect(d.fold + d.call + d.raise).toBeCloseTo(1)
+      // Contado de a 10, en enteros.
+      expect(d.folds + d.callWins + d.callLosses + d.raises).toBe(10)
+      expect(d.callWins + d.callLosses).toBeGreaterThan(0)
+      expect(d.evCheck * 10).toBe(d.checkWins * d.pot)
+      expect(d.evBet * 10).toBe(
+        d.folds * d.pot + d.callWins * (d.pot + d.bet) - (d.callLosses + d.raises) * d.bet,
+      )
       expect(d.eqCall).toBeLessThan(d.eqCheck)
       expect(d.pot % 100).toBe(0)
       expect(d.bet % 100).toBe(0)
@@ -725,18 +732,21 @@ describe("Cuentas de valor esperado (ideas de Daily Dose of GTO)", () => {
     expect(byFold).toBeLessThan(240)
   })
 
-  it("Defender contra proyectos: 4 opciones, la respuesta entre ellas y distinta de la defensa de siempre", async () => {
+  it("Defender contra proyectos: de 100 manos, en enteros y igual a la fórmula", async () => {
     const { makeSemiBluff } = await import("../lib/poker/ev")
     const rng = seededRng(12)
     for (let i = 0; i < 300; i++) {
-      const d = makeSemiBluff({ game: "omaha", deck: "short" }, rng, i % 2 ? "draw" : "showdown")
+      const d = makeSemiBluff({ game: "omaha", deck: "short" }, rng)
       expect(d.options).toHaveLength(4)
       expect(new Set(d.options).size).toBe(4)
       expect(d.options).toContain(d.answer)
-      expect(d.answer).toBe(Math.round(d.defend * 100))
-      expect(Math.abs(d.answer - Math.round(d.plainMdf * 100))).toBeGreaterThanOrEqual(4)
-      expect(d.street).toBe(d.type === "draw" ? "turn" : "river")
-      if (d.type === "showdown") expect(d.defend).toBeCloseTo((1 - d.checkShare) * d.plainMdf)
+      expect(d.street).toBe("river")
+      // La cuenta de cabeza da exacto lo mismo que la fórmula.
+      expect(d.plainCount).toBe(d.plainMdf * 100)
+      expect(d.answer).toBe((d.counted * d.plainCount) / 100)
+      expect(d.answer).toBeCloseTo(d.defend * 100)
+      expect(d.defend).toBeCloseTo((1 - d.checkShare) * d.plainMdf)
+      expect(Math.abs(d.answer - d.plainCount)).toBeGreaterThanOrEqual(4)
       expect(d.bet % 100).toBe(0)
     }
   })
@@ -799,11 +809,13 @@ describe("¿Qué le queda? (tres apuestas seguidas)", () => {
       expect(d.options).toHaveLength(4)
       expect(new Set(d.options).size).toBe(4)
       expect(d.options).toContain(d.answer)
-      expect(d.left).toBeCloseTo(callDownLeft(d.sizes.map((s) => s.frac)))
-      if (d.question === "left") expect(d.answer).toBe(Math.round(d.left * 100))
+      expect(d.left).toBe(d.chain[2])
+      // Redondeando calle por calle no se aleja más de 1 mano de la cuenta exacta.
+      expect(Math.abs(d.left - callDownLeft(d.sizes.map((s) => s.frac)) * 100)).toBeLessThanOrEqual(1)
+      if (d.question === "left") expect(d.answer).toBe(d.left)
       else {
-        expect(d.answer).toBe(Math.round((d.strong! / d.left) * 100))
-        expect(d.answer).toBeLessThanOrEqual(90)
+        expect(d.answer).toBe(d.strong)
+        expect(d.strong! * 2).toBeLessThanOrEqual(d.left)
       }
     }
   })

@@ -51,13 +51,20 @@ export interface BetOrCheckDrill {
   pot: number
   bet: number
   sizeName: string
-  /** Partes (0–1) de cómo responde el rival a tu apuesta: suman 1. */
+  /** Todo contado "de cada 10 veces", en enteros. Pasando: cuántas ganás el showdown. */
+  checkWins: number
+  /** Apostando: cuántas foldea, cuántas paga (y ganás / perdés) y cuántas te sube (y foldeás). Suman 10. */
+  folds: number
+  callWins: number
+  callLosses: number
+  raises: number
+  /** Lo mismo en partes (0–1), para las fórmulas. */
   fold: number
   call: number
   raise: number
-  /** Cuánto ganás si pasás (vas al showdown) y si te pagan la apuesta. */
   eqCheck: number
   eqCall: number
+  /** Promedio por mano (total de las 10 ÷ 10). */
   evCheck: number
   evBet: number
   shouldBet: boolean
@@ -70,39 +77,46 @@ export function evBet(d: Pick<BetOrCheckDrill, "pot" | "bet" | "fold" | "call" |
 
 /** Diferencia mínima entre las dos opciones (parte del pozo): más cerca sería adivinar. */
 export const BET_OR_CHECK_GAP = 0.05
-const BET_OR_CHECK_KEEP_CHECK = 0.25
+const BET_OR_CHECK_KEEP_CHECK = 0.14
 const BET_OR_CHECK_KEEP_OBVIOUS = 0.2
 
 export function makeBetOrCheck(_v: Variant, rng: Rng = Math.random): BetOrCheckDrill {
   // Hasta el pozo: es una decisión de valor fino, no de overbet.
   const sizes = GTO_SIZES.filter((s) => s.frac <= 1)
   let d: BetOrCheckDrill | null = null
-  for (let tries = 0; tries < 200; tries++) {
+  for (let tries = 0; tries < 400; tries++) {
     const size = pick(sizes, rng)
     const pot = (1 + Math.floor(rng() * 5)) * 1200
     const bet = pot * size.frac
-    const raise = stepInt(0, 25, 5, rng)
-    const fold = stepInt(10, 85 - raise, 5, rng)
-    const call = 100 - fold - raise
-    const eqCheck = stepInt(40, 85, 5, rng)
+    const raises = stepInt(0, 2, 1, rng)
+    const folds = stepInt(1, 9 - raises, 1, rng)
+    const calls = 10 - folds - raises
+    const checkWins = stepInt(4, 9, 1, rng)
     // Cuando te pagan estás peor que en el showdown sin apostar: pagan las mejores.
-    const eqCall = Math.max(5, eqCheck - stepInt(10, 35, 5, rng))
-    const base = { pot, bet, fold: fold / 100, call: call / 100, raise: raise / 100, eqCall: eqCall / 100 }
-    const ec = evCheck(pot, eqCheck / 100)
-    const eb = evBet(base)
+    const callWins = stepInt(0, calls, 1, rng)
+    if (callWins / calls > checkWins / 10 - 0.1) continue
+    const callLosses = calls - callWins
+    const base = { pot, bet, fold: folds / 10, call: calls / 10, raise: raises / 10, eqCall: callWins / calls }
+    const ec = (checkWins * pot) / 10
+    const eb = (folds * pot + callWins * (pot + bet) - callLosses * bet - raises * bet) / 10
     d = {
       kind: "betOrCheck",
       ...base,
       sizeName: size.name,
-      eqCheck: eqCheck / 100,
+      checkWins,
+      folds,
+      callWins,
+      callLosses,
+      raises,
+      eqCheck: checkWins / 10,
       evCheck: ec,
       evBet: eb,
       shouldBet: eb > ec,
     }
     // Y al menos $200: los botones muestran el promedio redondeado a $100.
     if (Math.abs(eb - ec) < Math.max(BET_OR_CHECK_GAP * pot, 200)) continue
-    // Al azar, pasar gana 8 de cada 10: se descartan la mayoría para que
-    // apostar y pasar salgan parecido (si no, se aprende a tocar siempre pasar).
+    // Al azar, pasar gana la mayoría: se descartan muchos para que apostar y
+    // pasar salgan parecido (si no, se aprende a tocar siempre pasar).
     if (!d.shouldBet && rng() > BET_OR_CHECK_KEEP_CHECK) continue
     // Y "apuesto si foldea mucho" no tiene que alcanzar: hay que hacer la cuenta.
     if (d.shouldBet === d.fold > 0.5 && rng() > BET_OR_CHECK_KEEP_OBVIOUS) continue
@@ -111,25 +125,28 @@ export function makeBetOrCheck(_v: Variant, rng: Rng = Math.random): BetOrCheckD
   return d!
 }
 
-// ── 2. Defensa contra bluffs con chances ───────────────────────────────────
-
-export type SemiBluffKind = "showdown" | "draw"
+// ── 2. Defensa contra bluffs con chances (river) ───────────────────────────
+// Contado "de tus 100 manos": contra un bluff puro pagás con la defensa mínima.
+// Si su bluff, pasando, le ganaría a algunas de tus manos en el showdown, esas
+// no sirven para pagar (pierden igual): la defensa se aplica sobre las demás.
 
 export interface SemiBluffDrill {
   kind: "semiBluff"
-  /** showdown: river, su bluff ganaría a veces si pasara. draw: turn, su bluff es un proyecto. */
-  type: SemiBluffKind
-  street: "turn" | "river"
+  street: "river"
   pot: number
   /** All-in del rival: no se puede subir. */
   bet: number
   sizeName: string
-  /** Parte del pozo que su bluff se llevaría pasando (s) y su chance de ganar si lo pagás (q). */
+  /** De tus 100 manos, a cuántas les ganaría su bluff si pasara. */
+  beaten: number
+  /** Parte del pozo que su bluff se llevaría pasando (beaten ÷ 100). */
   checkShare: number
-  drawEquity: number
-  /** Defensa mínima de siempre (para comparar). */
+  /** Defensa mínima de siempre (0–1) y en manos de 100. */
   plainMdf: number
-  /** Parte de tus manos con la que hay que seguir (0–1) y las opciones en % enteros. */
+  plainCount: number
+  /** Las que cuentan: 100 − beaten. */
+  counted: number
+  /** Parte de tus manos con la que hay que seguir (0–1); la respuesta en manos de 100. */
   defend: number
   options: number[]
   answer: number
@@ -139,39 +156,40 @@ export function semiBluffDefense(pot: number, bet: number, checkShare: number, d
   return ((1 - checkShare) * pot) / (pot + bet - drawEquity * (pot + 2 * bet))
 }
 
-export function makeSemiBluff(_v: Variant, rng: Rng = Math.random, type?: SemiBluffKind): SemiBluffDrill {
-  const t: SemiBluffKind = type ?? (rng() < 0.5 ? "showdown" : "draw")
+/** Tamaños con defensa mínima entera (75, 60, 50, 40 de 100): la cuenta sale de cabeza. */
+const SEMI_BLUFF_SIZES = GTO_SIZES.filter((s) => Number.isInteger(100 / (1 + s.frac)))
+
+export function makeSemiBluff(_v: Variant, rng: Rng = Math.random): SemiBluffDrill {
   let d: SemiBluffDrill | null = null
   for (let tries = 0; tries < 200; tries++) {
-    const size = pick(GTO_SIZES, rng)
+    const size = pick(SEMI_BLUFF_SIZES, rng)
     const pot = (1 + Math.floor(rng() * 5)) * 1200
     const bet = pot * size.frac
-    const s = stepInt(10, 30, 5, rng) / 100
-    // Con un proyecto, pasar le deja más o menos su chance de ganar ese pozo.
-    const checkShare = s
-    const drawEquity = t === "draw" ? s : 0
-    const defend = semiBluffDefense(pot, bet, checkShare, drawEquity)
+    const beaten = stepInt(10, 30, 5, rng)
+    const counted = 100 - beaten
     const plain = mdf(pot, bet)
-    const answer = Math.round(defend * 100)
-    const plainPct = Math.round(plain * 100)
-    // Confusiones típicas: la defensa de siempre y restarle la chance del bluff.
-    const related = [plainPct, Math.round((plain - s) * 100)]
+    const plainCount = Math.round(plain * 100)
+    // Que el resultado sea entero: si no, la cuenta no sale de cabeza.
+    if ((counted * plainCount) % 100 !== 0) continue
+    const answer = (counted * plainCount) / 100
+    // Confusiones típicas: la defensa de siempre y restarle las que pierden.
+    const related = [plainCount, plainCount - beaten]
     d = {
       kind: "semiBluff",
-      type: t,
-      street: t === "draw" ? "turn" : "river",
+      street: "river",
       pot,
       bet,
       sizeName: size.name,
-      checkShare,
-      drawEquity,
+      beaten,
+      checkShare: beaten / 100,
       plainMdf: plain,
-      defend,
+      plainCount,
+      counted,
+      defend: semiBluffDefense(pot, bet, beaten / 100, 0),
       options: percentOptions(answer, related, rng),
       answer,
     }
-    // Que se note la diferencia con la defensa de siempre (si no, la pregunta no enseña nada).
-    if (Math.abs(answer - plainPct) >= 4 && answer > 0 && answer < 100) break
+    break
   }
   return d!
 }
@@ -231,8 +249,10 @@ export function makeShove(_v: Variant, rng: Rng = Math.random): ShoveDrill {
 // ── 4. ¿Qué le queda? (tres apuestas seguidas) ──────────────────────────────
 // Lecciones 210 y 325: si apostás en flop, turn y river y el rival paga cada
 // vez justo su defensa mínima (P / (P + B) = 1 / (1 + tamaño)), lo que llega al
-// river es el producto de las tres. Las manos que nunca foldea (por ejemplo
-// los colores ya hechos) pasan a ser una parte mucho mayor de lo que queda.
+// river es lo que queda calle por calle. Contado "de 100 manos" y redondeando
+// en cada calle, para que se pueda seguir de cabeza. Las manos que nunca
+// foldea (por ejemplo los colores ya hechos) siguen siendo las mismas, así que
+// pasan a ser una parte mucho mayor de lo que queda.
 
 export type CallDownQuestion = "left" | "strong"
 
@@ -241,56 +261,78 @@ export interface CallDownDrill {
   question: CallDownQuestion
   /** Tamaño de cada apuesta como fracción del pozo, y cómo se dice. */
   sizes: { frac: number; name: string }[]
-  /** Parte de su rango que sigue en cada calle (0–1). */
+  /** Contra cada apuesta, con cuántas de cada 100 sigue (75, 67, 60, 50, 40). */
   defends: number[]
-  /** Parte de su rango del flop que llega al river pagando todo (0–1). */
+  /** Manos que siguen después del flop, del turn y del river (de 100 al flop). */
+  chain: number[]
+  /** Manos que llegan al river pagando todo (= chain[2]). */
   left: number
-  /** Solo en "strong": parte de su rango del flop que son manos que nunca foldea (0–1). */
+  /** Solo en "strong": de las 100 del flop, cuántas nunca foldean. */
   strong?: number
   options: number[]
   answer: number
 }
 
-/** Lo que queda de su rango si paga justo la defensa mínima en cada calle. */
+/** Con cuántas de cada 100 sigue contra una apuesta de ese tamaño: su defensa mínima. */
+export const defendPer100 = (frac: number) => Math.round(100 / (1 + frac))
+
+/** Lo que queda calle por calle, redondeando cada vez (de 100 al flop). */
+export function callDownChain(fracs: readonly number[]): number[] {
+  const out: number[] = []
+  let n = 100
+  for (const f of fracs) {
+    n = Math.round((n * defendPer100(f)) / 100)
+    out.push(n)
+  }
+  return out
+}
+
+/** Lo que queda de su rango si paga justo la defensa mínima en cada calle (exacto, 0–1). */
 export const callDownLeft = (fracs: readonly number[]) => fracs.reduce((a, f) => a / (1 + f), 1)
+
+/** Los tamaños de la tablita, del tercio al pozo y medio. */
+export const CALL_DOWN_SIZES = GTO_SIZES.filter((s) => s.frac <= 1.5 && s.frac !== 3 / 4)
 
 export const CALL_DOWN_QUESTIONS: CallDownQuestion[] = ["left", "strong"]
 
 export function makeCallDown(_v: Variant, rng: Rng = Math.random, question?: CallDownQuestion): CallDownDrill {
   const q = question ?? pick(CALL_DOWN_QUESTIONS, rng)
-  // Del tercio al pozo y medio: las tres apuestas de una mano normal.
-  const sizesPool = GTO_SIZES.filter((s) => s.frac <= 1.5)
   let d: CallDownDrill | null = null
   for (let tries = 0; tries < 200; tries++) {
-    const sizes = [pick(sizesPool, rng), pick(sizesPool, rng), pick(sizesPool, rng)]
-    const defends = sizes.map((s) => 1 / (1 + s.frac))
-    const left = callDownLeft(sizes.map((s) => s.frac))
-    const leftPct = Math.round(left * 100)
-    const lastPct = Math.round(defends[2] * 100)
+    const sizes = [pick(CALL_DOWN_SIZES, rng), pick(CALL_DOWN_SIZES, rng), pick(CALL_DOWN_SIZES, rng)]
+    const defends = sizes.map((s) => defendPer100(s.frac))
+    const chain = callDownChain(sizes.map((s) => s.frac))
+    const left = chain[2]
+    if (left < 8) continue
+    const base = { kind: "callDown" as const, question: q, sizes, defends, chain, left }
     if (q === "left") {
-      // Confusiones: quedarse con la última calle, o restar en vez de multiplicar.
-      const subtract = Math.round((1 - defends.reduce((a, m) => a + (1 - m), 0)) * 100)
-      d = { kind: "callDown", question: q, sizes, defends, left, options: percentOptions(leftPct, [lastPct, subtract], rng), answer: leftPct }
-      if (Math.abs(leftPct - lastPct) >= 4) break
-      continue
+      // Confusiones: quedarse con la última calle, o restar en vez de ir calle por calle.
+      const last = defends[2]
+      const subtract = 100 - defends.reduce((a, m) => a + (100 - m), 0)
+      if (Math.abs(left - last) < 4) continue
+      d = { ...base, options: percentOptions(left, [last, subtract], rng), answer: left }
+      break
     }
-    // "strong": entre 3% y 15% de su rango del flop que nunca foldea, y que no pase del 90% de lo que queda.
-    const strongPct = pick([3, 4, 5, 6, 8, 10, 12, 15], rng)
-    const answer = Math.round((strongPct / 100 / left) * 100)
-    if (answer > 90 || answer < 10) continue
-    // Confusiones: el porcentaje del flop tal cual, o dividir solo por la última calle.
-    const related = [strongPct, Math.round((strongPct / 100 / defends[2]) * 100)]
-    d = {
-      kind: "callDown",
-      question: q,
-      sizes,
-      defends,
-      left,
-      strong: strongPct / 100,
-      options: percentOptions(answer, related, rng),
-      answer,
-    }
+    // "strong": las que nunca foldean siguen siendo las mismas.
+    const strong = pick([3, 4, 5, 6, 8, 10, 12], rng)
+    if (strong * 2 > left) continue
+    // Confusión: achicarlas como al resto.
+    const shrunk = Math.round((strong * left) / 100)
+    d = { ...base, strong, options: countOptions(strong, [shrunk], left, rng), answer: strong }
     break
   }
   return d!
+}
+
+/** 4 cantidades distintas entre 0 y `max`, con la respuesta y las confusiones típicas. */
+function countOptions(answer: number, related: number[], max: number, rng: Rng): number[] {
+  const opts = [answer]
+  const ok = (x: number) => x >= 0 && x <= max && !opts.includes(x)
+  for (const r of related) if (opts.length < 4 && ok(r)) opts.push(r)
+  const spread = [-3, -2, -1, 1, 2, 3, 4, 6]
+  for (let tries = 0; opts.length < 4 && tries < 100; tries++) {
+    const x = answer + pick(spread, rng)
+    if (ok(x)) opts.push(x)
+  }
+  return opts.sort((a, b) => a - b)
 }

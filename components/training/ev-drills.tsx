@@ -6,6 +6,8 @@ import {
   makeCallDown,
   makeSemiBluff,
   makeShove,
+  CALL_DOWN_SIZES,
+  defendPer100,
   type BetOrCheckDrill as BetOrCheckData,
   type CallDownDrill as CallDownData,
   type SemiBluffDrill as SemiBluffData,
@@ -29,6 +31,10 @@ function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
   )
 }
 
+/** Plata con signo: +$1.200 / −$800. */
+const signed = (n: number) => (n < 0 ? `−${pesos(-n)}` : `+${pesos(n)}`)
+const veces = (n: number) => `${n} ${n === 1 ? "vez" : "veces"}`
+
 // ── 1. ¿Apostar o pasar? ────────────────────────────────────────────────────
 
 export function BetOrCheckDrill(props: DrillProps<BetOrCheckData>) {
@@ -37,8 +43,9 @@ export function BetOrCheckDrill(props: DrillProps<BetOrCheckData>) {
 
   if (!drill) return null
   const answered = verdict !== null
-  const { pot, bet, fold, call, raise, eqCheck, eqCall, evCheck, evBet } = drill
-  const winCalled = eqCall * (pot + 2 * bet) - bet
+  const { pot, bet, checkWins, folds, callWins, callLosses, raises, evCheck, evBet } = drill
+  const totalCheck = evCheck * 10
+  const totalBet = evBet * 10
 
   return (
     <DrillShell
@@ -54,73 +61,78 @@ export function BetOrCheckDrill(props: DrillProps<BetOrCheckData>) {
         <div className="space-y-3">
           <div className="rounded-lg bg-muted/50 p-3 space-y-1">
             <Row label="Pozo en el river" value={pesos(pot)} />
-            <p className="text-xs text-muted-foreground">El rival pasó y hablás vos. Ya no salen más cartas.</p>
-          </div>
-          <div className="rounded-lg border p-3 space-y-1">
-            <div className="font-semibold">Si pasás</div>
-            <p>
-              Se ven las cartas y ganás el <b>{pct(eqCheck, 0)}</b> de las veces.
+            <p className="text-xs text-muted-foreground">
+              El rival pasó y hablás vos. Ya no salen más cartas. Lo que está en el pozo ya no es de nadie: perderlo
+              cuenta $0.
             </p>
           </div>
-          <div className="rounded-lg border p-3 space-y-1">
+          <div className="rounded-lg border p-3 space-y-1.5">
+            <div className="font-semibold">Si pasás, de cada 10 veces:</div>
+            <Row label={`${veces(checkWins)} ganás el pozo`} value={`+${pesos(pot)}`} />
+            <Row label={`${veces(10 - checkWins)} perdés`} value={pesos(0)} />
+          </div>
+          <div className="rounded-lg border p-3 space-y-1.5">
             <div className="font-semibold">
-              Si apostás {pesos(bet)} <span className="font-normal text-muted-foreground">({drill.sizeName})</span>
+              Si apostás {pesos(bet)} <span className="font-normal text-muted-foreground">({drill.sizeName})</span>, de
+              cada 10 veces:
             </div>
-            <Row label="Hace fold" value={pct(fold, 0)} />
-            <Row
-              label={
-                <>
-                  Paga <span className="text-muted-foreground">(y ganás el {pct(eqCall, 0)})</span>
-                </>
-              }
-              value={pct(call, 0)}
-            />
-            {raise > 0 && (
+            <Row label={`${veces(folds)} foldea`} value={`+${pesos(pot)}`} />
+            {callWins > 0 && (
               <Row
                 label={
                   <>
-                    Te sube <span className="text-muted-foreground">(y foldeás)</span>
+                    {veces(callWins)} paga y ganás <span className="text-muted-foreground">(pozo + su apuesta)</span>
                   </>
                 }
-                value={pct(raise, 0)}
+                value={`+${pesos(pot + bet)}`}
+              />
+            )}
+            {callLosses > 0 && <Row label={`${veces(callLosses)} paga y perdés`} value={`−${pesos(bet)}`} />}
+            {raises > 0 && (
+              <Row
+                label={
+                  <>
+                    {veces(raises)} te sube <span className="text-muted-foreground">(y foldeás)</span>
+                  </>
+                }
+                value={`−${pesos(bet)}`}
               />
             )}
           </div>
+          <p>Sumando las 10 veces, ¿qué da más?</p>
         </div>
       }
       headline={
         <Stats
           items={[
-            { label: "pasando ganás", value: avg(evCheck), tone: drill.shouldBet ? "neutral" : "good" },
-            { label: "apostando ganás", value: avg(evBet), tone: drill.shouldBet ? "good" : "neutral" },
+            { label: "pasando, en 10", value: signed(totalCheck), tone: drill.shouldBet ? "neutral" : "good" },
+            { label: "apostando, en 10", value: signed(totalBet), tone: drill.shouldBet ? "good" : "neutral" },
           ]}
         />
       }
       feedback={
         <div className="space-y-2">
-          <p>
-            <b>Pasando:</b> {pct(eqCheck, 0)} × {pesos(pot)} = <b>{avg(evCheck)}</b> en promedio.
-          </p>
-          <p>
-            <b>Apostando</b>, sumá cada respuesta del rival por lo que pasa:
-          </p>
-          <ul className="list-disc space-y-0.5 pl-5">
-            <li>
-              Fold ({pct(fold, 0)}): ganás el pozo, {pesos(pot)} <span className="whitespace-nowrap">→ {avg(fold * pot)}</span>
-            </li>
-            <li>
-              Call ({pct(call, 0)}): ganás {pesos(pot + bet)} el {pct(eqCall, 0)} y perdés {pesos(bet)} el resto ={" "}
-              {avg(winCalled)} <span className="whitespace-nowrap">→ {avg(call * winCalled)}</span>
-            </li>
-            {raise > 0 && (
-              <li>
-                Sube ({pct(raise, 0)}): perdés tu apuesta, <span className="whitespace-nowrap">−{pesos(bet)}</span> <span className="whitespace-nowrap">→ {avg(-raise * bet)}</span>
-              </li>
-            )}
-          </ul>
-          <p>
-            Total: <b>{avg(evBet)}</b>. {drill.shouldBet ? "Apostar" : "Pasar"} gana {avg(Math.abs(evBet - evCheck))} más
-            por mano.
+          <p>Sumá lo que pasa en las 10 veces de cada opción:</p>
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+            <div className="font-semibold">Pasando</div>
+            <Row label={`${checkWins} × +${pesos(pot)}`} value={signed(checkWins * pot)} />
+            <div className="border-t pt-1">
+              <Row label="Total" value={signed(totalCheck)} />
+            </div>
+          </div>
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+            <div className="font-semibold">Apostando</div>
+            <Row label={`${folds} × +${pesos(pot)}`} value={signed(folds * pot)} />
+            {callWins > 0 && <Row label={`${callWins} × +${pesos(pot + bet)}`} value={signed(callWins * (pot + bet))} />}
+            {callLosses > 0 && <Row label={`${callLosses} × −${pesos(bet)}`} value={signed(-callLosses * bet)} />}
+            {raises > 0 && <Row label={`${raises} × −${pesos(bet)}`} value={signed(-raises * bet)} />}
+            <div className="border-t pt-1">
+              <Row label="Total" value={signed(totalBet)} />
+            </div>
+          </div>
+          <p className="font-medium">
+            {drill.shouldBet ? "Apostar" : "Pasar"} da {pesos(Math.abs(totalBet - totalCheck))} más cada 10 manos (
+            {avg(Math.abs(evBet - evCheck))} por mano).
           </p>
           <p className="text-muted-foreground">
             Apostar con una mano que ya gana seguido solo conviene si te pagan peores. Si las que pagan te ganan y las
@@ -148,7 +160,7 @@ export function BetOrCheckDrill(props: DrillProps<BetOrCheckData>) {
   )
 }
 
-// ── 2. Defender contra proyectos ──────────────────────────────────────────
+// ── 2. Defender contra proyectos (bluffs con chances, en el river) ─────────
 
 export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
   const { drill, verdict, score, answer, next, inChallenge } = useDrill("semiBluff", props, makeSemiBluff)
@@ -156,8 +168,7 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
 
   if (!drill) return null
   const answered = verdict !== null
-  const { pot, bet, checkShare: s, drawEquity: q, defend, plainMdf, type } = drill
-  const draw = type === "draw"
+  const { pot, bet, beaten, counted, plainCount } = drill
 
   return (
     <DrillShell
@@ -172,27 +183,24 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
       question={
         <div className="space-y-3">
           <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-            <Row label={draw ? "Pozo en el turn" : "Pozo en el river"} value={pesos(pot)} />
+            <Row label="Pozo en el river" value={pesos(pot)} />
             <Row label="El rival va all-in por" value={pesos(bet)} />
             <p className="text-xs text-muted-foreground pt-1">
-              Es {drill.sizeName}. {draw ? "Falta el river." : "Ya no salen más cartas."} No podés subir: pagás o foldeás.
+              Es {drill.sizeName}. Ya no salen más cartas. No podés subir: pagás o foldeás.
+            </p>
+          </div>
+          <div className="rounded-lg border p-3 space-y-1.5">
+            <p>
+              Contra un bluff de aire pagarías con <b>{plainCount}</b> de tus 100 manos (su defensa mínima: pozo ÷ (pozo
+              + apuesta)).
+            </p>
+            <p>
+              Pero sus bluffs no son aire: si en vez de apostar pasaran, en el showdown le ganarían a <b>{beaten}</b> de tus
+              100 manos.
             </p>
           </div>
           <p>
-            {draw ? (
-              <>
-                Sus bluffs son <b>proyectos</b>: si le pagás, igual ganan el <b>{pct(q, 0)}</b> de las veces con el river. Y
-                si en vez de apostar pasaran, se llevarían en promedio el {pct(s, 0)} del pozo.
-              </>
-            ) : (
-              <>
-                Sus bluffs no son aire: si en vez de apostar pasaran, ganarían en el showdown el <b>{pct(s, 0)}</b> de las
-                veces. Si le pagás, pierden siempre.
-              </>
-            )}
-          </p>
-          <p>
-            Para que a esos bluffs les dé lo mismo apostar que pasar, ¿con qué parte de tus manos tenés que <b>pagar</b>?
+            De tus 100 manos, ¿con cuántas tenés que <b>pagar</b> para que a sus bluffs les dé lo mismo apostar que pasar?
           </p>
         </div>
       }
@@ -200,15 +208,15 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
         <div className="space-y-3">
           <Stats
             items={[
-              { label: "defensa de siempre", value: pct(plainMdf, 0) },
-              { label: "acá alcanza con", value: pct(defend, 0), tone: "good" },
+              { label: "contra aire", value: `${plainCount} de 100` },
+              { label: "acá alcanza con", value: `${drill.answer} de 100`, tone: "good" },
             ]}
           />
           <Split
-            left={defend}
-            right={1 - defend}
-            leftLabel={`Pagás ${pct(defend, 0)}`}
-            rightLabel={`Foldeás ${pct(1 - defend, 0)}`}
+            left={drill.answer / 100}
+            right={1 - drill.answer / 100}
+            leftLabel={`Pagás con ${drill.answer}`}
+            rightLabel={`Foldeás ${100 - drill.answer}`}
             leftClass="bg-emerald-500"
             rightClass="bg-rose-500/70"
           />
@@ -217,25 +225,16 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
       feedback={
         <div className="space-y-2">
           <p>
-            Contra un bluff puro tendrías que pagar pozo ÷ (pozo + apuesta) = {pesos(pot)} ÷ {pesos(pot + bet)} ={" "}
-            {pct(plainMdf, 0)}. Pero acá el rival no compara apostar contra perder todo: lo compara contra pasar, que ya le
-            deja {pct(s, 0)} × {pesos(pot)} = {avg(s * pot)}.
+            Las {beaten} manos a las que su bluff les gana igual no sirven para pagar: si pagás, perdés lo mismo que si
+            hubiera pasado. Cuentan las otras <b>{counted}</b>.
           </p>
-          {draw ? (
-            <p>
-              Y cuando lo pagás no pierde siempre: arriesga menos que un bluff puro. Igualando apostar con pasar: pagar ={" "}
-              (1 − {pct(s, 0)}) × {pesos(pot)} ÷ ({pesos(pot + bet)} − {pct(q, 0)} × {pesos(pot + 2 * bet)}) ={" "}
-              <b>{pct(defend, 0)}</b>.
-            </p>
-          ) : (
-            <p>
-              Solo cuentan las manos que le ganan a su bluff: el {pct(1 - s, 0)} de tus manos. Defendé la parte de
-              siempre de esas: {pct(1 - s, 0)} × {pct(plainMdf, 0)} = <b>{pct(defend, 0)}</b>.
-            </p>
-          )}
+          <p>
+            Defendé la misma parte que contra aire, pero de esas {counted}: {counted} × {plainCount} ÷ 100 ={" "}
+            <b>{drill.answer}</b> de 100.
+          </p>
           <p className="text-muted-foreground">
-            Por eso contra bluffs con chances se puede pagar menos que la defensa mínima. Vale igual en Hold&apos;em, Omaha
-            y Manhattan.
+            Por eso contra bluffs con chances (los que ganan a veces sin que les paguen, o los proyectos) se puede pagar
+            menos que la defensa mínima. Vale igual en Hold&apos;em, Omaha y Manhattan.
           </p>
           <MdfVsPotOdds />
         </div>
@@ -252,7 +251,7 @@ export function SemiBluffDrill(props: DrillProps<SemiBluffData>) {
               answer(o === drill.answer ? "right" : "wrong")
             }}
           >
-            {o}%
+            {o}
           </AnswerButton>
         ))}
       </div>
@@ -271,8 +270,6 @@ export function ShoveDrill(props: DrillProps<ShoveData>) {
   const { pot, stack, calls, wins, total } = drill
   const folds = 10 - calls
   const losses = calls - wins
-  const signed = (n: number) => (n < 0 ? `−${pesos(-n)}` : `+${pesos(n)}`)
-  const veces = (n: number) => `${n} ${n === 1 ? "vez" : "veces"}`
 
   return (
     <DrillShell
@@ -370,7 +367,7 @@ export function CallDownDrill(props: DrillProps<CallDownData>) {
 
   if (!drill) return null
   const answered = verdict !== null
-  const { sizes, defends, left, question: q } = drill
+  const { sizes, defends, chain, left, question: q } = drill
   const strong = drill.strong ?? 0
 
   return (
@@ -385,23 +382,31 @@ export function CallDownDrill(props: DrillProps<CallDownData>) {
       }}
       question={
         <div className="space-y-3">
+          <p>
+            El rival llega al flop con <b>100 manos</b>. Apostás en las tres calles y él paga las tres, sin subir nunca:
+          </p>
           <div className="rounded-lg bg-muted/50 p-3 space-y-1">
             {sizes.map((s, i) => (
               <Row key={i} label={`${STREET_LABELS[i]}: apostás`} value={s.name} />
             ))}
-            <p className="text-xs text-muted-foreground pt-1">
-              El rival paga las tres y nunca sube. Supongamos que en cada calle sigue con lo justo: su defensa mínima.
-            </p>
+          </div>
+          <div className="rounded-lg border p-3 space-y-1">
+            <div className="text-xs text-muted-foreground">
+              En cada calle sigue con lo justo (su defensa mínima). Contra cada tamaño, de cada 100 manos sigue con:
+            </div>
+            {CALL_DOWN_SIZES.map((s) => (
+              <Row key={s.name} label={s.name} value={defendPer100(s.frac)} />
+            ))}
           </div>
           <p>
             {q === "left" ? (
               <>
-                De todas las manos con las que llegó al flop, ¿qué parte <b>sigue en el river</b>?
+                Calle por calle, ¿con <b>cuántas manos</b> llega al river?
               </>
             ) : (
               <>
-                En el flop, el <b>{pct(strong, 0)}</b> de sus manos ya eran muy fuertes (por ejemplo, color hecho) y esas
-                nunca foldean. De lo que llega al river, ¿qué parte son <b>esas manos</b>?
+                Llega al river con <b>{left}</b> manos. De las 100 del flop, <b>{strong}</b> ya eran color y esas nunca
+                foldean. De las {left} que llegan, ¿cuántas son color?
               </>
             )}
           </p>
@@ -411,16 +416,16 @@ export function CallDownDrill(props: DrillProps<CallDownData>) {
         <div className="space-y-3">
           <Stats
             items={[
-              { label: "llega al river", value: pct(left, 0), tone: q === "left" ? "good" : "neutral" },
-              ...(q === "strong" ? [{ label: "son manos fuertes", value: pct(strong / left, 0), tone: "good" as const }] : []),
+              { label: "llegan al river", value: `${left} de 100`, tone: q === "left" ? "good" : "neutral" },
+              ...(q === "strong" ? [{ label: "son color", value: `${strong} de ${left}`, tone: "good" as const }] : []),
             ]}
           />
           {q === "strong" && (
             <Split
               left={strong / left}
               right={1 - strong / left}
-              leftLabel={`Fuertes ${pct(strong / left, 0)}`}
-              rightLabel={`Resto ${pct(1 - strong / left, 0)}`}
+              leftLabel={`Color ${strong}`}
+              rightLabel={`Resto ${left - strong}`}
               leftClass="bg-rose-500/80"
               rightClass="bg-emerald-500"
             />
@@ -429,23 +434,24 @@ export function CallDownDrill(props: DrillProps<CallDownData>) {
       }
       feedback={
         <div className="space-y-2">
-          <p>Contra cada apuesta, la defensa mínima es pozo ÷ (pozo + apuesta) = 1 ÷ (1 + tamaño):</p>
-          <ul className="list-disc space-y-0.5 pl-5">
+          <p>Seguí las manos calle por calle:</p>
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+            <Row label="Llega al flop" value="100" />
             {sizes.map((s, i) => (
-              <li key={i}>
-                {STREET_LABELS[i]}, {s.name}: sigue con el <b>{pct(defends[i], 0)}</b>
-              </li>
+              <Row
+                key={i}
+                label={`${STREET_LABELS[i]} (${s.name}): ${i === 0 ? 100 : chain[i - 1]} × ${defends[i]} ÷ 100`}
+                value={chain[i]}
+              />
             ))}
-          </ul>
-          <p>
-            Como cada calle se aplica sobre lo que quedó de la anterior, se multiplican: {defends.map((m) => pct(m, 0)).join(" × ")}{" "}
-            = <b>{pct(left, 0)}</b> de su rango del flop.
-          </p>
+          </div>
           {q === "strong" && (
             <p>
-              Las manos fuertes no se van nunca: siguen siendo el {pct(strong, 0)} del rango del flop, pero ahora sobre un
-              total de {pct(left, 0)}. {pct(strong, 0)} ÷ {pct(left, 0)} = <b>{pct(strong / left, 0)}</b> de lo que paga
-              todo.
+              Las {strong} de color no se van nunca: siguen siendo {strong}, pero ahora de un total de {left}. O sea,{" "}
+              <b>
+                {strong} de cada {left}
+              </b>{" "}
+              (el {pct(strong / left, 0)} de lo que paga todo).
             </p>
           )}
           <p className="text-muted-foreground">
@@ -467,7 +473,7 @@ export function CallDownDrill(props: DrillProps<CallDownData>) {
               answer(o === drill.answer ? "right" : "wrong")
             }}
           >
-            {o}%
+            {o}
           </AnswerButton>
         ))}
       </div>

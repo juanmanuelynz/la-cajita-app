@@ -149,13 +149,13 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   preflop:
     "Cuanto más tarde hablás, con más manos podés subir: hablando 1º se juega el 13% de las manos y repartiendo, el 62%.",
   betOrCheck:
-    "Antes de apostar, sumá lo que ganás cuando foldea, lo que ganás o perdés cuando paga y lo que perdés cuando sube. Si pasando ya ganás seguido, apostar solo conviene si te pagan peores.",
+    "Contá 10 veces de cada opción: pasando sumá los pozos que ganás; apostando sumá cuando foldea y cuando paga y ganás, y restá cuando paga y perdés o te sube. Gana la que da más.",
   semiBluff:
-    "Si el bluff del rival igual tiene chances (gana a veces en el showdown o es un proyecto), no hace falta defender tanto como la defensa mínima. Y si sabés que farolea poco, olvidate de la defensa mínima: mirá tus pot odds.",
+    "Las manos a las que su bluff les gana igual no sirven para pagar. Sacalas de tus 100 y defendé la parte de siempre de las que quedan. Y si sabés que farolea poco, olvidate de la defensa mínima: mirá tus pot odds.",
   shove:
     "Contá 10 all-ins: sumá las luces de las veces que foldean todos y lo que ganás cuando te pagan, y restá lo que perdés. Si da positivo, all-in; si no, fold (que da $0).",
   callDown:
-    "Multiplicá la defensa de cada calle: si paga justo lo necesario contra tres apuestas, al river llega poco de su rango. Y las manos que nunca foldea pasan a ser casi todo lo que queda.",
+    "Seguí sus 100 manos calle por calle: en cada una sigue con su defensa mínima de las que le quedaban. Al river llegan pocas, y las que nunca foldean siguen siendo las mismas: pasan a ser buena parte de lo que queda.",
   preflopVs:
     "Contra una subida de los primeros lugares se paga y se resube con poco; contra el que reparte o la ciega chica, con mucho más. Y con algunos ases y reyes se paga a propósito, para disimular.",
 }
