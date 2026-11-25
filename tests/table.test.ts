@@ -71,6 +71,12 @@ describe("Motor de la mano: arranque", () => {
     ).toThrow()
   })
 
+  it("luz y cajita en múltiplos de la ficha", () => {
+    expect(() => createTable(cfg({ luz: 150 }), names(3))).toThrow()
+    expect(() => createTable(cfg({ cajita: 2050 }), names(3))).toThrow()
+    expect(() => createTable(cfg({ luz: 200, cajita: 5000 }), names(3))).not.toThrow()
+  })
+
   it("en rotación cambia de juego cada vuelta completa de la mesa", () => {
     const t = createTable(cfg({ variants: [{ game: "holdem", deck: "long" }, { game: "omaha", deck: "long" }] }), names(3))
     expect([1, 2, 3, 4, 5, 6, 7].map((n) => variantForHand(t, n).game)).toEqual([

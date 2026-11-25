@@ -75,14 +75,20 @@ Las mismas que la mesa online:
 
 ### Bots
 
-- **Hold'em Long, antes del flop:** siguen los rangos de PokerStrategy que ya
-  usa Entrenar (abrir, pagar o resubir según la posición).
-- **Después del flop, y en Omaha, Manhattan y Short:** comparan la equity de su
-  mano contra los que siguen en la mano con lo que tienen que pagar (pot odds),
-  y apuestan cuando están adelante. Les sumamos un poco de azar (algún bluff,
-  algún slowplay) para que no sean 100% previsibles.
-- Fuera de Hold'em Long es una regla nuestra, sin fuente: los bots llevan la
-  etiqueta **Beta**, como el resto de Entrenar cuando no hay fuente.
+- **Deciden igual en todos los juegos y calles, como "Con luz":** simulan su
+  equity contra los que siguen en la mano (con cartas al azar: no ven las de
+  nadie) y la comparan con lo que tienen que pagar (pot odds). Apuestan cuando
+  están bastante por encima de lo que les toca, pagan si les alcanza y se
+  retiran si no. Nunca se retiran si pueden pasar gratis.
+- **Los rangos de PokerStrategy no se usan:** son para mesas con ciegas y acá
+  se juega con luz (decidido el 25/11/2026). Toda la lógica es nuestra, sin
+  fuente: los bots llevan la etiqueta **Beta**.
+- **Para no ser previsibles:** farolean a veces (10%, solo contra 1 o 2), juegan
+  lento una mano muy buena (15%) y el tamaño de la apuesta varía.
+- Piden otra cajita solo cuando se quedan sin fichas.
+- **Prueba de sentido común** (300 manos por juego, 120 simulaciones por
+  decisión): en Hold'em, Omaha y Manhattan Short les ganan plata a un jugador
+  que decide al azar y a uno que paga todo. Cada decisión tarda 10–25 ms.
 - **Son bots simples:** juegan razonable pero se dejan leer. Un bot fuerte es
   otro proyecto.
 
@@ -102,10 +108,10 @@ En este orden. Cada paso se puede probar solo antes de seguir.
    cajitas. Tests con manos armadas a mano: pozos laterales con tres all-in
    distintos, pozos repartidos, subida mínima, Short deck y pedir cajita.
    Es el mismo motor que usaría la mesa online si se retoma.
-2. **Bots** (`lib/poker/bot.ts`, nuevo, con tests). Decisión a partir del estado
-   de la mano y las cartas del bot. Tests de sentido común: nunca se retira si
-   puede pasar gratis, siempre sigue con la mejor mano posible, en Hold'em Long
-   abre según el rango de PokerStrategy.
+2. ✅ **Bots** (`lib/poker/bot.ts`, tests en `tests/bot.test.ts`; hecho el
+   25/11/2026). Tests de sentido común: nunca se retira si puede pasar gratis,
+   nunca se retira con la mejor mano posible, sus apuestas siempre son
+   válidas y una mesa solo de bots juega manos enteras sin perder fichas.
 3. **Pantalla** (`components/training/bot-table.tsx`, nuevo): armar la mesa, la
    mesa ovalada con `RingTable` y las cartas de Entrenar, pozo, fichas de cada
    uno, quién habla, tus botones (pasar, pagar, subir con montos rápidos tipo

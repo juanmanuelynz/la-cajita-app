@@ -155,6 +155,9 @@ export function createTable(config: TableConfig, players: { id: string; name: st
     if (players.length > maxSeats(v, config.burn)) throw new Error(`No entran ${players.length} jugadores en ${GAMES[v.game].name} ${v.deck}`)
   }
   if (config.variants.length === 0) throw new Error("Falta el juego")
+  // Todo en múltiplos de la ficha: así cualquier apuesta, pozo y all-in también lo es.
+  if (config.luz <= 0 || config.luz % config.chip !== 0) throw new Error(`La luz va de a ${config.chip}`)
+  if (config.cajita <= 0 || config.cajita % config.chip !== 0) throw new Error(`La cajita va de a ${config.chip}`)
   return {
     config: clone(config),
     seats: players.map((p) => ({ id: p.id, name: p.name, stack: config.cajita, cajitas: 1, pending: 0 })),
