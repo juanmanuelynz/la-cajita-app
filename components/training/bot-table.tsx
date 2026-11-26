@@ -6,7 +6,7 @@
 // Es de práctica: no se anota en ningún lado.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { Crown, FlaskConical, Lock, Minus, Plus } from "lucide-react"
+import { Bot, Crown, Lock, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { addHandToReads, botAct, botLevelOf, botWantsCajita, EMPTY_READS, makeBots, NANO_NAME, type BotDecision, type PlayerReads } from "@/lib/poker/bot"
@@ -195,7 +195,7 @@ function Field({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-/** Si los bots usan rangos de PokerStrategy o nuestra cuenta (Beta). */
+/** Si los bots usan rangos de PokerStrategy o nuestra cuenta. */
 function usesRanges(structure: Structure, variants: Variant[], players: number) {
   return (
     structure === "ciegas" &&
@@ -209,10 +209,10 @@ function BotsNote({ structure, variants, players }: { structure: Structure; vari
   const ranges = usesRanges(structure, variants, players)
   return (
     <p className="flex gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
-      <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>
-        <b className="text-foreground">Bots Beta:</b> deciden con su chance de ganar contra lo que tienen que pagar,
-        teniendo en cuenta lo que apostaste (cuenta nuestra, sin fuente).
+        <b className="text-foreground">Cómo juegan:</b> deciden con su chance de ganar contra lo que tienen que pagar,
+        teniendo en cuenta lo que apostaste (cuenta nuestra, medida en simulaciones).
         {ranges
           ? " En Hold'em Long, antes del flop, siguen los rangos de PokerStrategy."
           : structure === "ciegas"
@@ -681,7 +681,7 @@ export function BotTable({
           Mano {h.number} · {variantLabel(h.variant)} · {table.config.structure === "luz" ? `Luz ${pesos(table.config.luz)}` : `Ciegas ${pesos(table.config.blinds.small)}/${pesos(table.config.blinds.big)}`}
         </span>
         <span className="flex items-center gap-1">
-          <FlaskConical className="h-3 w-3" /> Bots {tableLevelLabel(table)} · Beta
+          <Bot className="h-3 w-3" /> Bots {tableLevelLabel(table)}
         </span>
       </div>
 
@@ -783,7 +783,6 @@ export function BotTable({
                   <span className="w-16 shrink-0 text-muted-foreground">{STREET_NAMES[th.street]}</span>
                   <span>
                     <b>{table.seats[th.seat].name}</b> · {th.decision.reason}
-                    {th.decision.source === "equity" && <span className="text-muted-foreground"> (Beta)</span>}
                   </span>
                 </li>
               ))}

@@ -3,7 +3,8 @@
 // En general deciden como el ejercicio "Con luz": simulan su chance de ganar
 // (equity) contra los que siguen en la mano, con cartas al azar (no ven las de
 // nadie), y la comparan con lo que tienen que pagar (pot odds). Es una regla
-// nuestra, sin fuente: en la pantalla van con la etiqueta Beta.
+// nuestra, sin fuente, medida con simulaciones (ver más abajo). Desde el
+// 26/11/2026 ya no llevan la etiqueta Beta en la pantalla (se pidió sacarla).
 //
 // Excepción: con ciegas, en Hold'em Long y de 4 a 6 jugadores, antes del flop
 // siguen los rangos de PokerStrategy que ya usa Entrenar (preflop.ts y
@@ -17,8 +18,8 @@
 //
 // Niveles (BOT_PROFILES): fácil (paga todo, casi no bluffea), media, difícil
 // (lee rangos, apuesta con proyectos, usa la posición) y Nano, el final boss,
-// que además se adapta a cómo jugás vos en la sesión. Todo eso es nuestro
-// (Beta); cuánto le gana cada nivel al otro está medido en
+// que además se adapta a cómo jugás vos en la sesión. Todo eso es nuestro;
+// cuánto le gana cada nivel al otro está medido en
 // scripts/lab/bot-levels.ts (resultados en docs/plan-jugar-contra-bots.md).
 
 import { remainingDeck, type Card, type Rng } from "./cards"
@@ -91,7 +92,7 @@ export function estimateEquity(
 // de cada mano contra 2 al azar (la misma tabla del "¿Abrís?" Beta); del flop
 // en adelante, con la mano hecha que arma con la mesa. En Omaha y Manhattan no
 // hay tabla antes del flop: ahí no se achica (se usa la cuenta de siempre).
-// Los factores por acción (KEEP) son nuestros, sin fuente: van como Beta.
+// Los factores por acción (KEEP) son nuestros, sin fuente (medidos en el estudio de niveles).
 
 /** Parte de las manos que le queda a un rival después de cada acción (antes de escalar por `reads`). */
 export const KEEP = {
@@ -396,7 +397,7 @@ export interface BotDecision {
   action: Action
   /** Equity simulada (NaN si decidió por rango). */
   equity: number
-  /** De dónde sale la decisión: rangos de PokerStrategy o nuestra cuenta (Beta). */
+  /** De dónde sale la decisión: rangos de PokerStrategy o nuestra cuenta. */
   source: "pokerstrategy" | "equity"
   /** Explicación corta, para mostrar o para los tests. */
   reason: string

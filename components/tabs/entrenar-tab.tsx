@@ -175,9 +175,6 @@ function DrillMenu({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 font-semibold">
               Jugar contra bots
-              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 text-[9px] font-black uppercase leading-4 text-muted-foreground">
-                <FlaskConical className="h-2.5 w-2.5" /> Beta
-              </span>
             </div>
             <div className="text-xs text-muted-foreground">Manos completas, con luz o ciegas. No se anota.</div>
           </div>

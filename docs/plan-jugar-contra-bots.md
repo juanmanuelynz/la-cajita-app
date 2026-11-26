@@ -92,8 +92,10 @@ Las mismas que la mesa online:
   Con 4 o 5 se sacan las primeras posiciones, como en Entrenar (adaptación
   nuestra). Los tamaños para resubir (3× la subida, 2,5× la resubida) son
   nuestros. Con luz los rangos no se usan: son para mesas con ciegas.
-- Todo lo demás es lógica nuestra, sin fuente: en esos casos los bots llevan la
-  etiqueta **Beta**. Cada decisión dice de dónde sale (`source`).
+- Todo lo demás es lógica nuestra, sin fuente, medida con simulaciones (ver
+  "Cuánto le gana cada nivel al otro"). Cada decisión dice de dónde sale
+  (`source`). Hasta el 26/11/2026 los bots llevaban la etiqueta **Beta**; se
+  sacó a pedido, con los niveles ya medidos.
 - **Leen lo que apostás** (26/11/2026): quien apuesta o sube no tiene una mano
   cualquiera. Para cada rival, el bot achica sus manos posibles según lo que
   hizo en la mano (`keepFor`: subir antes del flop deja el 35% de arriba,
@@ -104,7 +106,7 @@ Las mismas que la mesa online:
   y después del flop con la mano hecha que arma con la mesa. Una parte de las
   veces (`bluffMix`) igual le da una mano cualquiera, para contar bluffs y
   proyectos. En Omaha y Manhattan, antes del flop, no se achica (no hay tabla).
-  Los factores son nuestros: **Beta**.
+  Los factores son nuestros, sin fuente.
 - **Piden otra cajita solo cuando se quedan sin fichas.**
 
 ### Niveles
