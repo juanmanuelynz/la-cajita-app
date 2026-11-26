@@ -22,6 +22,7 @@ import {
   startHand,
   act,
   type Action,
+  type BettingStreet,
   type Structure,
   type TableConfig,
   type TableState,
@@ -33,6 +34,13 @@ import { PotPill, RingTable, type RingSeat } from "./table-view"
 import { pesos } from "./drill-shell"
 
 const STORAGE_KEY = "la-cajita:bots:mesa"
+
+interface Thought {
+  seat: number
+  street: BettingStreet
+  decision: BotDecision
+}
+const STREET_NAMES: Record<BettingStreet, string> = { preflop: "Preflop", flop: "Flop", turn: "Turn", river: "River" }
 const SETUP_KEY = "la-cajita:bots:armado"
 const HERO = 0
 /** Pausa entre jugadas de los bots, para poder seguirlas. */
@@ -455,7 +463,12 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
   const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP)
   const [ended, setEnded] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [lastBot, setLastBot] = useState<BotDecision | null>(null)
+  /**
+   * Por qué jugó así cada bot en la mano. Se muestra recién al terminar la
+   * mano: durante la mano sería ver sus cartas ("bluff con 30%").
+   */
+  const [thoughts, setThoughts] = useState<Thought[]>([])
+  const [showThoughts, setShowThoughts] = useState(false)
 
   // Retomar la mesa guardada (en useEffect: el reparto es al azar y no puede salir en el servidor).
   useEffect(() => {
@@ -482,7 +495,8 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
     }
     const players = [{ id: "vos", name: heroName }, ...Array.from({ length: s.bots }, (_, i) => ({ id: `bot${i + 1}`, name: `Bot ${i + 1}` }))]
     setEnded(false)
-    setLastBot(null)
+    setThoughts([])
+    setShowThoughts(false)
     setTable(startHand(createTable(config, players)))
   }
 
@@ -495,8 +509,9 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
       if (busy.current) return
       busy.current = true
       try {
+        const h = table.hand!
         const r = botAct(table)
-        setLastBot(r.decision)
+        setThoughts((prev) => [...prev, { seat: toAct, street: h.street, decision: r.decision }])
         setTable(r.table)
       } finally {
         busy.current = false
@@ -516,7 +531,8 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
     const withChips = t.seats.filter((s) => s.stack + s.pending > 0)
     if (t.seats[HERO].stack === 0 && t.seats[HERO].pending === 0) return // tiene que pedir cajita o terminar
     if (withChips.length < 2) return
-    setLastBot(null)
+    setThoughts([])
+    setShowThoughts(false)
     setTable(startHand(t))
   }
 
@@ -631,10 +647,25 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
         </div>
       )}
 
-      {lastBot && !r && (
-        <p className="text-center text-[11px] text-muted-foreground">
-          {lastBot.source === "pokerstrategy" ? lastBot.reason : `${lastBot.reason} (Beta)`}
-        </p>
+      {r && thoughts.length > 0 && (
+        <div className="space-y-2">
+          <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setShowThoughts((v) => !v)}>
+            {showThoughts ? "Ocultar" : "Ver cómo pensaron los bots"}
+          </Button>
+          {showThoughts && (
+            <ol className="space-y-1.5 rounded-2xl border p-3 text-xs">
+              {thoughts.map((th, k) => (
+                <li key={k} className="flex gap-2">
+                  <span className="w-16 shrink-0 text-muted-foreground">{STREET_NAMES[th.street]}</span>
+                  <span>
+                    <b>{table.seats[th.seat].name}</b> · {th.decision.reason}
+                    {th.decision.source === "equity" && <span className="text-muted-foreground"> (Beta)</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       )}
 
       <div className="flex items-center justify-between gap-2 pt-1">

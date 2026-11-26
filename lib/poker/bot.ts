@@ -124,27 +124,27 @@ export function decide(s: Situation, rng: Rng): BotDecision {
     const strong = strength >= 1.5 && equity >= 0.35
     if (legal.canRaise && strong) {
       if (strength >= 2.5 && rng() < BOT_STYLE.slowplay) {
-        return { action: { type: "check" }, equity, source: "equity", reason: `Juega lento: ${pct} de ganar` }
+        return { action: { type: "check" }, equity, source: "equity", reason: `Pasó con una mano muy buena (${pct} de ganar) para disimular` }
       }
       const frac = 0.5 + rng() * 0.3
-      return { action: { type: "raise", to: sizeTo(legal, pot * frac, chip) }, equity, source: "equity", reason: `Apuesta: ${pct} de ganar` }
+      return { action: { type: "raise", to: sizeTo(legal, pot * frac, chip) }, equity, source: "equity", reason: `Apostó: tenía ${pct} de ganar` }
     }
     if (legal.canRaise && opponents <= 2 && rng() < BOT_STYLE.bluff) {
-      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, source: "equity", reason: `Bluff con ${pct}` }
+      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, source: "equity", reason: `Apostó de bluff: tenía solo ${pct} de ganar` }
     }
-    return { action: { type: "check" }, equity, source: "equity", reason: `Pasa: ${pct} de ganar` }
+    return { action: { type: "check" }, equity, source: "equity", reason: `Pasó: tenía ${pct} de ganar, no le daba para apostar` }
   }
 
   // Le apostaron: ¿le alcanza para pagar?
   const needed = legal.toCall / (pot + legal.toCall)
   if (equity < needed + BOT_STYLE.callMargin) {
-    return { action: { type: "fold" }, equity, source: "equity", reason: `Se retira: ${pct} y necesita ${Math.round(needed * 100)}%` }
+    return { action: { type: "fold" }, equity, source: "equity", reason: `Se fue: tenía ${pct} de ganar y para pagar necesitaba ${Math.round(needed * 100)}%` }
   }
   // Muy por encima de lo que necesita: sube (o a veces solo paga para disimular).
   if (legal.canRaise && strength >= 1.8 && equity >= needed + 0.2 && rng() >= BOT_STYLE.slowplay) {
-    return { action: { type: "raise", to: raiseTo(0.4 + rng() * 0.4) }, equity, source: "equity", reason: `Sube: ${pct} de ganar` }
+    return { action: { type: "raise", to: raiseTo(0.4 + rng() * 0.4) }, equity, source: "equity", reason: `Subió: tenía ${pct} de ganar, mucho más de lo que necesitaba` }
   }
-  return { action: { type: "call" }, equity, source: "equity", reason: `Paga: ${pct} y necesita ${Math.round(needed * 100)}%` }
+  return { action: { type: "call" }, equity, source: "equity", reason: `Pagó: tenía ${pct} de ganar y le alcanzaba con ${Math.round(needed * 100)}%` }
 }
 
 /**
@@ -187,9 +187,9 @@ export function rangeDecision(t: TableState, legal: Legal): BotDecision | null {
   // Nadie entró antes: abrir o no (la grande no abre: ya puso).
   if (raises.length === 0 && callsBefore(-1).length === 0 && mine !== "BB") {
     const p = mine as Position
-    if (!openRange(p).has(cls)) return out("fold", 0, `PokerStrategy: ${cls} no abre desde ${mine}`)
+    if (!openRange(p).has(cls)) return out("fold", 0, `No abrió ${cls} desde ${mine}: no está en el rango de PokerStrategy`)
     const size = Number(OPEN_RANGES[p].openSize.replace(",", "."))
-    return out("raise", size * big, `PokerStrategy: abre ${cls} desde ${mine}`)
+    return out("raise", size * big, `Abrió ${cls} desde ${mine}: está en el rango de PokerStrategy`)
   }
   // Las situaciones contra una subida son solo de mesas de 6.
   if (h.players.length !== 6) return null
@@ -201,7 +201,7 @@ export function rangeDecision(t: TableState, legal: Legal): BotDecision | null {
     const spot = vsSpots().find((s) => s.kind === "vsOpen" && s.hero === mine && s.villain === pos.get(r.seat))
     if (!spot) return null
     const a = vsAction(spot, me.hole)
-    return out(a, 3 * r.to!, `PokerStrategy: contra la subida de ${spot.villain}, ${a === "raise" ? "resube" : a === "call" ? "paga" : "se va"} con ${cls}`)
+    return out(a, 3 * r.to!, `${a === "raise" ? "Resubió" : a === "call" ? "Pagó" : "Se fue"} con ${cls} contra la subida de ${spot.villain}, como dice PokerStrategy`)
   }
   // Abrí, me resubieron y nadie más entró: contestar a la resubida.
   if (raises.length === 2 && raises[0].seat === me.seat && myActs.length === 1) {
@@ -211,7 +211,7 @@ export function rangeDecision(t: TableState, legal: Legal): BotDecision | null {
     const spot = vsSpots().find((s) => s.kind === "vs3bet" && s.hero === mine && s.villain === pos.get(r.seat))
     if (!spot || idx < 0) return null
     const a = vsAction(spot, me.hole)
-    return out(a, 2.5 * r.to!, `PokerStrategy: contra la resubida de ${spot.villain}, ${a === "raise" ? "vuelve a subir" : a === "call" ? "paga" : "se va"} con ${cls}`)
+    return out(a, 2.5 * r.to!, `${a === "raise" ? "Volvió a subir" : a === "call" ? "Pagó" : "Se fue"} con ${cls} contra la resubida de ${spot.villain}, como dice PokerStrategy`)
   }
   return null
 }
