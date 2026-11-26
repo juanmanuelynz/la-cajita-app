@@ -94,7 +94,7 @@ Las mismas que la mesa online:
   nuestros. Con luz los rangos no se usan: son para mesas con ciegas.
 - Todo lo demás es lógica nuestra, sin fuente: en esos casos los bots llevan la
   etiqueta **Beta**. Cada decisión dice de dónde sale (`source`).
-- **Para no ser previsibles:** farolean a veces (10%, solo contra 1 o 2), juegan
+- **Para no ser previsibles:** bluffean a veces (10%, solo contra 1 o 2), juegan
   lento una mano muy buena (15%) y el tamaño de la apuesta varía.
 - Piden otra cajita solo cuando se quedan sin fichas.
 - **Prueba de sentido común** (300 manos por juego, 120 simulaciones por

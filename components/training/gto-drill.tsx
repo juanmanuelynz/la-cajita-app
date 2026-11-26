@@ -38,8 +38,8 @@ export function Split({ left, right, leftLabel, rightLabel, leftClass, rightClas
 export function MdfVsPotOdds() {
   return (
     <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-muted-foreground">
-      <b className="text-foreground">Ojo:</b> la defensa mínima sirve contra alguien que podría farolear de más. Si sabés
-      que el rival farolea poco, no pagues para cumplirla: mirá tus pot odds. Si tu mano no gana lo suficiente seguido,
+      <b className="text-foreground">Ojo:</b> la defensa mínima sirve contra alguien que podría bluffear de más. Si sabés
+      que el rival bluffea poco, no pagues para cumplirla: mirá tus pot odds. Si tu mano no gana lo suficiente seguido,
       el fold es lo correcto.
     </p>
   )

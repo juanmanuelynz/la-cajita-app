@@ -151,7 +151,7 @@ export const DRILL_TIPS: Record<DrillId, string> = {
   betOrCheck:
     "Contá 10 veces de cada opción: pasando sumá los pozos que ganás; apostando sumá cuando foldea y cuando paga y ganás, y restá cuando paga y perdés o te sube. Gana la que da más.",
   semiBluff:
-    "Las manos a las que su bluff les gana igual no sirven para pagar. Sacalas de tus 100 y defendé la parte de siempre de las que quedan. Y si sabés que farolea poco, olvidate de la defensa mínima: mirá tus pot odds.",
+    "Las manos a las que su bluff les gana igual no sirven para pagar. Sacalas de tus 100 y defendé la parte de siempre de las que quedan. Y si sabés que bluffea poco, olvidate de la defensa mínima: mirá tus pot odds.",
   shove:
     "Contá 10 all-ins: sumá las luces de las veces que foldean todos y lo que ganás cuando te pagan, y restá lo que perdés. Si da positivo, all-in; si no, fold (que da $0).",
   callDown:

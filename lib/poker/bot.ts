@@ -12,7 +12,7 @@
 // posiciones, como en Entrenar (adaptación nuestra). Los tamaños de las
 // subidas fuera de la apertura (3× la subida, 2,5× la resubida) son nuestros.
 //
-// Para que no sean 100% previsibles: a veces farolean, a veces juegan lento una
+// Para que no sean 100% previsibles: a veces bluffean, a veces juegan lento una
 // mano muy buena y el tamaño de la apuesta varía un poco.
 
 import { remainingDeck, type Card, type Rng } from "./cards"
@@ -74,7 +74,7 @@ export function estimateEquity(
 
 /** Qué tan seguido el bot se aparta de lo "correcto" para no ser previsible. */
 export const BOT_STYLE = {
-  /** Farol cuando nadie apostó y quedan 1 o 2 rivales. */
+  /** Bluff cuando nadie apostó y quedan 1 o 2 rivales. */
   bluff: 0.1,
   /** Con una mano muy buena, pasar o solo pagar en vez de apostar. */
   slowplay: 0.15,
@@ -130,7 +130,7 @@ export function decide(s: Situation, rng: Rng): BotDecision {
       return { action: { type: "raise", to: sizeTo(legal, pot * frac, chip) }, equity, source: "equity", reason: `Apuesta: ${pct} de ganar` }
     }
     if (legal.canRaise && opponents <= 2 && rng() < BOT_STYLE.bluff) {
-      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, source: "equity", reason: `Farol con ${pct}` }
+      return { action: { type: "raise", to: sizeTo(legal, pot * 0.5, chip) }, equity, source: "equity", reason: `Bluff con ${pct}` }
     }
     return { action: { type: "check" }, equity, source: "equity", reason: `Pasa: ${pct} de ganar` }
   }

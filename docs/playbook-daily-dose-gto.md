@@ -25,7 +25,7 @@ playbook de GTO"). Escrito el 25/11/2026.
 | 51 | Sumar el EV de cada respuesta del rival para decidir apostar o pasar | ¿Apostar o pasar? |
 | 130, 131 | Si el bluff tiene chances (showdown o proyecto), alcanza con defender menos que la MDF | Defender contra bluffs con chances |
 | 137 | All-in con pocas fichas: los folds bajan lo que tenés que ganar | ¿All-in o fold? (con luz) |
-| 44, 149 | Las pot odds mandan sobre la MDF: contra quien farolea poco, fold | Aviso en "Ver por qué" |
+| 44, 149 | Las pot odds mandan sobre la MDF: contra quien bluffea poco, fold | Aviso en "Ver por qué" |
 | 210, 325 | Tres apuestas seguidas: lo que paga todo es el producto de las MDF, y las manos que no foldean pasan a ser casi todo | ¿Qué le queda? (en el Desafío desde el 27/11) |
 
 Fórmulas y tests: `lib/poker/ev.ts` y `tests/poker.test.ts` (verifican los

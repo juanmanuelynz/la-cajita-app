@@ -123,7 +123,7 @@ describe("Bots: en la mesa", () => {
       // Habla primero el 1 (izquierda del botón 0). Pasan hasta el river y el 0 apuesta.
       for (let k = 0; k < 6; k++) t = act(t, { type: "check" })
       t = act(t, { type: "check" }) // 1 en el river
-      t = act(t, { type: "raise", to: 1500 }) // 0 farolea
+      t = act(t, { type: "raise", to: 1500 }) // 0 bluffea
       expect(botDecide(t, rng).action.type).not.toBe("fold")
     }
   })
