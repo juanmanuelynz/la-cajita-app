@@ -1,4 +1,4 @@
-// Bots de "Jugar contra bots" (ver docs/plan-jugar-contra-bots.md).
+// Bots de "Mesa de práctica" (ver docs/plan-jugar-contra-bots.md).
 //
 // En general deciden como el ejercicio "Con luz": simulan su chance de ganar
 // (equity) contra los que siguen en la mano, con cartas al azar (no ven las de

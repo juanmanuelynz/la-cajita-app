@@ -1,6 +1,6 @@
 // Motor de una mano de poker con las reglas de La Cajita (ver
 // docs/plan-jugar-contra-bots.md). Código puro: no sabe de pantallas, bots ni
-// base de datos. Lo usa "Jugar contra bots" y lo usaría la mesa online.
+// base de datos. Lo usa "Mesa de práctica" y lo usaría la mesa online.
 //
 // Reglas (se elige al crear la mesa: con luz o con ciegas):
 // - Con luz (como en La Cajita): luz igual para todos, sin ciegas. Va al pozo

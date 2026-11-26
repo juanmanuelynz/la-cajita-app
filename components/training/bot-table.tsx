@@ -1,6 +1,6 @@
 "use client"
 
-// "Jugar contra bots" (docs/plan-jugar-contra-bots.md): armar la mesa, jugar
+// "Mesa de práctica" (docs/plan-jugar-contra-bots.md): armar la mesa, jugar
 // manos completas contra bots y ver cómo terminaste. Todo corre en el celular;
 // la mesa se guarda en localStorage para seguir en la misma mano si se cierra.
 // Es de práctica: no se anota en ningún lado.
@@ -550,7 +550,7 @@ function tableLevelLabel(t: TableState): string {
   return levels.includes("nano") ? (base ? `${base} + ${NANO_NAME}` : NANO_NAME) : base
 }
 
-/** Pantalla completa de "Jugar contra bots". */
+/** Pantalla completa de "Mesa de práctica". */
 export function BotTable({
   heroName = "Vos",
   difficulty = "media",

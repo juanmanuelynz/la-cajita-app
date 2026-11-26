@@ -174,9 +174,9 @@ function DrillMenu({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 font-semibold">
-              Jugar contra bots
+              Mesa de práctica
             </div>
-            <div className="text-xs text-muted-foreground">Manos completas, con luz o ciegas. No se anota.</div>
+            <div className="text-xs text-muted-foreground">Manos completas contra bots, con luz o ciegas. No se anota.</div>
           </div>
         </button>
       </section>
@@ -345,7 +345,7 @@ export function EntrenarTab({
   )
   const progress = useTrainingProgress(playerId, version)
   // Tu nivel (aciertos acumulados; null sin nombre elegido) y la dificultad que le toca (sin nivel: media).
-  // El nivel también desbloquea a Nano en "Jugar contra bots".
+  // El nivel también desbloquea a Nano en "Mesa de práctica".
   const playerLevel = useMemo(() => {
     if (!playerId || !progress) return null
     return levelFor(Object.values(progress.byDrill).reduce((a, t) => a + t.right, 0)).level
@@ -361,7 +361,7 @@ export function EntrenarTab({
   // "Lo que más fallás" también: atrás vuelve a Entrenar.
   const closePractice = useCallback(() => setPractice(null), [])
   useBackToClose(practice !== null, closePractice, "entrenar-practica")
-  // "Jugar contra bots" también (la mesa queda guardada: al volver se retoma).
+  // "Mesa de práctica" también (la mesa queda guardada: al volver se retoma).
   const [bots, setBots] = useState(false)
   const closeBots = useCallback(() => setBots(false), [])
   useBackToClose(bots, closeBots, "entrenar-bots")
@@ -438,7 +438,7 @@ export function EntrenarTab({
                   <ChevronLeft className="h-4 w-4" />
                   Volver
                 </Button>
-                <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">Jugar contra bots</div>
+                <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">Mesa de práctica</div>
               </div>
               <BotTable heroName={heroName} difficulty={difficulty} level={playerLevel} />
             </div>

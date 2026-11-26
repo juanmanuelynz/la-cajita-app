@@ -25,7 +25,7 @@ se retoma ese plan; el motor de la mano y los bots de acá se reutilizan tal cua
 
 ### Dónde está
 
-- En **Entrenar → Ejercicios**, una entrada nueva **"Jugar contra bots"** arriba
+- En **Entrenar → Ejercicios**, una entrada nueva **"Mesa de práctica"** (se llamó "Jugar contra bots" hasta el 26/11/2026) arriba
   de todo el menú. Se abre en su propia pantalla con "Volver", y el "atrás" del
   celular la cierra (`useBackToClose`), igual que los ejercicios.
 
