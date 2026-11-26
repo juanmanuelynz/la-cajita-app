@@ -6,10 +6,11 @@
 // Es de práctica: no se anota en ningún lado.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { FlaskConical, Minus, Plus } from "lucide-react"
+import { Crown, FlaskConical, Lock, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { botAct, botWantsCajita, type BotDecision } from "@/lib/poker/bot"
+import { addHandToReads, botAct, botLevelOf, botWantsCajita, EMPTY_READS, makeBots, NANO_NAME, type BotDecision, type PlayerReads } from "@/lib/poker/bot"
+import { DIFFICULTY_NAMES, type Difficulty } from "@/lib/poker/difficulty"
 import {
   canRequestCajita,
   createTable,
@@ -42,6 +43,10 @@ interface Thought {
 }
 const STREET_NAMES: Record<BettingStreet, string> = { preflop: "Preflop", flop: "Flop", turn: "Turn", river: "River" }
 const SETUP_KEY = "la-cajita:bots:armado"
+/** Lo que Nano viene aprendiendo de cómo jugás en la mesa guardada. */
+const READS_KEY = "la-cajita:bots:lectura"
+/** Nivel de Entrenar desde el que se puede desafiar a Nano (Leyenda). */
+export const NANO_UNLOCK_LEVEL = 9
 const HERO = 0
 /** Pausa entre jugadas de los bots, para poder seguirlas. */
 const BOT_DELAY_MS = 900
@@ -58,6 +63,10 @@ interface Setup {
   luz: number
   small: number
   big: number
+  /** Qué tan fuertes juegan los bots: "auto" = según tu nivel de Entrenar. */
+  botLevel: "auto" | Difficulty
+  /** Desafiar a Nano (solo desde el nivel NANO_UNLOCK_LEVEL). */
+  nano: boolean
 }
 
 const DEFAULT_SETUP: Setup = {
@@ -70,6 +79,8 @@ const DEFAULT_SETUP: Setup = {
   luz: 100,
   small: 100,
   big: 200,
+  botLevel: "auto",
+  nano: false,
 }
 
 const variantsOf = (s: Setup): Variant[] =>
@@ -200,19 +211,36 @@ function BotsNote({ structure, variants, players }: { structure: Structure; vari
     <p className="flex gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
       <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>
-        <b className="text-foreground">Bots Beta:</b> deciden con su chance de ganar contra lo que tienen que pagar
-        (cuenta nuestra, sin fuente).
+        <b className="text-foreground">Bots Beta:</b> deciden con su chance de ganar contra lo que tienen que pagar,
+        teniendo en cuenta lo que apostaste (cuenta nuestra, sin fuente).
         {ranges
           ? " En Hold'em Long, antes del flop, siguen los rangos de PokerStrategy."
           : structure === "ciegas"
             ? " Los rangos de PokerStrategy solo se usan en Hold'em Long con ciegas y de 4 a 6 jugadores."
             : " Con luz no usan rangos: los de PokerStrategy son para mesas con ciegas."}
+        {ranges && " Los de nivel Fácil no los siguen: entran con cualquier cosa."}
       </span>
     </p>
   )
 }
 
-function SetupScreen({ initial, onStart }: { initial: Setup; onStart: (s: Setup) => void }) {
+const LEVEL_HINTS: Record<Difficulty, string> = {
+  facil: "Pagan casi todo y casi nunca bluffean: apostales tus buenas manos y no los bluffees.",
+  media: "Juegan razonable: leen a medias lo que les apostás y el tamaño de su apuesta sigue a su mano.",
+  dificil: "Leen lo que les apostás, apuestan con proyectos, usan la posición y apuestan igual con valor y con bluff.",
+}
+
+function SetupScreen({
+  initial,
+  onStart,
+  playerDifficulty,
+  nanoUnlocked,
+}: {
+  initial: Setup
+  onStart: (s: Setup) => void
+  playerDifficulty: Difficulty
+  nanoUnlocked: boolean
+}) {
   const [s, setS] = useState<Setup>(initial)
   const set = (patch: Partial<Setup>) =>
     setS((prev) => {
@@ -255,6 +283,50 @@ function SetupScreen({ initial, onStart }: { initial: Setup; onStart: (s: Setup)
           Hasta {limit} con este juego (no dan las cartas para más).
         </p>
         <Stepper label="Cajita" value={s.cajita} step={500} min={1000} max={50000} onChange={(cajita) => set({ cajita })} />
+      </Field>
+
+      <Field title="Rivales">
+        <Choice
+          value={s.botLevel}
+          onChange={(botLevel) => set({ botLevel })}
+          options={[
+            { id: "auto", label: "Tu nivel" },
+            { id: "facil", label: DIFFICULTY_NAMES.facil },
+            { id: "media", label: DIFFICULTY_NAMES.media },
+            { id: "dificil", label: DIFFICULTY_NAMES.dificil },
+          ]}
+        />
+        <p className="px-1 text-xs text-muted-foreground">
+          {s.botLevel === "auto" && <>Según tu nivel en Entrenar: <b className="text-foreground">{DIFFICULTY_NAMES[playerDifficulty]}</b>. </>}
+          {LEVEL_HINTS[s.botLevel === "auto" ? playerDifficulty : s.botLevel]}
+        </p>
+        {nanoUnlocked ? (
+          <button
+            type="button"
+            onClick={() => set({ nano: !s.nano })}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm transition-colors",
+              s.nano ? "border-amber-400/70 bg-amber-400/10" : "border-border",
+            )}
+            aria-pressed={s.nano}
+          >
+            <Crown className={cn("h-5 w-5 shrink-0", s.nano ? "text-amber-400" : "text-muted-foreground")} />
+            <span className="flex-1">
+              <b>Desafiar a {NANO_NAME}</b>
+              <span className="block text-xs text-muted-foreground">
+                El final boss: juega como Difícil y además te estudia durante la mesa (si te vas mucho, te bluffea; si pagás todo, no).
+              </span>
+            </span>
+            <span className={cn("text-xs font-semibold", s.nano ? "text-amber-400" : "text-muted-foreground")}>{s.nano ? "Sí" : "No"}</span>
+          </button>
+        ) : (
+          <p className="flex items-center gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+            <Lock className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              <b className="text-foreground">{NANO_NAME}</b>, el final boss, se desbloquea en el nivel {NANO_UNLOCK_LEVEL} (Leyenda).
+            </span>
+          </p>
+        )}
       </Field>
 
       <Field title="Para entrar a la mano">
@@ -427,18 +499,37 @@ function ActionBar({ t, onAct }: { t: TableState; onAct: (a: Action) => void }) 
 
 function Summary({ t, heroName, onNew }: { t: TableState; heroName: string; onNew: () => void }) {
   const rows = t.seats
-    .map((s, i) => ({ name: i === HERO ? heroName : s.name, cajitas: s.cajitas, net: netResult(t, i), hero: i === HERO }))
+    .map((s, i) => ({ seat: i, name: i === HERO ? heroName : s.name, cajitas: s.cajitas, net: netResult(t, i), hero: i === HERO, nano: botLevelOf(s.id) === "nano" }))
     .sort((a, b) => b.net - a.net)
+  const nano = rows.find((r) => r.nano)
+  const heroRow = rows.find((r) => r.hero)!
   return (
     <div className="space-y-4">
       <div className="text-center">
         <div className="text-xl font-bold">Fin de la mesa</div>
         <div className="text-sm text-muted-foreground">{t.handsPlayed} manos jugadas</div>
       </div>
+      {nano && (
+        <div className={cn("flex items-center gap-2 rounded-2xl border p-3 text-sm", heroRow.net > nano.net ? "border-amber-400/70 bg-amber-400/10" : "")}>
+          <Crown className={cn("h-5 w-5 shrink-0", heroRow.net > nano.net ? "text-amber-400" : "text-muted-foreground")} />
+          {heroRow.net > nano.net ? (
+            <span>
+              <b>¡Le ganaste a {NANO_NAME}!</b> Terminaste mejor que el final boss.
+            </span>
+          ) : (
+            <span>
+              <b>{NANO_NAME} te ganó esta vez.</b> Revisá en &quot;Ver cómo pensaron los bots&quot; cuándo te bluffeó.
+            </span>
+          )}
+        </div>
+      )}
       <div className="divide-y rounded-2xl border">
         {rows.map((r) => (
-          <div key={r.name} className={cn("flex items-center justify-between px-3 py-2", r.hero && "bg-primary/10")}>
-            <span className={cn(r.hero && "font-semibold")}>{r.name}</span>
+          <div key={r.seat} className={cn("flex items-center justify-between px-3 py-2", r.hero && "bg-primary/10")}>
+            <span className={cn("flex items-center gap-1", r.hero && "font-semibold")}>
+              {r.nano && <Crown className="h-3.5 w-3.5 text-amber-400" />}
+              {r.name}
+            </span>
             <span className="flex items-center gap-3 text-sm">
               <span className="text-muted-foreground">
                 {r.cajitas} {r.cajitas === 1 ? "cajita" : "cajitas"}
@@ -457,8 +548,27 @@ function Summary({ t, heroName, onNew }: { t: TableState; heroName: string; onNe
   )
 }
 
+/** "Difícil", "Difícil + Nano"… según los bots sentados. */
+function tableLevelLabel(t: TableState): string {
+  const levels = t.seats.slice(1).map((s) => botLevelOf(s.id))
+  const rest = levels.find((l): l is Difficulty => l !== "nano")
+  const base = rest ? DIFFICULTY_NAMES[rest] : ""
+  return levels.includes("nano") ? (base ? `${base} + ${NANO_NAME}` : NANO_NAME) : base
+}
+
 /** Pantalla completa de "Jugar contra bots". */
-export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
+export function BotTable({
+  heroName = "Vos",
+  difficulty = "media",
+  level = null,
+}: {
+  heroName?: string
+  /** Dificultad de Entrenar según tu nivel (la de los bots por defecto). */
+  difficulty?: Difficulty
+  /** Tu nivel de Entrenar (null sin nombre elegido): desbloquea a Nano. */
+  level?: number | null
+}) {
+  const nanoUnlocked = (level ?? 0) >= NANO_UNLOCK_LEVEL
   const [table, setTable] = useState<TableState | null>(null)
   const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP)
   const [ended, setEnded] = useState(false)
@@ -469,6 +579,8 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
    */
   const [thoughts, setThoughts] = useState<Thought[]>([])
   const [showThoughts, setShowThoughts] = useState(false)
+  /** Cómo venís jugando en esta mesa (Nano lo usa para adaptarse). */
+  const [reads, setReads] = useState<PlayerReads>(EMPTY_READS)
 
   // Retomar la mesa guardada (en useEffect: el reparto es al azar y no puede salir en el servidor).
   useEffect(() => {
@@ -476,11 +588,21 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
     if (saved?.hand) setTable(saved)
     const s = load<Setup>(SETUP_KEY)
     if (s) setSetup({ ...DEFAULT_SETUP, ...s })
+    const r = load<PlayerReads>(READS_KEY)
+    if (saved?.hand && r) setReads({ ...EMPTY_READS, ...r })
     setLoaded(true)
   }, [])
   useEffect(() => {
     if (loaded) save(STORAGE_KEY, ended ? null : table)
   }, [table, ended, loaded])
+  useEffect(() => {
+    if (loaded) save(READS_KEY, ended ? null : reads)
+  }, [reads, ended, loaded])
+  // Al terminar cada mano, sumar lo que hiciste (addHandToReads no cuenta dos veces la misma).
+  const finished = table?.hand?.result ? table.hand : null
+  useEffect(() => {
+    if (finished && table) setReads((prev) => addHandToReads(prev, finished, HERO, table.config.structure))
+  }, [finished, table])
 
   const start = (s: Setup) => {
     save(SETUP_KEY, s)
@@ -493,7 +615,9 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
       blinds: { small: s.small, big: s.big },
       variants: variantsOf(s),
     }
-    const players = [{ id: "vos", name: heroName }, ...Array.from({ length: s.bots }, (_, i) => ({ id: `bot${i + 1}`, name: `Bot ${i + 1}` }))]
+    const botLevel = s.botLevel === "auto" ? difficulty : s.botLevel
+    const players = [{ id: "vos", name: heroName }, ...makeBots(botLevel, s.bots, s.nano && nanoUnlocked)]
+    setReads(EMPTY_READS)
     setEnded(false)
     setThoughts([])
     setShowThoughts(false)
@@ -510,7 +634,7 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
       busy.current = true
       try {
         const h = table.hand!
-        const r = botAct(table)
+        const r = botAct(table, Math.random, { reads: { [HERO]: reads } })
         setThoughts((prev) => [...prev, { seat: toAct, street: h.street, decision: r.decision }])
         setTable(r.table)
       } finally {
@@ -518,7 +642,7 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
       }
     }, BOT_DELAY_MS)
     return () => clearTimeout(id)
-  }, [table, toAct])
+  }, [table, toAct, reads])
 
   const onAct = useCallback((a: Action) => setTable((t) => (t ? act(t, a) : t)), [])
 
@@ -539,7 +663,7 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
   const seats = useMemo(() => (table?.hand ? seatsFor(table, heroName) : []), [table, heroName])
 
   if (!loaded) return null
-  if (!table) return <SetupScreen initial={setup} onStart={start} />
+  if (!table) return <SetupScreen initial={setup} onStart={start} playerDifficulty={difficulty} nanoUnlocked={nanoUnlocked} />
   if (ended) return <Summary t={table} heroName={heroName} onNew={() => { setTable(null); setEnded(false) }} />
 
   const h = table.hand!
@@ -557,7 +681,7 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
           Mano {h.number} · {variantLabel(h.variant)} · {table.config.structure === "luz" ? `Luz ${pesos(table.config.luz)}` : `Ciegas ${pesos(table.config.blinds.small)}/${pesos(table.config.blinds.big)}`}
         </span>
         <span className="flex items-center gap-1">
-          <FlaskConical className="h-3 w-3" /> Bots Beta
+          <FlaskConical className="h-3 w-3" /> Bots {tableLevelLabel(table)} · Beta
         </span>
       </div>
 

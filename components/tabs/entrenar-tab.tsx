@@ -347,12 +347,13 @@ export function EntrenarTab({
     [playerId],
   )
   const progress = useTrainingProgress(playerId, version)
-  // Dificultad según tu nivel (aciertos acumulados). Sin nombre elegido: media.
-  const difficulty: Difficulty = useMemo(() => {
-    if (!playerId || !progress) return "media"
-    const right = Object.values(progress.byDrill).reduce((a, t) => a + t.right, 0)
-    return difficultyForLevel(levelFor(right).level)
+  // Tu nivel (aciertos acumulados; null sin nombre elegido) y la dificultad que le toca (sin nivel: media).
+  // El nivel también desbloquea a Nano en "Jugar contra bots".
+  const playerLevel = useMemo(() => {
+    if (!playerId || !progress) return null
+    return levelFor(Object.values(progress.byDrill).reduce((a, t) => a + t.right, 0)).level
   }, [playerId, progress])
+  const difficulty: Difficulty = playerLevel === null ? "media" : difficultyForLevel(playerLevel)
   const ctx = useMemo(() => ({ onAnswer, difficulty }), [onAnswer, difficulty])
 
   const variant = useMemo<Variant>(() => ({ game, deck }), [game, deck])
@@ -442,7 +443,7 @@ export function EntrenarTab({
                 </Button>
                 <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">Jugar contra bots</div>
               </div>
-              <BotTable heroName={heroName} />
+              <BotTable heroName={heroName} difficulty={difficulty} level={playerLevel} />
             </div>
           ) : (
             <>

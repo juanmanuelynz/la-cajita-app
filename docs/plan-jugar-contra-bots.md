@@ -94,14 +94,87 @@ Las mismas que la mesa online:
   nuestros. Con luz los rangos no se usan: son para mesas con ciegas.
 - Todo lo demás es lógica nuestra, sin fuente: en esos casos los bots llevan la
   etiqueta **Beta**. Cada decisión dice de dónde sale (`source`).
-- **Para no ser previsibles:** bluffean a veces (10%, solo contra 1 o 2), juegan
-  lento una mano muy buena (15%) y el tamaño de la apuesta varía.
-- Piden otra cajita solo cuando se quedan sin fichas.
-- **Prueba de sentido común** (300 manos por juego, 120 simulaciones por
-  decisión): en Hold'em, Omaha y Manhattan Short les ganan plata a un jugador
-  que decide al azar y a uno que paga todo. Cada decisión tarda 10–25 ms.
-- **Son bots simples:** juegan razonable pero se dejan leer. Un bot fuerte es
-  otro proyecto.
+- **Leen lo que apostás** (26/11/2026): quien apuesta o sube no tiene una mano
+  cualquiera. Para cada rival, el bot achica sus manos posibles según lo que
+  hizo en la mano (`keepFor`: subir antes del flop deja el 35% de arriba,
+  pagar el 70%; después del flop apostar deja el 45% y pagar el 70%; lo de
+  calles anteriores pesa a medias) y en la simulación le reparte solo manos de
+  esa parte. "La parte de arriba" se mide antes del flop en Hold'em con la
+  equity de cada mano contra 2 al azar (las mismas tablas del "¿Abrís?" Beta)
+  y después del flop con la mano hecha que arma con la mesa. Una parte de las
+  veces (`bluffMix`) igual le da una mano cualquiera, para contar bluffs y
+  proyectos. En Omaha y Manhattan, antes del flop, no se achica (no hay tabla).
+  Los factores son nuestros: **Beta**.
+- **Piden otra cajita solo cuando se quedan sin fichas.**
+
+### Niveles
+
+Los rivales se eligen al armar la mesa: por defecto, **según tu nivel de
+Entrenar** (la misma dificultad de los ejercicios: Fácil 1–3, Media 4–6,
+Difícil 7 o más), y se puede cambiar. Cada nivel tiene sus apodos (personajes,
+no gente del grupo); el nivel va en el id del asiento, así la mesa guardada
+sabe cómo juega cada uno.
+
+| Nivel | Cómo juega | La lección | Apodos |
+|---|---|---|---|
+| **Fácil** | Paga casi todo (hasta 8 puntos menos de lo que necesita), casi no bluffea (3%), no lee rangos ni sigue los de PokerStrategy, y se le lee el tamaño: chico con manos medias, grande con monstruos | Apostale tus buenas manos y no lo bluffees | El Turista, Doña Rosa, El Optimista, Pagador Serial, El Curioso, Tío Pocho, La Esperanza |
+| **Media** | El bot de siempre, pero lee a medias lo que le apuestan; el tamaño sigue a la mano | — | El Contador, La Profe, El Ingeniero, Rulo, La Paciente, El Gringo, Toto |
+| **Difícil** | Lee rangos completos, apuesta con proyectos en el flop y el turn, bluffea más con posición y apuesta lo mismo con valor y con bluff | No le podés leer la mano por el tamaño | La Calculadora, El Mudo, La Víbora, El Frío, Mister GTO, La Esfinge, El Relojero |
+| **Nano** (final boss) | Difícil, y además **te estudia** en la mesa: si te vas mucho cuando te apuestan (más del 55%), te bluffea más seguido y más barato; si casi nunca te vas (menos del 30%), no te bluffea y te apuesta más fino y más grande con lo bueno; si te vio bluffear al mostrar en el river, te cree menos | Que no te lean: variá | Nano |
+
+- **Nano se desbloquea en el nivel 9 (Leyenda):** al armar la mesa aparece
+  "Desafiar a Nano" y se sienta con los demás bots. Antes, se ve candado. Al
+  terminar la mesa se dice si le ganaste.
+- Lo que Nano aprende de vos (`PlayerReads`) es solo lo que vería un jugador:
+  lo que hiciste y las cartas que mostraste. Necesita 6 veces que te hayan
+  apostado (y 3 apuestas tuyas en el river que se vieron) antes de sacar
+  conclusiones. Se guarda con la mesa y se borra al armar otra.
+- En "Ver cómo pensaron los bots", Nano dice cuándo te explotó ("te vio irte
+  el 70% de las veces que te apostaron").
+- **Para no ser previsibles:** bluffean a veces (solo contra 1 o 2), juegan
+  lento una mano muy buena y el tamaño de la apuesta varía. Las frecuencias de
+  cada nivel están en `BOT_PROFILES`.
+
+### Cuánto le gana cada nivel al otro (medido)
+
+`npx tsx scripts/lab/bot-levels.ts 1500 80 <semilla>` (unos 7 minutos por
+semilla). Mesas de 6 solo de bots, 3 de cada tipo en asientos alternados, con
+luz, 1.500 manos; se mide cuánto gana cada tipo en **luces cada 100 manos**.
+Promedio de 4 semillas (1 a 4), Hold'em Long, 80 simulaciones por decisión:
+
+| Par | Gana el primero | Semillas a favor |
+|---|---|---|
+| Media nueva vs **el bot anterior** | +141 | 4 de 4 |
+| Difícil vs el bot anterior | +143 | 4 de 4 |
+| Fácil vs el bot anterior | −123 | 1 de 4 (es el más flojo, a propósito) |
+| Media vs Fácil | +228 | 4 de 4 |
+| Difícil vs Media | +32 | 3 de 4 (la otra, empate: −1,5) |
+| Difícil vs Fácil | +264 | 4 de 4 |
+| Nano vs Difícil | −6 | 2 de 4: contra quien no tiene tendencias marcadas juega igual que Difícil |
+| Fácil vs azar / vs pagador | +368 / +572 | 4 de 4 |
+
+Lo que agrega Nano se ve contra jugadores con tendencias (mismo método):
+
+| Rival | Difícil | Nano |
+|---|---|---|
+| Pagador (paga todo) | +574 | **+758** (4 de 4 arriba) |
+| Maníaco (apuesta el pozo con cualquier cosa) | +621 | +647 |
+| Miedoso (se va el 70%) | +106 | +110 |
+
+Omaha Long (1.000 manos) y Manhattan Short (800 manos, 60 simulaciones), 2
+semillas: Media le gana a Fácil +180 y +243 (todas a favor); Difícil vs Media
+da +36 en Omaha (2 de 2) y +12 en Manhattan (1 de 2: no alcanza para decir
+que sea mejor ahí, y antes del flop en esos juegos no lee rangos).
+
+"El bot anterior" es la versión del commit 9941a20, medida una vez con una
+copia temporal (no quedó en el repo). Lo que se ajustó mirando estos números:
+Difícil lee rangos completos (con lectura a medias perdía con Media: −31),
+le da menos manos al azar a quien apuesta (12%) y sube con menos fuerza. Los
+bots no se leen el tamaño entre ellos: lo de "apostar parejo" de Difícil no
+se ve en estos números, es contra personas.
+
+- **Son bots de práctica:** juegan razonable y cada nivel tiene sus agujeros a
+  propósito. Un bot fuerte de verdad (que resuelva el juego) es otro proyecto.
 
 ### Para aprender (opcional, al final)
 
@@ -128,7 +201,10 @@ En este orden. Cada paso se puede probar solo antes de seguir.
    uno, quién habla, tus botones (pasar, pagar, subir con montos rápidos tipo
    medio pozo / pozo / all-in, retirarse) y la jugada de cada bot con una pausa
    corta para poder seguirla.
-4. **Repaso de la mano** (opcional): el resumen por calle.
+4. ✅ **Niveles, apodos y Nano** (26/11/2026): leer rangos, cuatro niveles
+   según tu nivel de Entrenar, Nano que se adapta, y el estudio
+   `scripts/lab/bot-levels.ts`. Tests en `tests/bot.test.ts`.
+5. **Repaso de la mano** (opcional): el resumen por calle.
 
 ## Riesgos
 

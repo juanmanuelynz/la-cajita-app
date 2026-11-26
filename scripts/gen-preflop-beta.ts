@@ -4,6 +4,7 @@
 // 1. Hold'em largo: equity de las 169 manos contra 2 al azar; se abre el top
 //    de cada posición y se compara con la fuente real (validación del método).
 // 2. Hold'em short: lo mismo con las 81 manos de la grilla 9×9.
+//    (Las dos grillas se guardan: los bots las usan para leer rangos.)
 // 3. Omaha y Manhattan (long/short): se reparten manos al azar, se mide su
 //    equity y se toma el umbral que deja arriba el % de cada posición.
 
@@ -101,7 +102,8 @@ export const BETA_DATA: {
   validation: Record<Position, number>
   thresholds: Record<string, Record<Position, number>>
   shortGrid: Record<string, number>
-} = ${JSON.stringify({ validation, thresholds, shortGrid }, null, 2)}
+  longGrid: Record<string, number>
+} = ${JSON.stringify({ validation, thresholds, shortGrid, longGrid }, null, 2)}
 `
 writeFileSync(new URL("../lib/poker/preflop-beta-data.ts", import.meta.url), out)
 log("escrito lib/poker/preflop-beta-data.ts")
