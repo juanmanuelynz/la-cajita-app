@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { addHandToReads, botAct, botLevelOf, botWantsCajita, EMPTY_READS, makeBots, NANO_NAME, type BotDecision, type PlayerReads } from "@/lib/poker/bot"
 import { DIFFICULTY_NAMES, type Difficulty } from "@/lib/poker/difficulty"
+import { reviewHand, reviewSpots, type ReviewedSpot } from "@/lib/poker/review"
 import {
   canRequestCajita,
   createTable,
@@ -542,6 +543,54 @@ function Summary({ t, heroName, onNew }: { t: TableState; heroName: string; onNe
   )
 }
 
+const VERDICT_STYLE: Record<ReviewedSpot["verdict"], { icon: string; tone: string }> = {
+  bien: { icon: "✓", tone: "text-emerald-500" },
+  mal: { icon: "✗", tone: "text-rose-500" },
+  justo: { icon: "≈", tone: "text-amber-500" },
+}
+
+function verdictText(s: ReviewedSpot): string {
+  if (s.verdict === "justo") return "da casi lo mismo pagar o irte"
+  const did = s.played === "fold" ? "irte" : s.played === "raise" ? "seguir (subiste)" : "pagar"
+  if (s.verdict === "bien") return `${did} estuvo bien`
+  return s.played === "fold" ? "te alcanzaba para pagar" : "te convenía irte"
+}
+
+/** Repaso de la mano: en cada momento en que te apostaron, pagar o irte. */
+function HandReview({ spots }: { spots: ReviewedSpot[] }) {
+  const pct = (x: number) => `${Math.round(x * 100)}%`
+  return (
+    <div className="space-y-2 rounded-2xl border p-3 text-xs">
+      <ol className="space-y-2">
+        {spots.map((s) => {
+          const v = VERDICT_STYLE[s.verdict]
+          return (
+            <li key={s.index} className="flex gap-2">
+              <span className="w-12 shrink-0 text-muted-foreground">{STREET_NAMES[s.street]}</span>
+              <span className="min-w-0 flex-1 space-y-0.5">
+                <span className="block">
+                  Pagabas {pesos(s.toCall)} para un pozo de {pesos(s.pot + s.toCall)}: necesitabas <b>{pct(s.needed)}</b>, tenías{" "}
+                  <b className={s.equity >= s.needed ? "text-emerald-500" : "text-rose-500"}>{pct(s.equity)}</b>.
+                </span>
+                <span className={cn("block font-semibold", v.tone)}>
+                  {v.icon} {verdictText(s)}
+                </span>
+                {s.actual !== null && (
+                  <span className="block text-muted-foreground">Contra sus cartas (se vieron al final): {pct(s.actual)}.</span>
+                )}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="text-muted-foreground">
+        Tu chance se calcula con lo que sabías: contra las manos que podía tener cada uno según cómo apostó. Como en
+        &quot;¿Call o fold?&quot;, no cuenta lo que puedas ganar después.
+      </p>
+    </div>
+  )
+}
+
 /** "Difícil", "Difícil + Nano"… según los bots sentados. */
 function tableLevelLabel(t: TableState): string {
   const levels = t.seats.slice(1).map((s) => botLevelOf(s.id))
@@ -573,6 +622,9 @@ export function BotTable({
    */
   const [thoughts, setThoughts] = useState<Thought[]>([])
   const [showThoughts, setShowThoughts] = useState(false)
+  /** Repaso de la mano: se calcula al tocar el botón (simula, así que no en cada render). */
+  const [review, setReview] = useState<ReviewedSpot[] | null>(null)
+  const [showReview, setShowReview] = useState(false)
   /** Cómo venís jugando en esta mesa (Nano lo usa para adaptarse). */
   const [reads, setReads] = useState<PlayerReads>(EMPTY_READS)
 
@@ -615,6 +667,8 @@ export function BotTable({
     setEnded(false)
     setThoughts([])
     setShowThoughts(false)
+    setReview(null)
+    setShowReview(false)
     setTable(startHand(createTable(config, players)))
   }
 
@@ -651,10 +705,22 @@ export function BotTable({
     if (withChips.length < 2) return
     setThoughts([])
     setShowThoughts(false)
+    setReview(null)
+    setShowReview(false)
     setTable(startHand(t))
   }
 
   const seats = useMemo(() => (table?.hand ? seatsFor(table, heroName) : []), [table, heroName])
+  // Momentos en que te apostaron (sin chances: es rápido). Sin ninguno no hay repaso.
+  const spotCount = useMemo(
+    () => (table?.hand?.result ? reviewSpots(table.hand, HERO, table.config.structure, table.config.blinds.big).length : 0),
+    [table],
+  )
+  const openReview = () => {
+    if (!table?.hand) return
+    if (!review) setReview(reviewHand(table.hand, HERO, table.config.structure, table.config.blinds.big))
+    setShowReview((v) => !v)
+  }
 
   if (!loaded) return null
   if (!table) return <SetupScreen initial={setup} onStart={start} playerDifficulty={difficulty} nanoUnlocked={nanoUnlocked} />
@@ -765,6 +831,15 @@ export function BotTable({
         </div>
       )}
 
+      {r && spotCount > 0 && (
+        <div className="space-y-2">
+          <Button variant="outline" size="sm" className="w-full" onClick={openReview}>
+            {showReview ? "Ocultar repaso" : "Repaso de la mano"}
+          </Button>
+          {showReview && review && <HandReview spots={review} />}
+        </div>
+      )}
+
       {r && thoughts.length > 0 && (
         <div className="space-y-2">
           <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setShowThoughts((v) => !v)}>
@@ -793,7 +868,7 @@ export function BotTable({
         ) : (
           <span />
         )}
-        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setEnded(true)}>
+        <Button variant="outline" size="sm" onClick={() => setEnded(true)}>
           Terminar mesa
         </Button>
       </div>

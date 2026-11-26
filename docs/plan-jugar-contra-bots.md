@@ -207,7 +207,16 @@ En este orden. Cada paso se puede probar solo antes de seguir.
 4. ✅ **Niveles, apodos y Nano** (26/11/2026): leer rangos, cuatro niveles
    según tu nivel de Entrenar, Nano que se adapta, y el estudio
    `scripts/lab/bot-levels.ts`. Tests en `tests/bot.test.ts`.
-5. **Repaso de la mano** (opcional): el resumen por calle.
+5. ✅ **Repaso de la mano** (26/11/2026; `lib/poker/review.ts`, tests en
+   `tests/review.test.ts`): al terminar la mano, el botón "Repaso de la mano"
+   muestra cada momento en que te apostaron: lo que pagabas, el pozo, la
+   chance que necesitabas y la que tenías, y si pagar o irte estuvo bien (✓),
+   mal (✗) o daba casi lo mismo (≈, menos de 3 puntos de diferencia). La
+   chance se calcula con lo que sabías: contra las manos que podía tener cada
+   rival según cómo apostó, leídas como las lee un bot Difícil. Si sus cartas
+   se vieron al final, al lado va la chance real contra ellas, de dato. No
+   cuenta lo que puedas ganar después (como "¿Call o fold?"). Se calcula al
+   tocar el botón.
 
 ## Riesgos
 
