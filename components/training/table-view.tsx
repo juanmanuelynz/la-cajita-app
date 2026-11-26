@@ -5,12 +5,13 @@
 // en el centro y cada jugador con su cartelito apoyado sobre el borde. Vos
 // siempre abajo (resaltado); el rival arriba.
 
-import type { CSSProperties, ReactNode } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { Check } from "lucide-react"
 import { CHIP_COLORS, PokerChip } from "@/components/poker-chip"
 import type { Card } from "@/lib/poker/cards"
 import { cn } from "@/lib/utils"
 import { CardBack, CardRow, type CardSize } from "./playing-card"
+import { ringLayout, type Layout } from "./ring-layout"
 
 export interface TableSeat {
   key: string | number
@@ -169,14 +170,10 @@ export function BetChip({ amount, className, style }: { amount?: string; classNa
 }
 
 /** Botón del que reparte. */
-function DealerButton({ style }: { style?: CSSProperties }) {
+function DealerButton() {
   return (
     <span
-      style={style}
-      className={cn(
-        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-black shadow",
-        style && "absolute z-10 -translate-x-1/2 -translate-y-1/2",
-      )}
+      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-black shadow"
       aria-label="Reparte"
     >
       D
@@ -201,11 +198,16 @@ export interface RingSeat {
   dealer?: boolean
 }
 
+/** Para medir sin parpadeo antes de pintar (en el servidor no hace falta). */
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect
+
 /**
  * Mesa con todos los lugares alrededor del óvalo, en el orden en que se habla
  * (sentido de las agujas del reloj, hacia la izquierda). Vos siempre abajo; el
- * resto se reparte por el borde dejando lugar para tus cartas. `center` va en
- * el medio del paño (pozo, la mano del rival).
+ * resto se reparte por el borde. `center` va en el medio del paño (pozo, la
+ * mano del rival). Cada lugar es un bloque (ficha, cartas, cartelito con el
+ * botón, jugada) que se mide en el navegador: `ringLayout` los ubica sin que
+ * nada se pise, agrandando la mesa si hace falta.
  */
 export function RingTable({
   seats,
@@ -217,144 +219,155 @@ export function RingTable({
   /** Tamaño de tus cartas (más chicas si además hay mesa y manos de 4–5). */
   heroCardSize?: "sm" | "md"
 }) {
-  const n = seats.length
   const h = Math.max(0, seats.findIndex((s) => s.hero))
-  const hero = seats[h]
-  // Ángulos (0° = derecha, 90° = abajo). El resto ocupa el arco que deja libre el lugar de abajo.
-  const GAP = 72
-  const angleOf = (i: number) => {
-    const k = (i - h + n) % n
-    return 90 + GAP + ((k - 1) * (360 - 2 * GAP)) / Math.max(1, n - 2)
-  }
-  const at = (deg: number, r: number, margin = 13) => {
-    const t = (deg * Math.PI) / 180
-    // Un poco hacia adentro del borde y sin salirse de los costados (los cartelitos tienen ancho).
-    const x = Math.min(100 - margin, Math.max(margin, 50 + 41 * r * Math.cos(t)))
-    return { left: `${x}%`, top: `${50 + 40 * r * Math.sin(t)}%` }
-  }
-  // Un lugar con cartas boca arriba es más ancho: que no se salga de los costados.
-  const cardsMargin = (count: number) => {
-    const width = count >= 4 ? 36 + (count - 1) * 24 : count * 40
-    return Math.max(13, ((width / 2 + 6) / 380) * 100)
-  }
-  const heroOverlap = (hero?.cards?.length ?? 0) >= 4
+  const rootRef = useRef<HTMLDivElement>(null)
+  const seatRefs = useRef<(HTMLDivElement | null)[]>([])
+  const centerRef = useRef<HTMLDivElement>(null)
+  const [layout, setLayout] = useState<Layout | null>(null)
+  // Si alguno tiene ficha, todos le guardan el lugar: así no se mueven al apostar.
+  const anyChip = seats.some((s) => s.chip)
+
+  const measure = useCallback(() => {
+    const root = rootRef.current
+    if (!root) return
+    const width = root.clientWidth
+    const boxes = seats.map((_, i) => {
+      const el = seatRefs.current[i]
+      return { w: el?.offsetWidth ?? 0, h: el?.offsetHeight ?? 0 }
+    })
+    const c = centerRef.current
+    const next = ringLayout(width, boxes, h, c ? { w: c.offsetWidth, h: c.offsetHeight } : null)
+    setLayout((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+  }, [seats, h])
+
+  useIsoLayoutEffect(() => {
+    measure()
+  })
+  // Cambios de ancho o de tamaño (fuentes que cargan, cartas que aparecen).
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root || typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(root)
+    seatRefs.current.forEach((el) => el && ro.observe(el))
+    if (centerRef.current) ro.observe(centerRef.current)
+    return () => ro.disconnect()
+  }, [measure])
+
+  const pos = (i: number): CSSProperties =>
+    layout?.seats[i]
+      ? { left: layout.seats[i].x, top: layout.seats[i].y, transform: "translate(-50%, -50%)" }
+      : { left: 0, top: 0, visibility: "hidden" }
 
   return (
-    <div className="relative mx-auto h-[340px] w-full max-w-[380px]">
+    <div ref={rootRef} className="relative mx-auto w-full max-w-[380px]" style={{ height: layout?.height ?? 340 }}>
       {/* El paño */}
-      <div
-        className={cn(
-          "absolute inset-x-[5%] inset-y-[8%] rounded-[50%] border border-primary/45",
-          "bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_14%,var(--background)),var(--background)_75%)]",
-          "outline outline-1 -outline-offset-[10px] outline-primary/15",
-        )}
-      />
+      {layout && (
+        <div
+          className={cn(
+            "absolute rounded-[50%] border border-primary/45",
+            "bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_14%,var(--background)),var(--background)_75%)]",
+            "outline outline-1 -outline-offset-[10px] outline-primary/15",
+          )}
+          style={{
+            left: layout.felt.x - layout.felt.rx,
+            width: layout.felt.rx * 2,
+            top: Math.max(0, layout.felt.y - layout.felt.ry),
+            height: Math.min(layout.height, layout.felt.y + layout.felt.ry) - Math.max(0, layout.felt.y - layout.felt.ry),
+          }}
+        />
+      )}
       {center && (
-        <div className="absolute inset-x-[18%] top-[30%] bottom-[34%] z-10 flex flex-col items-center justify-center gap-2">
+        <div
+          ref={centerRef}
+          className="absolute z-10 flex flex-col items-center gap-2"
+          style={
+            layout?.center
+              ? { left: layout.center.x, top: layout.center.y, transform: "translate(-50%, -50%)" }
+              : { left: 0, top: 0, visibility: "hidden" }
+          }
+        >
           {center}
         </div>
       )}
 
       {seats.map((s, i) => {
-        if (s.hero) return null
-        const deg = angleOf(i)
         const folded = s.action?.kind === "fold"
         const bettor = s.action?.kind === "bet"
-        // Con cartas boca arriba la ficha va pegada a las cartas, del lado del centro
-        // (medida sobre las cartas reales, así no las tapa aunque sean 4 o 5).
-        // Los de la mitad de arriba la llevan abajo de su cartelito; los de los costados, al lado de las cartas.
-        const rad = (deg * Math.PI) / 180
-        const chipBeside =
-          s.cards && s.chip ? (Math.sin(rad) < -0.5 ? "below" : Math.cos(rad) < 0 ? "right" : "left") : null
-        const chip = s.chip && (
+        // La ficha va del lado del centro: arriba en los lugares de abajo (y en el tuyo), abajo en el resto.
+        const lower = s.hero || (layout ? layout.seats[i].y > (layout.center?.y ?? layout.felt.y) : false)
+        const chip = anyChip && (
           <BetChip
             amount={s.chip === true ? undefined : s.chip}
-            className={cn(
-              "absolute z-10 whitespace-nowrap",
-              chipBeside === "right" && "left-full top-1/2 ml-1.5 -translate-y-1/2",
-              chipBeside === "left" && "right-full top-1/2 mr-1.5 -translate-y-1/2",
-              chipBeside === "below" && "left-1/2 top-full mt-1.5 -translate-x-1/2",
-              !chipBeside && "-translate-x-1/2 -translate-y-1/2",
-            )}
-            style={chipBeside ? undefined : at(deg, 0.6)}
+            className={cn("whitespace-nowrap", !s.chip && "invisible")}
+            // Lugar guardado aunque no tenga ficha.
+            style={s.chip ? undefined : { minHeight: 16 }}
           />
         )
         return (
-          <div key={s.key}>
-            <div
-              style={at(deg, 1, s.cards ? cardsMargin(s.cards.length) : undefined)}
-              className={cn(
-                "absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 transition-opacity",
-                folded && "opacity-40",
-              )}
-            >
-              {s.cards && (
-                <div className="relative">
-                  <CardRow
-                    cards={s.cards}
-                    size="sm"
-                    overlap={s.cards.length >= 4}
-                    deal={s.deal}
-                    className="flex-nowrap justify-center"
-                  />
-                  {(chipBeside === "right" || chipBeside === "left") && chip}
-                </div>
-              )}
-              {!folded && !s.cards && (
-                <div className="flex -space-x-2">
-                  <CardBack size="mini" className="-rotate-6" />
-                  <CardBack size="mini" className="rotate-6" />
-                </div>
-              )}
+          <div
+            key={s.key}
+            ref={(el) => {
+              seatRefs.current[i] = el
+            }}
+            style={pos(i)}
+            className="absolute z-10 flex flex-col items-center gap-1"
+          >
+            {lower && chip}
+            {s.hero ? (
+              s.cards && (
+                <CardRow
+                  cards={s.cards}
+                  size={heroCardSize}
+                  overlap={s.cards.length >= 4}
+                  deal={0}
+                  className="flex-nowrap justify-center"
+                />
+              )
+            ) : s.cards ? (
+              <CardRow
+                cards={s.cards}
+                size="sm"
+                overlap={s.cards.length >= 4}
+                deal={s.deal}
+                className={cn("flex-nowrap justify-center", folded && "opacity-40")}
+              />
+            ) : (
+              // Al irse quedan sin cartas, pero el hueco se guarda para que no se corra nada.
+              <div className={cn("flex -space-x-2", folded && "invisible")}>
+                <CardBack size="mini" className="-rotate-6" />
+                <CardBack size="mini" className="rotate-6" />
+              </div>
+            )}
+            <div className={cn("flex items-center gap-1", folded && "opacity-40")}>
               <div
                 className={cn(
-                  "whitespace-nowrap rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium leading-4",
+                  "whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] leading-4",
+                  s.hero
+                    ? "border-primary bg-primary font-semibold text-primary-foreground"
+                    : "bg-background font-medium",
                   bettor && "border-rose-500 text-rose-400",
                 )}
               >
-                {s.label}
+                {s.hero ? `Vos · ${s.label}` : s.label}
               </div>
-              {s.action && (
-                <div
-                  className={cn(
-                    "rounded px-1 text-[10px] font-semibold uppercase leading-3 tracking-wide",
-                    bettor ? "bg-rose-500 text-white" : "text-muted-foreground",
-                    folded && "line-through",
-                  )}
-                >
-                  {s.action.text}
-                </div>
-              )}
-              {chipBeside === "below" && chip}
+              {s.dealer && <DealerButton />}
             </div>
-            {!chipBeside && chip}
-            {s.dealer && <DealerButton style={at(deg + 16, 0.72)} />}
+            {!s.hero && (
+              <div
+                className={cn(
+                  "min-h-3 whitespace-nowrap rounded px-1 text-[10px] font-semibold uppercase leading-3 tracking-wide",
+                  bettor ? "bg-rose-500 text-white" : "text-muted-foreground",
+                  folded && "line-through opacity-40",
+                )}
+              >
+                {s.action?.text}
+              </div>
+            )}
+            {!lower && chip}
           </div>
         )
       })}
-
-      {hero && (
-        <>
-          <div className="absolute bottom-[1%] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5">
-            {hero.cards && (
-              <CardRow cards={hero.cards} size={heroCardSize} overlap={heroOverlap} deal={0} className="flex-nowrap justify-center" />
-            )}
-            <div className="flex items-center gap-1">
-              <div className="whitespace-nowrap rounded-full border border-primary bg-primary px-2 py-0.5 text-[11px] font-semibold leading-4 text-primary-foreground">
-                Vos · {hero.label}
-              </div>
-              {hero.dealer && <DealerButton />}
-            </div>
-          </div>
-          {hero.chip && (
-            <BetChip
-              amount={hero.chip === true ? undefined : hero.chip}
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: "68%", top: "66%" }}
-            />
-          )}
-        </>
-      )}
     </div>
   )
 }
