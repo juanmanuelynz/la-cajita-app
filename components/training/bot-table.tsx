@@ -312,7 +312,8 @@ function seatsFor(t: TableState, heroName: string): RingSeat[] {
   return t.seats.map((s, i) => {
     const p = h.players.find((x) => x.seat === i)
     const shown = i === HERO || (!!r && r.showdown && !!p && !p.folded)
-    const won = r?.won[i]
+    // Lo ganado de verdad (sin lo que le devuelven porque nadie lo pagó).
+    const won = r?.pots.filter((pot) => pot.winners.includes(i) && (pot.eligible.length > 1 || !r.showdown)).reduce((sum, pot) => sum + pot.amount / pot.winners.length, 0)
     const name = i === HERO ? heroName : s.name
     return {
       key: s.id,
@@ -560,15 +561,49 @@ export function BotTable({ heroName = "Vos" }: { heroName?: string }) {
 
       {r ? (
         <div className="space-y-2 rounded-2xl border bg-card p-3 text-sm">
-          {winners.map((w) => (
-            <div key={w} className="flex justify-between">
-              <span>
-                <b>{w === HERO ? heroName : table.seats[w].name}</b>
-                {r.showdown && r.handNames[w] ? ` · ${r.handNames[w]}` : ""}
-              </span>
-              <span className="font-semibold text-emerald-500">+{pesos(r.won[w])}</span>
+          {r.pots.map((pot, k) => {
+            const name = (seat: number) => (seat === HERO ? heroName : table.seats[seat].name)
+            // Un "pozo" con un solo candidato es lo que apostó de más y nadie pagó: se le devuelve.
+            if (pot.eligible.length === 1 && r.showdown) {
+              return (
+                <div key={k} className="flex justify-between text-muted-foreground">
+                  <span>
+                    A <b className="text-foreground">{name(pot.eligible[0])}</b> le vuelven lo que nadie pagó
+                  </span>
+                  <span className="tabular-nums">{pesos(pot.amount)}</span>
+                </div>
+              )
+            }
+            const contested = r.pots.filter((p) => p.eligible.length > 1)
+            const title = contested.length > 1 ? (contested.indexOf(pot) === 0 ? "Pozo principal" : "Pozo aparte") : null
+            return (
+              <div key={k} className="space-y-0.5">
+                {title && (
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {title} · {pesos(pot.amount)}
+                  </div>
+                )}
+                {pot.winners.map((w, j) => (
+                  <div key={w} className="flex justify-between">
+                    <span>
+                      <b>{name(w)}</b>
+                      {r.showdown && r.handNames[w] ? ` · ${r.handNames[w]}` : ""}
+                    </span>
+                    {pot.winners.length === 1 ? (
+                      <span className="font-semibold text-emerald-500">+{pesos(pot.amount)}</span>
+                    ) : (
+                      j === 0 && <span className="text-xs font-semibold text-emerald-500">reparten {pesos(pot.amount)}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+          {r.pots.filter((p) => p.eligible.length > 1).length > 1 && (
+            <div className="text-xs text-muted-foreground">
+              Hubo pozo aparte: el que fue all-in con menos fichas solo juega por lo que puso.
             </div>
-          ))}
+          )}
           {!r.showdown && <div className="text-xs text-muted-foreground">Se fueron todos: gana sin mostrar.</div>}
           {r.showdown && heroPlayer && !heroPlayer.folded && !winners.includes(HERO) && r.handNames[HERO] && (
             <div className="text-xs text-muted-foreground">Vos: {r.handNames[HERO]}</div>
