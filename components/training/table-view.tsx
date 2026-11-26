@@ -346,7 +346,7 @@ export function RingTable({
                   s.hero
                     ? "border-primary bg-primary font-semibold text-primary-foreground"
                     : "bg-background font-medium",
-                  bettor && "border-rose-500 text-rose-400",
+                  !s.hero && bettor && "border-rose-500 text-rose-400",
                 )}
               >
                 {s.hero ? `Vos · ${s.label}` : s.label}
