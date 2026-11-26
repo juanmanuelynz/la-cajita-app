@@ -125,7 +125,8 @@ sabe cómo juega cada uno.
 | **Nano** (final boss) | Difícil, y además **te estudia** en la mesa: si te vas mucho cuando te apuestan (más del 55%), te bluffea más seguido y más barato; si casi nunca te vas (menos del 30%), no te bluffea y te apuesta más fino y más grande con lo bueno; si te vio bluffear al mostrar en el river, te cree menos | Que no te lean: variá | Nano |
 
 - **Nano se desbloquea en el nivel 9 (Leyenda):** al armar la mesa aparece
-  "Desafiar a Nano" y se sienta con los demás bots. Antes, se ve candado. Al
+  "Desafiar a Nano" y se sienta con los demás bots. Antes no se muestra nada
+  (es una sorpresa). Al
   terminar la mesa se dice si le ganaste.
 - Lo que Nano aprende de vos (`PlayerReads`) es solo lo que vería un jugador:
   lo que hiciste y las cartas que mostraste. Necesita 6 veces que te hayan

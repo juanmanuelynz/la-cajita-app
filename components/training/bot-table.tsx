@@ -6,7 +6,7 @@
 // Es de práctica: no se anota en ningún lado.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { Bot, Crown, Lock, Minus, Plus } from "lucide-react"
+import { Bot, Crown, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { addHandToReads, botAct, botLevelOf, botWantsCajita, EMPTY_READS, makeBots, NANO_NAME, type BotDecision, type PlayerReads } from "@/lib/poker/bot"
@@ -300,7 +300,8 @@ function SetupScreen({
           {s.botLevel === "auto" && <>Según tu nivel en Entrenar: <b className="text-foreground">{DIFFICULTY_NAMES[playerDifficulty]}</b>. </>}
           {LEVEL_HINTS[s.botLevel === "auto" ? playerDifficulty : s.botLevel]}
         </p>
-        {nanoUnlocked ? (
+        {/* Nano no se anuncia: aparece de sorpresa al llegar al nivel NANO_UNLOCK_LEVEL. */}
+        {nanoUnlocked && (
           <button
             type="button"
             onClick={() => set({ nano: !s.nano })}
@@ -319,13 +320,6 @@ function SetupScreen({
             </span>
             <span className={cn("text-xs font-semibold", s.nano ? "text-amber-400" : "text-muted-foreground")}>{s.nano ? "Sí" : "No"}</span>
           </button>
-        ) : (
-          <p className="flex items-center gap-2 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              <b className="text-foreground">{NANO_NAME}</b>, el final boss, se desbloquea en el nivel {NANO_UNLOCK_LEVEL} (Leyenda).
-            </span>
-          </p>
         )}
       </Field>
 
