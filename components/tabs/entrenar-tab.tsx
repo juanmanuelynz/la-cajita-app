@@ -25,7 +25,7 @@ import { EquityCalculator } from "@/components/training/equity-calculator"
 import { HandRankings } from "@/components/training/hand-rankings"
 import { GtoDrill } from "@/components/training/gto-drill"
 import { BetOrCheckDrill, CallDownDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
-import { BotTable } from "@/components/training/bot-table"
+import { BotTable, savedTableInfo } from "@/components/training/bot-table"
 import type { DeckType } from "@/lib/poker/cards"
 import { GAMES, GAME_IDS, type GameId, type Variant } from "@/lib/poker/variants"
 import type { TrainingProgress } from "@/lib/types"
@@ -160,6 +160,9 @@ function DrillMenu({
   onPlay: () => void
   progress: TrainingProgress | null
 }) {
+  // Se lee en el navegador (localStorage); el menú se vuelve a montar al cerrar la mesa.
+  const [openTable, setOpenTable] = useState<{ handsPlayed: number } | null>(null)
+  useEffect(() => setOpenTable(savedTableInfo()), [])
   return (
     <div className="space-y-4 pt-1">
       <section className="space-y-2">
@@ -175,8 +178,17 @@ function DrillMenu({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 font-semibold">
               Mesa de práctica
+              {openTable && (
+                <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none text-primary-foreground">
+                  Abierta
+                </span>
+              )}
             </div>
-            <div className="text-xs text-muted-foreground">Manos completas contra bots, con luz o ciegas. No se anota.</div>
+            <div className="text-xs text-muted-foreground">
+              {openTable
+                ? `Sigue abierta tu mesa${openTable.handsPlayed > 0 ? ` (${openTable.handsPlayed} ${openTable.handsPlayed === 1 ? "mano jugada" : "manos jugadas"})` : ""}. Tocá para seguir.`
+                : "Manos completas contra bots, con luz o ciegas. No se anota."}
+            </div>
           </div>
         </button>
       </section>

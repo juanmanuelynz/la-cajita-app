@@ -109,6 +109,12 @@ function load<T>(key: string): T | null {
     return null
   }
 }
+/** La mesa guardada en este dispositivo (sigue abierta hasta "Terminar mesa"), o null. */
+export function savedTableInfo(): { handsPlayed: number } | null {
+  const t = load<TableState>(STORAGE_KEY)
+  return t?.seats?.length ? { handsPlayed: t.handsPlayed ?? 0 } : null
+}
+
 function save(key: string, value: unknown) {
   try {
     if (value === null) localStorage.removeItem(key)
