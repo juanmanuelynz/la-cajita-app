@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeftRight, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -10,8 +11,12 @@ import { logout } from "@/app/login/actions";
 import { useSoundEnabled } from "@/hooks/use-sound-enabled";
 import { playSound } from "@/lib/sounds";
 
-/** Tema, sonidos y cerrar sesión. Va en Configuración → Ajustes (y es todo lo que ve el invitado ahí). */
-export function AjustesCard() {
+/**
+ * Tema, sonidos, pasar a la otra app (Poker ↔ Truco) y cerrar sesión. Va en
+ * Configuración → Ajustes (y es todo lo que ve el invitado ahí). `app` es en
+ * cuál estás: el botón lleva a la otra.
+ */
+export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {}) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -55,6 +60,13 @@ export function AjustesCard() {
             Sonidos {mounted ? (soundOn ? "activados" : "desactivados") : ""}
           </span>
         </div>
+
+        <Button asChild variant="secondary" className="w-full">
+          <Link href={app === "poker" ? "/truco" : "/"}>
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            {app === "poker" ? "Quiero jugar Truco" : "Quiero jugar Poker"}
+          </Link>
+        </Button>
 
         <form action={logout}>
           <Button type="submit" variant="outline" className="w-full">

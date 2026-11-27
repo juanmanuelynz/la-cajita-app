@@ -3,7 +3,8 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Hecho:** paso 1 (motor + máquina + tests). Lo demás está por
+27/11/2026. **Hecho:** paso 1 (motor + máquina + tests) y paso 2 (ruta `/truco`
+con las pestañas vacías y los botones para ir y volver). Lo demás está por
 construir.
 
 ## Decisiones
@@ -49,7 +50,11 @@ construir.
 
 ### Secciones de `/truco`
 
-Pestañas con `IconTabsList` (mismo estilo que el resto):
+La misma barra flotante de abajo que Poker (`components/dock-nav.tsx`, la
+comparten las dos), con Jugar como botón grande del centro (decidido el
+27/11/2026; antes decía `IconTabsList` arriba). Las pantallas quedan montadas
+al cambiar de pestaña, para no perder una partida, y la última pestaña se
+recuerda en `la-cajita:truco:tab`.
 
 | Pestaña | Qué tiene | Origen |
 |---|---|---|
@@ -111,7 +116,9 @@ y se suma a `CREDITS.txt`; no se inventa nada sin preguntar.
 
 ## Archivos
 
-- `app/truco/page.tsx` — pantalla (client component), pestañas.
+- `app/truco/page.tsx` — pantalla (client component), pestañas; `app/truco/layout.tsx` — título "La Cajita Truco".
+- `components/dock-nav.tsx` — la barra de abajo, compartida con Poker.
+- `components/ajustes-card.tsx` — prop `app` ("poker" | "truco") para el botón "Quiero jugar Truco / Poker".
 - `lib/truco/engine.ts` — reglas (port del módulo `engine` del artefacto, a
   TypeScript, puro y con RNG sembrable).
 - `lib/truco/ai.ts` — la máquina (`winChance`, `decide`).
