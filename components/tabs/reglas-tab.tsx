@@ -179,7 +179,8 @@ export function ReglasTab({
   return (
     <>
       {/* Pasar a Truco: siempre a la vista en Configuración, arriba de Torneo / Ajustes / Reglas. */}
-      <div className="pt-3">
+      {/* Bien separada de las pestañas, para que no parezcan parte de la caja. */}
+      <div className="pt-3 pb-5">
         <TrucoPromo />
       </div>
       <Tabs
