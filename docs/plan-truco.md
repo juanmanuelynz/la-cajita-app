@@ -17,7 +17,7 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
   antes abría siempre en Poker): `lib/last-app.ts` guarda `la-cajita:app` y
   Poker, al abrir, manda a `/truco` si la última fue Truco. Los botones "Quiero
   jugar Truco / Poker" lo actualizan antes de navegar.
-- En Poker → Configuración → Ajustes, arriba de los ajustes, una presentación
+- En Poker → Configuración, arriba de las pestañas Torneo / Ajustes / Reglas (siempre a la vista), una presentación
   de Truco con las cuatro bravas en abanico y "Quiero jugar Truco"
   (`components/truco/truco-promo.tsx`); por eso `AjustesCard` muestra el botón
   de cambiar de app solo en Truco ("Quiero jugar Poker").

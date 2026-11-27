@@ -178,6 +178,10 @@ export function ReglasTab({
 
   return (
     <>
+      {/* Pasar a Truco: siempre a la vista en Configuración, arriba de Torneo / Ajustes / Reglas. */}
+      <div className="pt-3">
+        <TrucoPromo />
+      </div>
       <Tabs
         value={subtab}
         onValueChange={(v) => setSubtab(v as ReglasSubtab)}
@@ -605,7 +609,6 @@ export function ReglasTab({
         </TabsContent>
 
         <TabsContent value="ajustes" className="pt-4 pb-8 space-y-6 mt-0">
-          <TrucoPromo />
           <AjustesCard />
         </TabsContent>
       </Tabs>

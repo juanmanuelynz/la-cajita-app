@@ -1,8 +1,9 @@
 "use client"
 
-// Presentación de La Cajita Truco en Poker → Configuración → Ajustes, arriba de
-// la tarjeta de ajustes. La "imagen" son las cuatro bravas en abanico sobre el
-// paño azul de Truco (las cartas de la app, no una foto).
+// Presentación de La Cajita Truco en Poker → Configuración, arriba de las
+// pestañas Torneo / Ajustes / Reglas (y arriba de los ajustes del invitado).
+// La "imagen" son las cuatro bravas en abanico sobre el paño azul de Truco
+// (las cartas de la app, no una foto).
 
 import Link from "next/link"
 import type { CSSProperties } from "react"
