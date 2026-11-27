@@ -29,10 +29,10 @@ type TrucoTab = "aprender" | "practicar" | "jugar" | "anotar" | "config"
 // mismo cerebro que Entrenar. Anotar va al centro con el fósforo propio, como
 // Partidas con la pica en Poker.
 const TABS: DockTab<TrucoTab>[] = [
-  { id: "aprender", label: "Aprender", short: "Aprender", icon: GraduationCap },
+  { id: "jugar", label: "Jugar contra la máquina", short: "Jugar", icon: Swords },
   { id: "practicar", label: "Practicar", short: "Practicar", icon: Brain },
   { id: "anotar", label: "Anotador", short: "Anotar", icon: FosforoIcon },
-  { id: "jugar", label: "Jugar contra la máquina", short: "Jugar", icon: Swords },
+  { id: "aprender", label: "Aprender", short: "Aprender", icon: GraduationCap },
   { id: "config", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 

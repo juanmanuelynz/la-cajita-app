@@ -69,7 +69,7 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
 La misma barra flotante de abajo que Poker (`components/dock-nav.tsx`, la
 comparten las dos), con **Anotar** como botón grande del centro, como
 Partidas en Poker (decidido el 27/11/2026; antes decía `IconTabsList`
-arriba). Orden: Aprender, Practicar, Anotar, Jugar, Ajustes. Los íconos dicen
+arriba). Orden: Jugar, Practicar, Anotar, Aprender, Ajustes (cambiado el 27/11/2026). Los íconos dicen
 qué hace cada pestaña, como en Poker: gorro de graduado (Aprender), cerebro
 (Practicar, el mismo de Entrenar), fósforo propio al centro
 (`components/truco/fosforo-icon.tsx`, como la pica en Poker), espadas
