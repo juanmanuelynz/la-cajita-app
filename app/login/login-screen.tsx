@@ -66,10 +66,13 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
 
   useEffect(() => {
     if (!state?.ok) return;
+    // El PIN de Truco entra solo a Truco: si la escena era la de Poker, pasa a la de Truco.
+    const toTruco = truco || state.app === "truco";
+    if (toTruco && !truco) setApp("truco");
     // Se cierra el teclado, así la escena queda centrada igual que el splash.
     inputRef.current?.blur();
     playSequence(
-      truco
+      toTruco
         ? // El cajón que sale y los fósforos que saltan (ver match-box / globals.css).
           [
             { name: "fosforoA", at: 0.1 },
@@ -87,7 +90,7 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
           ],
     );
     const t1 = setTimeout(() => setRevealed(true), REVEAL_AT_MS);
-    const t2 = setTimeout(() => window.location.replace(truco ? "/truco" : "/"), OPEN_DURATION_MS);
+    const t2 = setTimeout(() => window.location.replace(toTruco ? "/truco" : "/"), OPEN_DURATION_MS);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);

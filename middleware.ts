@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { AUTH_COOKIE_NAME, verifyToken } from "./lib/auth"
+import { AUTH_COOKIE_NAME, rolePins, verifyToken } from "./lib/auth"
 import { LAST_APP_COOKIE } from "./lib/last-app"
 
 export async function middleware(request: NextRequest) {
@@ -17,14 +17,22 @@ export async function middleware(request: NextRequest) {
   if (!secret) return openLastApp(request) ?? NextResponse.next()
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
-  const role = await verifyToken(token, secret)
+  const role = await verifyToken(token, secret, rolePins())
   if (!role) {
     const url = new URL("/login", request.url)
     // Que el login (y su SEO, que es lo que ve quien comparte el link) sea el de Truco.
-    if (pathname === "/truco" || pathname.startsWith("/truco/")) url.searchParams.set("app", "truco")
+    if (isTruco(pathname)) url.searchParams.set("app", "truco")
     return NextResponse.redirect(url)
   }
+  // La sesión de Truco (TRUCO_PIN) solo entra a /truco.
+  if (role === "truco" && !isTruco(pathname)) {
+    return NextResponse.redirect(new URL("/truco", request.url))
+  }
   return openLastApp(request) ?? NextResponse.next()
+}
+
+function isTruco(pathname: string) {
+  return pathname === "/truco" || pathname.startsWith("/truco/")
 }
 
 /**

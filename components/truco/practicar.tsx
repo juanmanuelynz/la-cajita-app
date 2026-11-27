@@ -233,13 +233,28 @@ export function Practicar() {
   const [progress, setProgress] = useState<TrucoProgress | null>(null)
   const [pickOpen, setPickOpen] = useState(false)
   const [open, setOpen] = useState<TrucoQuizId | null>(null)
+  /** Sesión de Truco (TRUCO_PIN): no ve a nadie más; solo su jugador. */
+  const [alone, setAlone] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    let saved: string | null = null
     try {
-      setPlayerId(localStorage.getItem(PLAYER_KEY))
+      saved = localStorage.getItem(PLAYER_KEY)
+      setPlayerId(saved)
     } catch {}
-    db.getAllPlayers()
-      .then(setAllPlayers)
+    db.getSessionRole()
+      .then(async (role) => {
+        if (role === "truco") {
+          setAlone(true)
+          // Solo el jugador de este celular (si es de Truco; si no, se olvida).
+          const me = saved ? await db.getTrucoPlayer(saved) : null
+          setAllPlayers(me ? [me] : [])
+        } else {
+          setAllPlayers(await db.getTrucoPlayers())
+        }
+        setLoaded(true)
+      })
       .catch(() => {}) // sin señal: se practica igual, sin guardar
   }, [])
 
@@ -252,10 +267,11 @@ export function Practicar() {
     } catch {}
   }
 
-  // Si el jugador guardado ya no existe (se borró), olvidarlo.
+  // Si el jugador guardado ya no existe (se borró) o esta sesión no lo puede usar, olvidarlo.
   useEffect(() => {
-    if (playerId && allPlayers.length > 0 && !allPlayers.some((p) => p.id === playerId)) changePlayer(null)
-  }, [allPlayers, playerId])
+    if (playerId && loaded && (alone || allPlayers.length > 0) && !allPlayers.some((p) => p.id === playerId))
+      changePlayer(null)
+  }, [allPlayers, playerId, loaded, alone])
 
   useEffect(() => {
     if (!playerId) return
@@ -298,9 +314,10 @@ export function Practicar() {
       players={players}
       value={playerId}
       onChange={changePlayer}
+      alone={alone}
       onCreate={async (name) => {
-        const p = await db.createPlayer(name)
-        setAllPlayers(await db.getAllPlayers())
+        const p = await db.createTrucoPlayer(name)
+        setAllPlayers(alone ? [p] : await db.getTrucoPlayers())
         return p
       }}
     />

@@ -30,7 +30,7 @@ import {
 } from "./validators"
 import { POINTS_DISTRIBUTION } from "./constants"
 import { rankMatchPlayers } from "./ranking"
-import { getCurrentRole, requireAdmin } from "./session"
+import { getCurrentRole, requireAdmin, requirePoker } from "./session"
 import type { AuthRole } from "./auth"
 
 // Devolver fechas/timestamps como string ISO (igual que Supabase via PostgREST),
@@ -54,8 +54,9 @@ export async function getSessionRole(): Promise<AuthRole> {
   return getCurrentRole()
 }
 
-/** El invitado solo puede tocar partidas activas que sean sueltas. */
+/** El invitado solo puede tocar partidas activas que sean sueltas (y la sesión de Truco, ninguna). */
 async function assertCanUseActiveMatch(match: { is_casual?: boolean } | undefined | null) {
+  await requirePoker()
   if (match && !match.is_casual) await requireAdmin()
 }
 
@@ -63,9 +64,18 @@ async function assertCanUseActiveMatch(match: { is_casual?: boolean } | undefine
 // Players
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Jugadores de Poker: todos menos los que se anotaron desde Truco. `fixed`:
+ * está o estuvo en el roster de algún torneo (el grupo).
+ */
 export async function getAllPlayers(): Promise<Player[]> {
+  await requirePoker()
   const rows = await sql`
-    SELECT id, name, created_at FROM players ORDER BY name
+    SELECT p.id, p.name, p.created_at,
+      EXISTS (SELECT 1 FROM tournament_players tp WHERE tp.player_id = p.id) AS fixed
+    FROM players p
+    WHERE NOT p.truco_only
+    ORDER BY p.name
   `
   return rows as Player[]
 }
@@ -74,11 +84,13 @@ export async function createPlayer(
   name: string,
   tournamentId?: string,
 ): Promise<Player> {
+  await requirePoker()
   const parsed = PlayerNameSchema.parse(name)
   // Sumar al roster de un torneo es cosa del admin; crear el jugador solo
   // (para una suelta o para Entrenar) lo puede hacer el invitado.
   if (tournamentId) await requireAdmin()
-  // UPSERT por nombre: si ya existe, devolvemos el row sin modificarlo.
+  // UPSERT por nombre: si ya existe, devolvemos ese jugador. Si era solo de
+  // Truco, pasa a ser también de Poker (ahora juega o entrena poker).
   // Si se pasa tournamentId, lo agregamos al roster del torneo en la misma
   // transacción HTTP — así "+ Crear nuevo jugador" desde una partida activa
   // queda visible en el dropdown sin tener que refrescar a mano.
@@ -87,7 +99,7 @@ export async function createPlayer(
     const tx = (await sql.transaction([
       sql`
         INSERT INTO players (name) VALUES (${parsed})
-        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name, truco_only = false
         RETURNING id, name, created_at
       `,
       sql`
@@ -100,7 +112,7 @@ export async function createPlayer(
   }
   const rows = await sql`
     INSERT INTO players (name) VALUES (${parsed})
-    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name, truco_only = false
     RETURNING id, name, created_at
   `
   return rows[0] as Player
@@ -262,6 +274,7 @@ export async function getAllMatches(tournamentId: string): Promise<MatchWithPlay
 
 /** Todas las partidas sueltas registradas, de cualquier torneo o de ninguno. */
 export async function getCasualMatches(): Promise<MatchWithPlayers[]> {
+  await requirePoker()
   const rows = await sql`
     SELECT
       m.id,
@@ -316,6 +329,7 @@ export async function createMatch(matchData: {
   }>
 }): Promise<MatchWithPlayers> {
   const validated = CreateMatchSchema.parse(matchData)
+  await requirePoker()
   if (!validated.isCasual) await requireAdmin()
   // Las sueltas no cuelgan de un torneo (ni reparten puntos).
   const tournamentId = validated.isCasual ? null : validated.tournamentId!
@@ -524,6 +538,7 @@ export async function getAllActiveMatches(tournamentId: string): Promise<ActiveM
 
 /** Sueltas en curso (no dependen del torneo). */
 export async function getCasualActiveMatches(): Promise<ActiveMatch[]> {
+  await requirePoker()
   const rows = await sql`
     SELECT * FROM active_matches
     WHERE is_casual
@@ -559,6 +574,7 @@ export async function createActiveMatch(matchData: {
   }>
 }): Promise<ActiveMatch> {
   const validated = CreateActiveMatchSchema.parse(matchData)
+  await requirePoker()
   if (!validated.isCasual) await requireAdmin()
   // No persistimos tieBreak en active_matches: el orden de carga se infiere
   // del orden del array y se materializa como tie_break entero en createMatch.
@@ -652,6 +668,7 @@ export async function registerActiveMatch(matchId: string): Promise<MatchWithPla
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function recordTrainingAnswer(input: TrainingAnswerInput): Promise<void> {
+  await requirePoker()
   const a = TrainingAnswerSchema.parse(input)
   await sql`
     INSERT INTO training_answers (player_id, drill, game, deck, correct, local_date, street, seat)
@@ -660,6 +677,7 @@ export async function recordTrainingAnswer(input: TrainingAnswerInput): Promise<
 }
 
 export async function getTrainingProgress(playerId: string, today: string): Promise<TrainingProgress> {
+  await requirePoker()
   const id = UuidSchema.parse(playerId)
   const day = DateSchema.parse(today)
   const [drills, variants, combos, streets, seats, weeks, days, todayRows] = (await sql.transaction([
@@ -726,6 +744,7 @@ export async function getTrainingProgress(playerId: string, today: string): Prom
 
 /** Guarda el resultado del Desafío del día. Un solo intento por día: si ya había uno, queda el primero. */
 export async function submitDailyResult(input: DailyResultInput): Promise<void> {
+  await requirePoker()
   const r = DailyResultSchema.parse(input)
   await sql`
     INSERT INTO training_daily (player_id, challenge_date, score, total)
@@ -735,6 +754,7 @@ export async function submitDailyResult(input: DailyResultInput): Promise<void> 
 }
 
 export async function getDailyLeaderboard(date: string): Promise<DailyResult[]> {
+  await requirePoker()
   const day = DateSchema.parse(date)
   const rows = await sql`
     SELECT d.player_id, p.name, d.score, d.total
@@ -746,13 +766,79 @@ export async function getDailyLeaderboard(date: string): Promise<DailyResult[]> 
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// La Cajita Truco: progreso de Practicar (aparte del Entrenar de poker)
-// Roles: admin e invitado (cualquiera con sesión válida).
+// La Cajita Truco: jugadores y progreso de Practicar (aparte del Entrenar de poker)
+// Roles: todos. La sesión de Truco (TRUCO_PIN) no ve a nadie más que a sí
+// misma: no recibe la lista y solo usa jugadores anotados desde Truco.
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Para elegir quién practica. Admin e invitado: los de Poker (con `fixed`) y
+ * los anotados desde Truco (`truco_only`). Sesión de Truco: nadie (cada uno
+ * se anota con su nombre y su celular lo recuerda).
+ */
+export async function getTrucoPlayers(): Promise<Player[]> {
+  if ((await getCurrentRole()) === "truco") return []
+  const rows = await sql`
+    SELECT p.id, p.name, p.created_at, p.truco_only,
+      EXISTS (SELECT 1 FROM tournament_players tp WHERE tp.player_id = p.id) AS fixed
+    FROM players p
+    ORDER BY p.name
+  `
+  return rows as Player[]
+}
+
+/** El jugador guardado en este celular, si esta sesión lo puede usar (para mostrar su nombre). */
+export async function getTrucoPlayer(playerId: string): Promise<Player | null> {
+  const role = await getCurrentRole()
+  const id = UuidSchema.parse(playerId)
+  const rows = await sql`
+    SELECT id, name, created_at, truco_only FROM players
+    WHERE id = ${id} AND (${role !== "truco"} OR truco_only)
+    LIMIT 1
+  `
+  return (rows[0] as Player) ?? null
+}
+
+/**
+ * Anotarse desde Truco. Un nombre nuevo queda como jugador solo de Truco (no
+ * aparece en ninguna lista de Poker). Si el nombre ya existe: admin e invitado
+ * reciben ese jugador; la sesión de Truco solo si es de Truco o si nunca hizo
+ * nada en Poker (así no se puede hacer pasar por alguien del grupo).
+ */
+export async function createTrucoPlayer(name: string): Promise<Player> {
+  const role = await getCurrentRole()
+  const parsed = PlayerNameSchema.parse(name)
+  const rows = await sql`
+    INSERT INTO players (name, truco_only) VALUES (${parsed}, true)
+    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+    RETURNING id, name, created_at, truco_only
+  `
+  const player = rows[0] as Player
+  if (role !== "truco" || player.truco_only) return player
+  const claimed = await sql`
+    UPDATE players p SET truco_only = true
+    WHERE p.id = ${player.id}
+      AND NOT EXISTS (SELECT 1 FROM tournament_players WHERE player_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM match_players WHERE player_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM training_answers WHERE player_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM training_daily WHERE player_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM active_matches WHERE players::text LIKE '%' || p.id::text || '%')
+    RETURNING id, name, created_at, truco_only
+  `
+  if (!claimed[0]) throw new Error("Ese nombre ya está en uso")
+  return claimed[0] as Player
+}
+
+/** La sesión de Truco solo puede grabar o leer progreso de jugadores de Truco. */
+async function assertTrucoPlayer(playerId: string) {
+  if ((await getCurrentRole()) !== "truco") return
+  const rows = await sql`SELECT 1 FROM players WHERE id = ${playerId} AND truco_only LIMIT 1`
+  if (!rows[0]) throw new Error("No tenés permiso para esto")
+}
+
 export async function recordTrucoAnswer(input: TrucoAnswerInput): Promise<void> {
-  await getCurrentRole()
   const a = TrucoAnswerSchema.parse(input)
+  await assertTrucoPlayer(a.playerId)
   await sql`
     INSERT INTO truco_answers (player_id, quiz, correct, local_date)
     VALUES (${a.playerId}, ${a.quiz}, ${a.correct}, ${a.localDate})
@@ -760,9 +846,9 @@ export async function recordTrucoAnswer(input: TrucoAnswerInput): Promise<void> 
 }
 
 export async function getTrucoProgress(playerId: string, today: string): Promise<TrucoProgress> {
-  await getCurrentRole()
   const id = UuidSchema.parse(playerId)
   const day = DateSchema.parse(today)
+  await assertTrucoPlayer(id)
   const [quizzes, days, todayRows] = (await sql.transaction([
     sql`
       SELECT quiz AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total

@@ -45,6 +45,24 @@ const MIGRATIONS = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   "CREATE INDEX IF NOT EXISTS truco_answers_player_date ON truco_answers (player_id, local_date)",
+  // 16-truco-only-players.sql: jugadores anotados desde Truco (no se ven en
+  // Poker). La primera vez marca a los que solo practicaron Truco y nunca
+  // hicieron nada en Poker; después ya no toca a nadie.
+  `DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns WHERE table_name = 'players' AND column_name = 'truco_only'
+    ) THEN
+      ALTER TABLE players ADD COLUMN truco_only BOOLEAN NOT NULL DEFAULT false;
+      UPDATE players p SET truco_only = true
+      WHERE EXISTS (SELECT 1 FROM truco_answers WHERE player_id = p.id)
+        AND NOT EXISTS (SELECT 1 FROM tournament_players WHERE player_id = p.id)
+        AND NOT EXISTS (SELECT 1 FROM match_players WHERE player_id = p.id)
+        AND NOT EXISTS (SELECT 1 FROM training_answers WHERE player_id = p.id)
+        AND NOT EXISTS (SELECT 1 FROM training_daily WHERE player_id = p.id)
+        AND NOT EXISTS (SELECT 1 FROM active_matches WHERE players::text LIKE '%' || p.id::text || '%');
+    END IF;
+  END $$`,
 ]
 
 const url = process.env.DATABASE_URL

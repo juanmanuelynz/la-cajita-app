@@ -1,7 +1,8 @@
 "use client"
 
 // La Cajita Truco: app hermana de Poker (ver docs/plan-truco.md). Misma PWA y
-// misma sesión (admin e invitado); se entra y se sale desde Configuración.
+// misma sesión (admin e invitado); se entra y se sale desde Configuración. Con
+// el PIN de Truco (rol "truco") solo existe esta app: no se ofrece ir a Poker.
 
 import { useEffect, useState } from "react"
 import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
@@ -20,6 +21,7 @@ import { AjustesCard } from "@/components/ajustes-card"
 import { PokerPromo } from "@/components/poker-promo"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { getSessionRole } from "@/lib/database"
 
 type TrucoTab = "aprender" | "practicar" | "jugar" | "anotar" | "config"
 
@@ -40,6 +42,13 @@ export default function TrucoPage() {
   const [tab, setTab] = useState<TrucoTab>("aprender")
   useTrucoTheme()
   useEffect(() => setLastApp("truco"), [])
+  // La sesión de Truco no puede entrar a Poker: sin la presentación para ir.
+  const [trucoOnly, setTrucoOnly] = useState(true)
+  useEffect(() => {
+    getSessionRole()
+      .then((role) => setTrucoOnly(role === "truco"))
+      .catch(() => {})
+  }, [])
 
   // Splash de Truco solo si la app arranca acá (si venís de Poker ya hubo uno).
   // En el servidor y al hidratar arranca en "on", así está desde el primer HTML.
@@ -81,7 +90,7 @@ export default function TrucoPage() {
     anotar: <Anotador active={tab === "anotar"} />,
     config: (
       <div className="space-y-4 pt-4 pb-8">
-        <PokerPromo />
+        {!trucoOnly && <PokerPromo />}
         <AjustesCard />
       </div>
     ),

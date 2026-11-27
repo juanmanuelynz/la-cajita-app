@@ -2,6 +2,10 @@ export interface Player {
   id: string
   name: string
   created_at: string
+  /** Está o estuvo en el roster de algún torneo: es del grupo (solo en las listas para elegir jugador). */
+  fixed?: boolean
+  /** Se anotó desde Truco: no aparece en ninguna lista de Poker. */
+  truco_only?: boolean
 }
 
 export interface Match {

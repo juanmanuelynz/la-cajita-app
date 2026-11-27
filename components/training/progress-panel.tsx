@@ -120,6 +120,7 @@ export function PlayerDrawer({
   value,
   onChange,
   onCreate,
+  alone = false,
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -127,6 +128,8 @@ export function PlayerDrawer({
   value: string | null
   onChange: (id: string | null) => void
   onCreate?: (name: string) => Promise<Player>
+  /** Sesión de Truco: no hay lista, cada uno pone su nombre. */
+  alone?: boolean
 }) {
   const [newName, setNewName] = useState("")
   const [creating, setCreating] = useState(false)
@@ -144,47 +147,70 @@ export function PlayerDrawer({
       setNewName("")
       onOpenChange(false)
     } catch {
-      setCreateError("No se pudo crear. Probá con otro nombre.")
+      setCreateError("No se pudo. Probá con otro nombre (por ejemplo, con tu apellido).")
     } finally {
       setCreating(false)
     }
   }
 
+  // Los del grupo (roster de algún torneo) arriba; el resto aparte.
+  const fixed = players.filter((p) => p.fixed)
+  const others = players.filter((p) => !p.fixed)
+  const sections = alone
+    ? []
+    : fixed.length > 0
+      ? [
+          { title: null, list: fixed },
+          { title: "Otros", list: others },
+        ]
+      : [{ title: null, list: players }]
+
+  const playerButton = (p: Player) => (
+    <button
+      key={p.id}
+      type="button"
+      onClick={() => {
+        onChange(p.id)
+        onOpenChange(false)
+      }}
+      className={cn(
+        "flex flex-col items-center gap-1.5 rounded-2xl border p-3 transition-colors active:scale-[0.97]",
+        p.id === value ? "border-primary bg-primary/15" : "border-transparent bg-muted/60",
+      )}
+    >
+      <Avatar name={p.name} className="h-12 w-12 text-lg" />
+      <span className="w-full truncate text-center text-sm font-medium">{p.name}</span>
+    </button>
+  )
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>¿Quién entrena?</DrawerTitle>
+          <DrawerTitle>{alone ? "¿Cómo te llamás?" : "¿Quién entrena?"}</DrawerTitle>
           <DrawerDescription>Queda guardado en este celular.</DrawerDescription>
         </DrawerHeader>
-        <div className="grid grid-cols-3 gap-3 px-4 pb-8 max-h-[60vh] overflow-y-auto">
-          {players.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => {
-                onChange(p.id)
-                onOpenChange(false)
-              }}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-2xl border p-3 transition-colors active:scale-[0.97]",
-                p.id === value ? "border-primary bg-primary/15" : "border-transparent bg-muted/60",
-              )}
-            >
-              <Avatar name={p.name} className="h-12 w-12 text-lg" />
-              <span className="w-full truncate text-center text-sm font-medium">{p.name}</span>
-            </button>
-          ))}
-        </div>
+        {sections.length > 0 && (
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto px-4 pb-8">
+            {sections
+              .filter((sec) => sec.list.length > 0)
+              .map((sec) => (
+                <div key={sec.title ?? "grupo"} className="space-y-2">
+                  {sec.title && <div className="text-xs font-medium text-muted-foreground">{sec.title}</div>}
+                  <div className="grid grid-cols-3 gap-3">{sec.list.map(playerButton)}</div>
+                </div>
+              ))}
+          </div>
+        )}
         {onCreate && (
           <form
-            className="px-4 pb-8 -mt-4 space-y-1"
+            className={cn("px-4 pb-8 space-y-1", !alone && "-mt-4")}
             onSubmit={(e) => {
               e.preventDefault()
               void create()
             }}
           >
-            <div className="text-xs text-muted-foreground">¿No estás en la lista?</div>
+            {!alone && <div className="text-xs text-muted-foreground">¿No estás en la lista?</div>}
             <div className="flex gap-2">
               <Input
                 value={newName}
@@ -192,9 +218,10 @@ export function PlayerDrawer({
                 placeholder="Tu nombre"
                 maxLength={50}
                 aria-label="Tu nombre"
+                autoFocus={alone}
               />
               <Button type="submit" disabled={!newName.trim() || creating}>
-                {creating ? "Creando..." : "Agregarme"}
+                {creating ? "Creando..." : alone ? "Listo" : "Agregarme"}
               </Button>
             </div>
             {createError && <div className="text-xs text-rose-500">{createError}</div>}
