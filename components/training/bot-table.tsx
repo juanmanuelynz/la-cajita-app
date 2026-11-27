@@ -32,6 +32,7 @@ import {
   potTotal,
   requestCajita,
   startHand,
+  winningCards,
   act,
   type Action,
   type BettingStreet,
@@ -400,6 +401,7 @@ function actionText(t: TableState, seat: number): RingSeat["action"] | undefined
 function seatsFor(t: TableState, heroName: string): RingSeat[] {
   const h = t.hand!
   const r = h.result
+  const winning = winningCards(h)
   return t.seats.map((s, i) => {
     const p = h.players.find((x) => x.seat === i)
     const shown = i === HERO || (!!r && r.showdown && !!p && !p.folded)
@@ -411,6 +413,7 @@ function seatsFor(t: TableState, heroName: string): RingSeat[] {
       label: i === HERO ? pesos(s.stack) : `${name} · ${pesos(s.stack)}`,
       hero: i === HERO,
       cards: p && shown ? p.hole : undefined,
+      used: winning?.hole[i],
       action: r && won ? { kind: "bet", text: `Gana ${pesos(won)}` } : actionText(t, i),
       chip: p && !r && p.streetBet > 0 ? pesos(p.streetBet) : undefined,
       dealer: h.button === i,
@@ -751,6 +754,7 @@ export function BotTable({
   const canAsk = canRequestCajita(table, HERO)
   const heroPlayer = h.players.find((p) => p.seat === HERO)
   const winners = r ? Object.keys(r.won).map(Number) : []
+  const winning = winningCards(h)
 
   return (
     <div className="space-y-3">
@@ -770,7 +774,12 @@ export function BotTable({
         center={
           <>
             {h.board.length > 0 && (
-              <CardRow cards={h.board} size={GAMES[h.variant.game].holeCount >= 4 ? "xs" : "sm"} className="flex-nowrap justify-center" />
+              <CardRow
+                cards={h.board}
+                size={GAMES[h.variant.game].holeCount >= 4 ? "xs" : "sm"}
+                used={winning?.board}
+                className="flex-nowrap justify-center"
+              />
             )}
             <PotPill>Pozo {pesos(r ? r.pots.reduce((s, p) => s + p.amount, 0) : potTotal(h))}</PotPill>
           </>

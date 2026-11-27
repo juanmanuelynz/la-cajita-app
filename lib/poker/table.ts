@@ -585,3 +585,26 @@ export function netResult(t: TableState, seat: number): number {
   const s = t.seats[seat]
   return chipsOf(t, seat) - s.cajitas * t.config.cajita
 }
+
+/**
+ * Cartas de la mano ganadora en el showdown: de cada uno que ganó un pozo
+ * disputado, las propias que usa, y las de la mesa que usa alguno de ellos.
+ */
+export function winningCards(h: HandState): { hole: Record<number, Card[]>; board: Card[] } | null {
+  const r = h.result
+  if (!r?.showdown) return null
+  const hole: Record<number, Card[]> = {}
+  const board = new Set<Card>()
+  for (const pot of r.pots) {
+    if (pot.eligible.length < 2) continue
+    for (const seat of pot.winners) {
+      if (hole[seat]) continue
+      const p = h.players.find((x) => x.seat === seat)!
+      const best = bestHand(p.hole, h.board, h.variant.game, h.variant.deck)
+      if (!best) continue
+      hole[seat] = best.fromHole
+      for (const c of best.cards) if (!best.fromHole.includes(c)) board.add(c)
+    }
+  }
+  return { hole, board: h.board.filter((c) => board.has(c)) }
+}

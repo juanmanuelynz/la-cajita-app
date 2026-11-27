@@ -189,6 +189,8 @@ export interface RingSeat {
   hero?: boolean
   /** Tus cartas; en otro lugar, sus cartas boca arriba (la mano del que apostó). */
   cards?: readonly Card[]
+  /** Si se pasa, resalta estas de sus cartas y atenúa el resto (la mano ganadora). */
+  used?: readonly Card[]
   /** Repartir sus cartas con animación a partir de estos ms. */
   deal?: number
   /** Lo que hizo antes que vos. "fold" lo apaga; "bet" lo marca como el que apostó. */
@@ -319,6 +321,7 @@ export function RingTable({
                 <CardRow
                   cards={s.cards}
                   size={heroCardSize}
+                  used={s.used}
                   overlap={s.cards.length >= 4}
                   deal={0}
                   className="flex-nowrap justify-center"
@@ -328,6 +331,7 @@ export function RingTable({
               <CardRow
                 cards={s.cards}
                 size="sm"
+                used={s.used}
                 overlap={s.cards.length >= 4}
                 deal={s.deal}
                 className={cn("flex-nowrap justify-center", folded && "opacity-40")}

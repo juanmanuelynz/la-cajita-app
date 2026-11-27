@@ -14,6 +14,7 @@ import {
   requestCajita,
   startHand,
   variantForHand,
+  winningCards,
   type TableConfig,
   type TableState,
 } from "../lib/poker/table"
@@ -359,5 +360,44 @@ describe("Motor de la mano: cajitas", () => {
         if (h.result!.showdown) expect(h.board).toHaveLength(5)
       }
     }
+  })
+})
+
+describe("winningCards", () => {
+  type Hand = Parameters<typeof winningCards>[0]
+  const hand = (over: Partial<Hand>): Hand =>
+    ({
+      variant: { game: "omaha", deck: "short" },
+      board: parseCards("9h Ks 6s Jc 7h"),
+      players: [
+        { seat: 0, hole: parseCards("As 8h 7s 8s"), folded: false },
+        { seat: 1, hole: parseCards("Kc Kh Td Th"), folded: false },
+      ],
+      result: {
+        showdown: true,
+        pots: [{ amount: 5000, eligible: [0, 1], winners: [0] }],
+        won: { 0: 5000 },
+        handNames: {},
+      },
+      ...over,
+    }) as unknown as Hand
+
+  it("marca las 2 propias y las 3 de la mesa que arman la escalera A-6-7-8-9 en Omaha short", () => {
+    const w = winningCards(hand({}))!
+    expect(w.hole[0]).toHaveLength(2)
+    expect(w.hole[0]).toContain(parseCards("As")[0])
+    expect(w.hole[0].some((c) => parseCards("8h 8s").includes(c))).toBe(true)
+    expect(w.hole[1]).toBeUndefined()
+    expect(w.board).toEqual(parseCards("9h 6s 7h"))
+  })
+
+  it("sin showdown no marca nada; un pozo que se devuelve no cuenta como ganado", () => {
+    const h = hand({})
+    expect(winningCards({ ...h, result: { ...h.result!, showdown: false } })).toBeNull()
+    const back = winningCards({
+      ...h,
+      result: { ...h.result!, pots: [...h.result!.pots, { amount: 300, eligible: [1], winners: [1] }] },
+    })!
+    expect(Object.keys(back.hole)).toEqual(["0"])
   })
 })
