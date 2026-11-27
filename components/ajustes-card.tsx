@@ -2,22 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import Link from "next/link";
-import { ArrowLeftRight, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { logout } from "@/app/login/actions";
 import { useSoundEnabled } from "@/hooks/use-sound-enabled";
 import { playSound } from "@/lib/sounds";
-import { setLastApp } from "@/lib/last-app";
 
 /**
- * Tema, sonidos y cerrar sesión, y en Truco el botón para volver a Poker. Va
- * en Configuración → Ajustes (y es todo lo que ve el invitado ahí). `app` es en
- * cuál estás; en Poker, ir a Truco está en `TrucoPromo`.
+ * Tema, sonidos y cerrar sesión. Va en Configuración → Ajustes (y es todo lo
+ * que ve el invitado ahí) en Poker y en Truco. Pasar de una app a la otra está
+ * en las presentaciones de arriba (TrucoPromo en Poker, PokerPromo en Truco).
  */
-export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {}) {
+export function AjustesCard() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -62,15 +60,6 @@ export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {})
           </span>
         </div>
 
-        {/* En Poker, el botón para ir a Truco está en la presentación de Truco (TrucoPromo), arriba de esta tarjeta. */}
-        {app === "truco" && (
-          <Button asChild variant="secondary" className="w-full">
-            <Link href="/" onClick={() => setLastApp("poker")}>
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
-              Quiero jugar Poker
-            </Link>
-          </Button>
-        )}
 
         <form action={logout}>
           <Button type="submit" variant="outline" className="w-full">

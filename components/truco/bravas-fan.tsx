@@ -40,7 +40,8 @@ export function BravasFan({
       animationDelay: animated ? `${120 + i * 90}ms` : undefined,
     }) as CSSProperties
   return (
-    <div style={TRUCO_BACK} className={cn("relative h-28 w-56", className)}>
+    // translate-x-3: la carta de atrás asoma a la izquierda; así el conjunto queda centrado.
+    <div style={TRUCO_BACK} className={cn("relative h-28 w-56 translate-x-3", className)}>
       <SpanishCardBack size="lg" className="absolute bottom-0 left-1/2 -ml-8 origin-bottom -translate-x-10 -rotate-[34deg]" />
       {cards.map((c, i) => (
         <div

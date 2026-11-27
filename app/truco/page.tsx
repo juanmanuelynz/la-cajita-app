@@ -17,6 +17,7 @@ import { setLastApp } from "@/lib/last-app"
 import { appBooted, markAppBooted } from "@/lib/app-boot"
 import { TrucoSplash } from "@/components/splash-screen"
 import { AjustesCard } from "@/components/ajustes-card"
+import { PokerPromo } from "@/components/poker-promo"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
 
@@ -79,8 +80,9 @@ export default function TrucoPage() {
     jugar: <Jugar active={tab === "jugar"} />,
     anotar: <Anotador active={tab === "anotar"} />,
     config: (
-      <div className="pt-4 pb-8">
-        <AjustesCard app="truco" />
+      <div className="space-y-4 pt-4 pb-8">
+        <PokerPromo />
+        <AjustesCard />
       </div>
     ),
   }

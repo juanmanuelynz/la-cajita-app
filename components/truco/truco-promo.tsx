@@ -17,7 +17,7 @@ export function TrucoPromo() {
     <div className="overflow-hidden rounded-2xl border bg-card">
       <div
         style={{ "--back-from": "#2f62ad", "--back-to": "#16325e" } as CSSProperties}
-        className="truco-felt relative flex h-40 items-end justify-center pb-3"
+        className="truco-felt relative flex h-40 items-center justify-center pb-2"
       >
         <BravasFan />
       </div>

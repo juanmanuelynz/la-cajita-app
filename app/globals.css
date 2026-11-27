@@ -1044,7 +1044,8 @@
 
 
 /* Letra del logo "LA CAJITA" (components/logo-type.tsx): Bebas Neue (elegida
-   el 27/11/2026) con aire entre letras, en dorado (más oscuro en tema claro). */
+   el 27/11/2026) con aire entre letras. Toma el color del texto (blanco en los
+   encabezados con tema oscuro); los splash lo ponen en dorado. */
 .logo-type {
   font-family: var(--font-logo), var(--font-card), sans-serif;
   font-weight: 400;
@@ -1052,10 +1053,6 @@
   text-transform: uppercase;
   letter-spacing: 0.22em;
   margin-right: -0.22em;
-  color: #a87412;
-}
-.dark .logo-type {
-  color: #e2ab3c;
 }
 
 /* Splash de Truco: las bravas salen juntas del centro y se abren en abanico

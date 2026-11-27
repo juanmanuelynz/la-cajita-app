@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 /**
- * "LA CAJITA" con la letra del logo: mayúsculas bien separadas, en dorado. La
+ * "LA CAJITA" con la letra del logo (Bebas Neue, letras separadas). La
  * usan los encabezados de Poker y Truco y los splash. El margen negativo a la
  * derecha compensa el espacio que deja la última letra, así queda centrado.
  */

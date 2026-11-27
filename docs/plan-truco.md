@@ -19,8 +19,11 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
   jugar Truco / Poker" lo actualizan antes de navegar.
 - En Poker → Configuración, arriba de las pestañas Torneo / Ajustes / Reglas (siempre a la vista), una presentación
   de Truco con las cuatro bravas en abanico y "Quiero jugar Truco"
-  (`components/truco/truco-promo.tsx`); por eso `AjustesCard` muestra el botón
-  de cambiar de app solo en Truco ("Quiero jugar Poker").
+  (`components/truco/truco-promo.tsx`). En Truco → Ajustes, la presentación
+  espejo para volver: los cuatro ases en abanico sobre el paño verde y "Quiero
+  jugar Poker" (`components/poker-promo.tsx`). `AjustesCard` ya no tiene botón
+  de cambiar de app. El logo del encabezado va en blanco (color del texto); en
+  los splash, dorado.
 - El encabezado de Truco dice **"La Cajita Truco"**.
 - Es la misma PWA: un solo ícono instalado, el manifest y el service worker no
   cambian (el scope `/` ya cubre `/truco`).
