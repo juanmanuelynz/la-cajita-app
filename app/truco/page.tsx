@@ -39,7 +39,7 @@ const TABS: DockTab<TrucoTab>[] = [
 const TAB_KEY = "la-cajita:truco:tab"
 
 export default function TrucoPage() {
-  const [tab, setTab] = useState<TrucoTab>("aprender")
+  const [tab, setTab] = useState<TrucoTab>("anotar")
   useTrucoTheme()
   useEffect(() => setLastApp("truco"), [])
   // La sesión de Truco no puede entrar a Poker: sin la presentación para ir.
