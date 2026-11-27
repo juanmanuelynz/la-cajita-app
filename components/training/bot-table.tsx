@@ -8,6 +8,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Bot, Crown, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import { addHandToReads, botAct, botLevelOf, botWantsCajita, EMPTY_READS, makeBots, NANO_NAME, type BotDecision, type PlayerReads } from "@/lib/poker/bot"
 import { DIFFICULTY_NAMES, type Difficulty } from "@/lib/poker/difficulty"
@@ -615,6 +625,7 @@ export function BotTable({
   const [table, setTable] = useState<TableState | null>(null)
   const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP)
   const [ended, setEnded] = useState(false)
+  const [confirmEnd, setConfirmEnd] = useState(false)
   const [loaded, setLoaded] = useState(false)
   /**
    * Por qué jugó así cada bot en la mano. Se muestra recién al terminar la
@@ -868,10 +879,25 @@ export function BotTable({
         ) : (
           <span />
         )}
-        <Button variant="outline" size="sm" onClick={() => setEnded(true)}>
+        <Button variant="outline" size="sm" onClick={() => setConfirmEnd(true)}>
           Terminar mesa
         </Button>
       </div>
+
+      <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Terminar la mesa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vas a ver el resumen y la mesa se cierra. No vas a poder seguir jugando esta mesa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Seguir jugando</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setEnded(true)}>Terminar mesa</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
