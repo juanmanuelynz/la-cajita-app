@@ -4,8 +4,8 @@ Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
 27/11/2026. **Hecho:** pasos 1 (motor + máquina + tests), 2 (ruta `/truco`), 3
-(carta española y Aprender), 4 (anotador) y la primera parte del 5 (la mesa
-contra la máquina, con estadísticas). Lo demás está por construir.
+(carta española y Aprender), 4 (anotador) y 5 (jugar contra la máquina, con
+estadísticas y tres niveles). Lo demás está por construir.
 
 ## Decisiones
 
@@ -217,6 +217,30 @@ acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
 - **Para Jugar (paso 5), pedido el 27/11/2026** tras mirar otras apps:
   estadísticas contra la máquina (hechas: `lib/truco/play-stats.ts`, se
   guardan en `la-cajita:truco:estadisticas`) y rivales con niveles o
-  personalidad (falta: segunda parte del paso 5, midiendo cada nivel con un
-  estudio máquina contra máquina como `scripts/lab/bot-levels.ts`). La flor
-  como opción, más adelante.
+  personalidad (hecho: tres niveles, ver abajo). La flor como opción, más
+  adelante.
+
+## Niveles de la máquina (27/11/2026)
+
+En `lib/truco/ai.ts` (`BOT_LEVELS`), se eligen en Jugar antes de repartir
+(`la-cajita:truco:nivel`; la partida guardada recuerda el suyo en
+`la-cajita:truco:nivel-partida`). Reglas nuestras, sin fuente:
+
+- **Fácil**: no miente, quiere casi todo y tira primero su mejor carta.
+- **Media**: la máquina del artefacto, sin cambios (los tests lo cuidan).
+- **Difícil**: elige cada carta simulando el resto de la mano (`play:
+  "search"`), usa los tantos que dijo el rival para descartar manos
+  imposibles, quiere el truco desde 36% de chances y canta desde 60%.
+
+Medido con `npx tsx scripts/lab/truco-levels.ts 400 2026` (partidas a 30,
+400 por par, alternando quién es mano):
+
+| Par | Gana el primero |
+|---|---|
+| media vs fácil | 78.8% ± 4.0 |
+| difícil vs media | 60.0% ± 4.8 |
+| difícil vs fácil | 89.8% ± 3.0 |
+| fácil / media / difícil vs azar | 80.3% / 90.5% / 94.3% |
+
+Probado antes de elegir (otra semilla, 300-400 partidas contra media): sin la
+simulación de cartas, difícil no se separaba de media (49-55%).

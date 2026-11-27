@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { seededRng } from "../lib/poker/cards"
-import { decide } from "../lib/truco/ai"
+import { BOT_LEVELS, decide } from "../lib/truco/ai"
 import {
   act,
   actor,
@@ -323,3 +323,24 @@ describe("máquina contra máquina", () => {
     }
   })
 })
+
+describe("niveles de la máquina", () => {
+  it("cada nivel termina sus partidas jugando solo acciones legales", () => {
+    for (const level of BOT_LEVELS) {
+      for (let seed = 1; seed <= (level === "dificil" ? 4 : 10); seed++) {
+        const rng = seededRng(seed * 31)
+        let g = newGame({ target: 15, mano: (seed % 2) as Player }, rng)
+        while (!g.over) {
+          if (g.hand.over) {
+            g = dealHand(g, rng)
+            continue
+          }
+          const p = actor(g)!
+          g = act(g, p, decide(g, p, rng, level)) // tira si no es legal
+        }
+        expect(g.winner).not.toBeNull()
+      }
+    }
+  })
+})
+

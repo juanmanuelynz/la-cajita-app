@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useBackToClose } from "@/hooks/use-back-to-close"
-import { decide } from "@/lib/truco/ai"
+import { BOT_LEVEL_LABEL, BOT_LEVELS, decide, type BotLevel } from "@/lib/truco/ai"
 import {
   act,
   actor,
@@ -47,6 +47,17 @@ import { SpanishCard, SpanishCardBack } from "./spanish-card"
 const GAME_KEY = "la-cajita:truco:partida"
 const TARGET_KEY = "la-cajita:truco:objetivo"
 const STATS_KEY = "la-cajita:truco:estadisticas"
+/** Nivel elegido para la próxima partida, y el de la partida guardada. */
+const LEVEL_KEY = "la-cajita:truco:nivel"
+const GAME_LEVEL_KEY = "la-cajita:truco:nivel-partida"
+
+const LEVEL_HINT: Record<BotLevel, string> = {
+  facil: "No miente y quiere casi todo.",
+  media: "Canta, quiere y a veces miente.",
+  dificil: "Piensa cada carta y miente más.",
+}
+const parseLevel = (raw: string | null): BotLevel =>
+  BOT_LEVELS.includes(raw as BotLevel) ? (raw as BotLevel) : "media"
 /** Lo que tarda la máquina en jugar o contestar. */
 const AI_DELAY_MS = 900
 
@@ -393,6 +404,8 @@ export function Jugar({ active }: { active: boolean }) {
   const [atTable, setAtTable] = useState(false)
   const [target, setTargetState] = useState<15 | 30>(30)
   const [stats, setStats] = useState<PlayStats>({ ...EMPTY_STATS })
+  const [level, setLevelState] = useState<BotLevel>("media")
+  const [gameLevel, setGameLevel] = useState<BotLevel>("media")
   const [confirmQuit, setConfirmQuit] = useState(false)
   const loaded = useRef(false)
   const topRef = useRef<HTMLDivElement>(null)
@@ -401,6 +414,8 @@ export function Jugar({ active }: { active: boolean }) {
     setGame(load(GAME_KEY, parseGame))
     setTargetState(load(TARGET_KEY, (r) => (r === "15" ? 15 : 30)))
     setStats(load(STATS_KEY, parseStats))
+    setLevelState(load(LEVEL_KEY, parseLevel))
+    setGameLevel(load(GAME_LEVEL_KEY, parseLevel))
     loaded.current = true
     preloadSounds(["cardShuffle", "cardDeal", "latchClick", "fosforoA", "fosforoB", "jingleMatch"])
   }, [])
@@ -429,11 +444,11 @@ export function Jugar({ active }: { active: boolean }) {
   useEffect(() => {
     if (!game || !atTable || !active || actor(game) !== 1) return
     const id = setTimeout(() => {
-      const d = decide(game, 1)
+      const d = decide(game, 1, Math.random, gameLevel)
       advance(game, act(game, 1, d))
     }, AI_DELAY_MS)
     return () => clearTimeout(id)
-  }, [game, atTable, active, advance])
+  }, [game, atTable, active, advance, gameLevel])
 
   const human = (a: TrucoAction) => {
     if (!game || actor(game) !== 0) return
@@ -452,6 +467,10 @@ export function Jugar({ active }: { active: boolean }) {
   const start = () => {
     const g = newGame({ target, mano: Math.random() < 0.5 ? 0 : 1 })
     setGame(g)
+    setGameLevel(level)
+    try {
+      localStorage.setItem(GAME_LEVEL_KEY, level)
+    } catch {}
     setAtTable(true)
     dealSounds()
   }
@@ -469,6 +488,12 @@ export function Jugar({ active }: { active: boolean }) {
     setGame(null)
     setAtTable(false)
     setConfirmQuit(false)
+  }
+  const chooseLevel = (lv: BotLevel) => {
+    setLevelState(lv)
+    try {
+      localStorage.setItem(LEVEL_KEY, lv)
+    } catch {}
   }
   const chooseTarget = (t: 15 | 30) => {
     setTargetState(t)
@@ -491,7 +516,7 @@ export function Jugar({ active }: { active: boolean }) {
             Volver
           </Button>
           <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">
-            Mano {game.hands} · a {game.target}
+            {BOT_LEVEL_LABEL[gameLevel]} · mano {game.hands} · a {game.target}
           </div>
         </div>
         <Table g={game} onAction={human} onNextHand={nextHand} onNewGame={newGameFromEnd} onQuit={() => setConfirmQuit(true)} />
@@ -523,14 +548,13 @@ export function Jugar({ active }: { active: boolean }) {
           <div>
             <h2 className="text-xl font-bold">Mano a mano contra la máquina</h2>
             <p className="text-sm text-muted-foreground">
-              Sin flor. La máquina canta, quiere y a veces miente. Abajo de la mesa vas a ver qué pasó en cada jugada y
-              por qué.
+              Sin flor. Elegí el nivel de la máquina. Abajo de la mesa vas a ver qué pasó en cada jugada y por qué.
             </p>
           </div>
           {ongoing ? (
             <div className="space-y-2">
               <Button size="lg" className="w-full" onClick={() => setAtTable(true)}>
-                Seguir la partida ({ongoing.score[0]} a {ongoing.score[1]})
+                Seguir la partida ({ongoing.score[0]} a {ongoing.score[1]}, {BOT_LEVEL_LABEL[gameLevel].toLowerCase()})
               </Button>
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setConfirmQuit(true)}>
                 Abandonarla y empezar otra
@@ -553,6 +577,25 @@ export function Jugar({ active }: { active: boolean }) {
                     A {t}
                   </button>
                 ))}
+              </div>
+              <div className="space-y-1.5">
+                <div role="radiogroup" aria-label="Nivel de la máquina" className="grid grid-cols-3 rounded-full bg-muted p-1">
+                  {BOT_LEVELS.map((lv) => (
+                    <button
+                      key={lv}
+                      role="radio"
+                      aria-checked={level === lv}
+                      onClick={() => chooseLevel(lv)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-sm font-semibold transition-colors",
+                        level === lv ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {BOT_LEVEL_LABEL[lv]}
+                    </button>
+                  ))}
+                </div>
+                <p className="px-1 text-xs text-muted-foreground">{LEVEL_HINT[level]}</p>
               </div>
               <Button size="lg" className="w-full" onClick={start}>
                 Repartir

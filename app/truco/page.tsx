@@ -8,6 +8,7 @@ import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
 import { Aprender } from "@/components/truco/aprender"
+import { SuitPip } from "@/components/truco/spanish-card"
 import { Anotador } from "@/components/truco/anotador"
 import { Jugar } from "@/components/truco/jugar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
@@ -80,8 +81,13 @@ export default function TrucoPage() {
     <div className="relative h-[100dvh] flex flex-col">
       {/* Mismo encabezado que Poker: fondo sólido, ios-pwa-top-gap para la app instalada de iOS. */}
       <div className="ios-pwa-top-gap border-b bg-background text-foreground flex-shrink-0">
-        <div className="container mx-auto flex items-center justify-center px-4 py-2 text-lg font-bold md:text-xl">
-          <h1>La Cajita Truco</h1>
+        {/* Los cuatro palos españoles alrededor del nombre, como los de Poker. */}
+        <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
+          <SuitPip suit="espada" className="size-6" />
+          <SuitPip suit="copa" className="size-6" />
+          <h1 className="whitespace-nowrap">La Cajita Truco</h1>
+          <SuitPip suit="oro" className="size-6" />
+          <SuitPip suit="basto" className="size-6" />
         </div>
       </div>
 
