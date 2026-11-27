@@ -3,10 +3,8 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Hecho:** paso 1 (motor + máquina + tests), paso 2 (ruta `/truco`
-con las pestañas y los botones para ir y volver) y paso 3 (carta española y
-Aprender). Lo demás está por
-construir.
+27/11/2026. **Hecho:** pasos 1 (motor + máquina + tests), 2 (ruta `/truco`), 3
+(carta española y Aprender) y 4 (anotador). Lo demás está por construir.
 
 ## Decisiones
 
@@ -85,6 +83,11 @@ Fuera de esta versión: flor, parejas 2 vs 2, jugar online.
   envido) se suman tocando varias veces, como en la mesa de verdad.
 - "Empezar de cero" queda a un costado, con confirmación (`AlertDialog`).
   "A 15 / A 30" y los nombres de los equipos se mantienen.
+- Hecho así: lógica pura en `lib/truco/scorer.ts` (tests en
+  `tests/truco-scorer.test.ts`), pantalla en `components/truco/anotador.tsx`,
+  guardado en `la-cajita:truco:anotador`. Si se resta el punto que ganó la
+  partida, se descuenta de "Partidas ganadas". Cambiar A 15 / A 30 con puntos
+  pide confirmación. Por ahora sin sonido (ver Pendientes).
 
 ### Look and feel
 
@@ -187,3 +190,13 @@ Cada paso se sube por separado para poder probarlo.
 El estado de la partida es un objeto plano (como `lib/poker/table.ts`): cada
 acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
 `rnd` vivía dentro del estado y no se podía guardar).
+
+## Pendientes (27/11/2026)
+
+- **Las figuras (10, 11, 12) no se distinguen como figuras.** Se sacó la
+  palabra ("Caballo" chocaba con el índice) y por ahora quedan solo con el
+  número; no convence, hay que buscar una forma mejor (por ejemplo un dibujo
+  de la figura).
+- **Sonidos propios de Truco.** Los de `public/sounds` son casi todos de fichas
+  de poker; hacen falta sonidos de cartas españolas, fósforos, cantos. Buscar
+  CC0 y sumarlos a `CREDITS.txt`; nada inventado sin preguntar.

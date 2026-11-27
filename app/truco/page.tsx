@@ -8,6 +8,7 @@ import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
 import { Aprender } from "@/components/truco/aprender"
+import { Anotador } from "@/components/truco/anotador"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
@@ -66,7 +67,7 @@ export default function TrucoPage() {
     aprender: <Aprender onPractice={() => select("practicar")} />,
     practicar: <Proximamente title="Practicar" text="¿Qué carta gana?, ¿Cuántos tantos tenés? y ¿Cuántos puntos son?, con tu progreso." />,
     jugar: <Proximamente title="Jugar" text="Mano a mano contra la máquina, a 15 o a 30, sin flor." />,
-    anotar: <Proximamente title="Anotar" text="Anotador con fósforos para las partidas de verdad." />,
+    anotar: <Anotador active={tab === "anotar"} />,
     config: (
       <div className="pt-4 pb-8">
         <AjustesCard app="truco" />
