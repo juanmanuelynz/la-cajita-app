@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
+import { Aprender } from "@/components/truco/aprender"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
@@ -62,7 +63,7 @@ export default function TrucoPage() {
   }
 
   const screens: Record<TrucoTab, React.ReactNode> = {
-    aprender: <Proximamente title="Aprender" text="Las 8 lecciones: la baraja, la mano, qué carta gana, el envido, el truco, la partida, la flor y las señas." />,
+    aprender: <Aprender onPractice={() => select("practicar")} />,
     practicar: <Proximamente title="Practicar" text="¿Qué carta gana?, ¿Cuántos tantos tenés? y ¿Cuántos puntos son?, con tu progreso." />,
     jugar: <Proximamente title="Jugar" text="Mano a mano contra la máquina, a 15 o a 30, sin flor." />,
     anotar: <Proximamente title="Anotar" text="Anotador con fósforos para las partidas de verdad." />,

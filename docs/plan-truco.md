@@ -3,8 +3,9 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Hecho:** paso 1 (motor + máquina + tests) y paso 2 (ruta `/truco`
-con las pestañas vacías y los botones para ir y volver). Lo demás está por
+27/11/2026. **Hecho:** paso 1 (motor + máquina + tests), paso 2 (ruta `/truco`
+con las pestañas y los botones para ir y volver) y paso 3 (carta española y
+Aprender). Lo demás está por
 construir.
 
 ## Decisiones
@@ -136,7 +137,8 @@ y se suma a `CREDITS.txt`; no se inventa nada sin preguntar.
   TypeScript, puro y con RNG sembrable).
 - `lib/truco/ai.ts` — la máquina (`winChance`, `decide`).
 - `lib/truco/quizzes.ts` — generadores de ejercicios (puros, sembrables).
-- `lib/truco/lessons.tsx` — contenido de las lecciones.
+- `components/truco/lessons.tsx` — contenido de las lecciones (es JSX con cartas, por eso va en components); `components/truco/aprender.tsx` — menú de lecciones (con las leídas, en `la-cajita:truco:lecciones-leidas`) y cada lección en su pantalla con "Volver".
+- `components/truco/spanish-card.tsx` — `SpanishCard` (xs a xl), `SpanishCardBack` y `SuitPip`; `components/truco/fosforos.tsx` — los fósforos (ícono, lección y anotador).
 - `lib/truco/quiz-ids.ts` — lista única de ids de ejercicios (la usan el
   validador del servidor y la UI).
 - `components/truco/` — carta española, mesa, anotador, fósforos, lecciones,
