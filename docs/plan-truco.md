@@ -13,9 +13,9 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
   **"Quiero jugar Truco"** que lleva a `/truco`.
 - En Truco, su propia **Configuración** tiene **"Quiero jugar Poker"** que
   vuelve a `/`.
-- La app recuerda la última elegida en el dispositivo (localStorage): si
-  entraste a Truco, al abrir la app instalada vuelve a Truco. *(Pendiente de
-  confirmar; si no, siempre abre en Poker.)*
+- La app instalada **siempre abre en Poker** (`/`), aunque la última vez
+  hayas estado en Truco.
+- El encabezado de Truco dice **"La Cajita Truco"**.
 - Es la misma PWA: un solo ícono instalado, el manifest y el service worker no
   cambian (el scope `/` ya cubre `/truco`).
 
@@ -37,6 +37,9 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
 - Server Actions nuevas en `lib/database.ts`: `recordTrucoAnswer` (fire-and-
   forget, como `recordTrainingAnswer`) y `getTrucoProgress` (aciertos/total por
   ejercicio y racha). Las dos permitidas para admin e invitado.
+- **Son dos apps separadas:** el entrenamiento de Truco tiene su propio nivel,
+  su meta diaria y su progreso; no suma ni resta nada al Entrenar de poker
+  (ni a `levelFor`, ni a `DAILY_GOAL`, ni a Nano).
 - **El jugador es el mismo que elegiste en Entrenar** (misma clave
   `la-cajita:entrenar:jugador`): no se vuelve a preguntar. Si no elegiste,
   se pide una vez con el mismo selector.
@@ -123,11 +126,9 @@ y se suma a `CREDITS.txt`; no se inventa nada sin preguntar.
 
 Cada paso se sube por separado para poder probarlo.
 
-## Preguntas abiertas
+## Preguntas resueltas (27/11/2026)
 
-- ¿La app instalada abre en la última elegida (Poker o Truco) o siempre en
-  Poker?
-- ¿Practicar en Truco cuenta para el nivel y la meta diaria del Entrenar de
-  poker, o lleva su propio nivel? (Propuesta: propio, separado.)
-- ¿Querés un ícono o nombre distinto en el encabezado de Truco ("La Cajita
-  Truco")?
+- Al abrir, la app instalada va siempre a Poker.
+- Truco y Poker son apps separadas: cada entrenamiento tiene sus niveles
+  propios.
+- Encabezado: "La Cajita Truco".
