@@ -10,11 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { logout } from "@/app/login/actions";
 import { useSoundEnabled } from "@/hooks/use-sound-enabled";
 import { playSound } from "@/lib/sounds";
+import { setLastApp } from "@/lib/last-app";
 
 /**
- * Tema, sonidos, pasar a la otra app (Poker ↔ Truco) y cerrar sesión. Va en
- * Configuración → Ajustes (y es todo lo que ve el invitado ahí). `app` es en
- * cuál estás: el botón lleva a la otra.
+ * Tema, sonidos y cerrar sesión, y en Truco el botón para volver a Poker. Va
+ * en Configuración → Ajustes (y es todo lo que ve el invitado ahí). `app` es en
+ * cuál estás; en Poker, ir a Truco está en `TrucoPromo`.
  */
 export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {}) {
   const { theme, setTheme } = useTheme();
@@ -61,12 +62,15 @@ export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {})
           </span>
         </div>
 
-        <Button asChild variant="secondary" className="w-full">
-          <Link href={app === "poker" ? "/truco" : "/"}>
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            {app === "poker" ? "Quiero jugar Truco" : "Quiero jugar Poker"}
-          </Link>
-        </Button>
+        {/* En Poker, el botón para ir a Truco está en la presentación de Truco (TrucoPromo), arriba de esta tarjeta. */}
+        {app === "truco" && (
+          <Button asChild variant="secondary" className="w-full">
+            <Link href="/" onClick={() => setLastApp("poker")}>
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              Quiero jugar Poker
+            </Link>
+          </Button>
+        )}
 
         <form action={logout}>
           <Button type="submit" variant="outline" className="w-full">

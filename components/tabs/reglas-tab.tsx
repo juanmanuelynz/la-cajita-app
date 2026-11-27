@@ -36,6 +36,7 @@ import type {
 } from "@/lib/types";
 import { X } from "lucide-react";
 import { AjustesCard } from "@/components/ajustes-card";
+import { TrucoPromo } from "@/components/truco/truco-promo";
 import { TournamentClosingPodium } from "@/components/tournament-closing-podium";
 
 type ReglasSubtab = "torneo" | "reglas" | "ajustes";
@@ -604,6 +605,7 @@ export function ReglasTab({
         </TabsContent>
 
         <TabsContent value="ajustes" className="pt-4 pb-8 space-y-6 mt-0">
+          <TrucoPromo />
           <AjustesCard />
         </TabsContent>
       </Tabs>

@@ -12,6 +12,7 @@ import { Anotador } from "@/components/truco/anotador"
 import { Jugar } from "@/components/truco/jugar"
 import { Practicar } from "@/components/truco/practicar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
+import { setLastApp } from "@/lib/last-app"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
@@ -34,6 +35,7 @@ const TAB_KEY = "la-cajita:truco:tab"
 export default function TrucoPage() {
   const [tab, setTab] = useState<TrucoTab>("aprender")
   useTrucoTheme()
+  useEffect(() => setLastApp("truco"), [])
 
   // Vuelve a la última pestaña usada en este celular.
   useEffect(() => {

@@ -58,7 +58,9 @@ import { sortPlayerStats, type SortBy } from "@/lib/stats"
 import type { RankingScope } from "@/components/tabs/ranking-tab"
 import type { AuthRole } from "@/lib/auth"
 import { AjustesCard } from "@/components/ajustes-card"
+import { TrucoPromo } from "@/components/truco/truco-promo"
 import { SplashScreen } from "@/components/splash-screen"
+import { getLastApp, setLastApp } from "@/lib/last-app"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 
 ChartJS.register(
@@ -317,8 +319,14 @@ function LaCajitaPoker() {
   }, [booted, splashDone])
 
   useEffect(() => {
+    // Si la última vez estabas en Truco, la app abre ahí (el splash sigue mientras tanto).
+    if (getLastApp() === "truco") {
+      router.replace("/truco")
+      return
+    }
+    setLastApp("poker")
     void initializeApp()
-  }, [initializeApp])
+  }, [initializeApp, router])
 
   useEffect(() => {
     const tabParam = searchParams?.get("tab") as TabId | null
@@ -654,7 +662,8 @@ function LaCajitaPoker() {
       <EntrenarTab players={allPlayers} onCreatePlayer={handleCreateTrainingPlayer} />
     ),
     reglas: isGuest ? (
-      <div className="pt-4 pb-8">
+      <div className="space-y-4 pt-4 pb-8">
+        <TrucoPromo />
         <AjustesCard />
       </div>
     ) : (

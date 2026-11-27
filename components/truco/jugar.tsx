@@ -195,6 +195,11 @@ function Table({
   const reveal = h.over || g.over
   const handLog = g.log.filter((x) => x.hand === g.hands)
   const [logOpen, setLogOpen] = useState(true)
+  // Al terminar la mano, el cartel con "Siguiente mano" queda a la vista (si no, lo tapa la barra de abajo).
+  const endRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (reveal) endRef.current?.scrollIntoView({ block: "center", behavior: "smooth" })
+  }, [reveal])
   const value = h.truco.level ? `${TRUCO_LABEL[h.truco.level]} querido · vale ${trucoValue(h.truco.level)}` : "Vale 1"
   const tag = (p: Player) => (
     <span className="ml-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -317,7 +322,9 @@ function Table({
       )}
 
       {reveal && (
-        <Card className={cn("animate-fade-in", g.over && (g.winner === 0 ? "border-primary" : "border-destructive/60"))}>
+        <Card
+          ref={endRef}
+          className={cn("animate-fade-in", g.over && (g.winner === 0 ? "border-primary" : "border-destructive/60"))}>
           <CardContent className="flex flex-col items-center gap-2 pt-5 text-center">
             {g.over ? (
               <>
@@ -331,12 +338,10 @@ function Table({
                 {h.winner === 0 ? `Ganaste la mano: +${h.points}` : `La máquina gana la mano: +${h.points}`}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">La máquina tenía (envido {envidoPoints(h.dealt[1])}):</p>
-            <div className="flex gap-1.5">
-              {h.dealt[1].map((c) => (
-                <SpanishCard key={`${c.num}-${c.suit}`} card={c} size="sm" />
-              ))}
-            </div>
+            {/* Sus cartas ya están a la vista en la mesa; los tantos, solo si no se jugó el envido. */}
+            {!h.envido.points && (
+              <p className="text-xs text-muted-foreground">La máquina tenía {envidoPoints(h.dealt[1])} de envido.</p>
+            )}
             {g.over ? (
               <Button size="lg" className="mt-1" onClick={onNewGame}>
                 Otra partida

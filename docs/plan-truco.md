@@ -13,8 +13,14 @@ mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
   **"Quiero jugar Truco"** que lleva a `/truco`.
 - En Truco, su propia **Configuración** tiene **"Quiero jugar Poker"** que
   vuelve a `/`.
-- La app instalada **siempre abre en Poker** (`/`), aunque la última vez
-  hayas estado en Truco.
+- La app instalada **abre en la última que usaste** (cambiado el 27/11/2026;
+  antes abría siempre en Poker): `lib/last-app.ts` guarda `la-cajita:app` y
+  Poker, al abrir, manda a `/truco` si la última fue Truco. Los botones "Quiero
+  jugar Truco / Poker" lo actualizan antes de navegar.
+- En Poker → Configuración → Ajustes, arriba de los ajustes, una presentación
+  de Truco con las cuatro bravas en abanico y "Quiero jugar Truco"
+  (`components/truco/truco-promo.tsx`); por eso `AjustesCard` muestra el botón
+  de cambiar de app solo en Truco ("Quiero jugar Poker").
 - El encabezado de Truco dice **"La Cajita Truco"**.
 - Es la misma PWA: un solo ícono instalado, el manifest y el service worker no
   cambian (el scope `/` ya cubre `/truco`).
