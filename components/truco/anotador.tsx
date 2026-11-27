@@ -339,8 +339,9 @@ export function Anotador({ active }: { active: boolean }) {
                 : `Podés borrar solo los puntos de esta partida, o también las partidas ganadas (${s.wins[0]} a ${s.wins[1]}). Los nombres quedan.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          {/* gap-3: en el celular los botones van apilados y sin aire entre sí (Cancelar trae su propio margen: se lo saco). */}
+          <AlertDialogFooter className="gap-3 sm:gap-0">
+            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
             {confirm?.kind === "reset" && hasWins && (
               <AlertDialogAction
                 onClick={() => {
