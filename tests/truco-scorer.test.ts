@@ -6,6 +6,7 @@ import {
   parseScorer,
   removePoint,
   renameTeam,
+  scoreSpeech,
   scorerWinner,
   setTarget,
   type ScorerState,
@@ -71,5 +72,13 @@ describe("anotador de truco", () => {
     expect(parseScorer("{roto")).toEqual(freshScorer())
     expect(parseScorer(JSON.stringify({ target: 15, score: [99, -1] })).score).toEqual([0, 0])
     expect(parseScorer(JSON.stringify({ target: 15, score: [99, 3] })).score).toEqual([15, 3])
+  })
+
+  it("la voz dice los dos puntajes, o quién ganó", () => {
+    let s = renameTeam(freshScorer({ target: 15 }), 1, "Los primos")
+    s = times(s, 3, (x) => addPoint(x, 0))
+    expect(scoreSpeech(s)).toBe("Nosotros 3, Los primos 0.")
+    s = times(s, 15, (x) => addPoint(x, 1))
+    expect(scoreSpeech(s)).toBe("¡Ganó Los primos! 15 a 3.")
   })
 })

@@ -87,7 +87,16 @@ Fuera de esta versión: flor, parejas 2 vs 2, jugar online.
   `tests/truco-scorer.test.ts`), pantalla en `components/truco/anotador.tsx`,
   guardado en `la-cajita:truco:anotador`. Si se resta el punto que ganó la
   partida, se descuenta de "Partidas ganadas". Cambiar A 15 / A 30 con puntos
-  pide confirmación. Por ahora sin sonido (ver Pendientes).
+  pide confirmación.
+- **Sonido por equipo y voz** (pedido el 27/11/2026, sale de mirar otras apps
+  de anotador): al sumar, el primer equipo suena con un sacudón de la cajita de
+  fósforos (`fosforoA`) y el segundo con el mismo más grave (`fosforoB`); restar
+  suena a un fósforo que cae (`fosforoSaca`); ganar, `jingleMatch`. Todo
+  respeta el silencio de Ajustes. Botón de **voz** (apagada de entrada, se
+  recuerda en `la-cajita:truco:voz`): la voz del celular (Web Speech, es-AR)
+  dice "Nosotros 12, Ellos 9." o "¡Ganó …!", una sola vez cuando se dejan de
+  tocar puntos (`lib/truco/speech.ts`, `scoreSpeech` en `scorer.ts`).
+- Descartado: historial de partidas (hoy se anota "nosotros y ellos" y listo).
 
 ### Look and feel
 
@@ -198,5 +207,11 @@ acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
   número; no convence, hay que buscar una forma mejor (por ejemplo un dibujo
   de la figura).
 - **Sonidos propios de Truco.** Los de `public/sounds` son casi todos de fichas
-  de poker; hacen falta sonidos de cartas españolas, fósforos, cantos. Buscar
-  CC0 y sumarlos a `CREDITS.txt`; nada inventado sin preguntar.
+  de poker. El anotador ya tiene los suyos (fósforos, Freesound CC0, ver
+  `CREDITS.txt`); para Jugar faltan los de cartas españolas y cantos: buscar
+  CC0 en Freesound (las vistas previas se bajan sin cuenta) y sumarlos a
+  `CREDITS.txt`; nada inventado sin preguntar. Los "Sonidos y animaciones" de
+  arriba que usan fichas (`chipsStack`) hay que cambiarlos.
+- **Para Jugar (paso 5), pedido el 27/11/2026** tras mirar otras apps:
+  estadísticas contra la máquina (partidas, % ganadas, envidos) y rivales con
+  niveles o personalidad. La flor como opción, más adelante.

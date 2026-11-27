@@ -85,7 +85,7 @@ export function AjustesCard({ app = "poker" }: { app?: "poker" | "truco" } = {})
             <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">
               CC BY 4.0
             </a>{" "}
-            (recortado). Mazo: vkproduktion, CC0. Resto: Kenney, CC0.
+            (recortado). Mazo: vkproduktion, CC0. Fósforos: JarredGibb y MeanRaccoon, CC0. Resto: Kenney, CC0.
           </p>
         </details>
       </CardContent>

@@ -103,3 +103,10 @@ export function parseScorer(raw: string | null): ScorerState {
     return freshScorer()
   }
 }
+
+/** Lo que dice la voz del anotador: los dos puntajes, o quién ganó. */
+export function scoreSpeech(s: ScorerState): string {
+  const w = scorerWinner(s)
+  if (w !== null) return `¡Ganó ${s.names[w]}! ${s.score[w]} a ${s.score[1 - w]}.`
+  return `${s.names[0]} ${s.score[0]}, ${s.names[1]} ${s.score[1]}.`
+}

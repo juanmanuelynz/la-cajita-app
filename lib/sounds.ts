@@ -1,6 +1,7 @@
 // Efectos de sonido de la app. Los archivos están en /public/sounds: fichas
 // recortadas de "Clay Chips" (ArtOrDie, Freesound, CC BY 4.0: la atribución
-// se muestra en Configuración → Ajustes) y el resto del pack de Kenney (CC0).
+// se muestra en Configuración → Ajustes), los de Truco (fósforos, Freesound
+// CC0) y el resto del pack de Kenney (CC0).
 // Origen y licencia de cada uno en CREDITS.txt.
 //
 // Se usa Web Audio en vez de <audio>: menos latencia, sonidos superpuestos y
@@ -33,6 +34,13 @@ export const SOUNDS = {
   error: { files: ["drop-leather"], volume: 0.7 },
   jingleMatch: { files: ["jingle-match"], volume: 0.6 },
   jingleTournament: { files: ["jingle-tournament"], volume: 0.6 },
+  // --- Truco (sonidos propios, nada de fichas) ---
+  /** Sacudón de la cajita de fósforos: +1 para el primer equipo del anotador. */
+  fosforoA: { files: ["fosforo-1"], volume: 0.55 },
+  /** El mismo sacudón, más grave: +1 para el segundo equipo (así se distingue quién anotó). */
+  fosforoB: { files: ["fosforo-2"], volume: 0.55 },
+  /** Un fósforo que cae, grave y bajito: −1 en el anotador. */
+  fosforoSaca: { files: ["fosforo-saca"], volume: 0.45 },
 } as const satisfies Record<string, { files: readonly string[]; volume: number }>
 
 export type SoundName = keyof typeof SOUNDS

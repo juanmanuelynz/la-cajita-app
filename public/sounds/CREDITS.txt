@@ -34,3 +34,17 @@ drop-leather.mp3          RPG sounds/dropLeather.ogg
 jingle-match.mp3          Jingle sounds/jingles_STEEL/jingles_STEEL04.ogg
 jingle-tournament.mp3     Jingle sounds/jingles_PIZZA/jingles_PIZZA02.ogg
 Convertidos a MP3 mono 96 kbps y normalizados a -1 dBFS de pico.
+
+== Truco: fósforos (Freesound, CC0) ==
+"MatchBox Shake.wav" de JarredGibb -- https://freesound.org/s/248240/
+License: Creative Commons 0 -- http://creativecommons.org/publicdomain/zero/1.0/
+fosforo-1.mp3: un sacudón recortado desde 0,070 s (0,105 s).
+fosforo-2.mp3: otro sacudón desde 0,735 s (0,120 s), bajado de tono (x0,85).
+
+"item drop matchsticks individually on cold floor" de MeanRaccoon -- https://freesound.org/s/829696/
+License: Creative Commons 0 -- http://creativecommons.org/publicdomain/zero/1.0/
+fosforo-saca.mp3: la caída de un fósforo desde 0,675 s (0,06 s), bajada de tono (x0,7).
+
+Los tres: recortados de la vista previa HQ de Freesound, pasa-altos de 80 Hz,
+fades cortos, MP3 mono 112 kbps, normalizados a -1 dBFS de pico.
+

@@ -3,11 +3,12 @@
 // Anotador de Truco para partidas de verdad (ver docs/plan-truco.md): dos
 // equipos, fósforos de a 5, a 15 o a 30 (malas arriba, buenas abajo). Tocar la
 // columna suma 1; mantener apretado medio segundo saca 1 (el último fósforo se
-// va apagando; en Android vibra). La pantalla no se apaga mientras está a la
-// vista. Todo queda en este celular (localStorage).
+// va apagando; en Android vibra). Cada equipo suena distinto al sumar y, si se
+// prende, la voz del celular dice los puntos. La pantalla no se apaga mientras
+// está a la vista. Todo queda en este celular (localStorage).
 
 import { useEffect, useRef, useState } from "react"
-import { RotateCcw } from "lucide-react"
+import { RotateCcw, Speech } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -26,15 +27,19 @@ import {
   parseScorer,
   removePoint,
   renameTeam,
+  scoreSpeech,
   scorerWinner,
   setTarget,
   type ScorerState,
   type Team,
 } from "@/lib/truco/scorer"
+import { canSpeak, speakSoon, stopSpeaking } from "@/lib/truco/speech"
+import { playSound, preloadSounds, type SoundName } from "@/lib/sounds"
 import { cn } from "@/lib/utils"
 import { Fosforos } from "./fosforos"
 
 const KEY = "la-cajita:truco:anotador"
+const VOICE_KEY = "la-cajita:truco:voz"
 const HOLD_MS = 500
 /** Si el dedo se mueve más que esto, es un scroll: no suma ni resta. */
 const MOVE_TOLERANCE = 12
@@ -207,6 +212,39 @@ export function Anotador({ active }: { active: boolean }) {
 
   useWakeLock(active)
 
+  // Voz: apagada de entrada; se recuerda en este celular.
+  const [voice, setVoice] = useState(false)
+  const [voiceAvailable, setVoiceAvailable] = useState(false)
+  useEffect(() => {
+    setVoiceAvailable(canSpeak())
+    try {
+      setVoice(localStorage.getItem(VOICE_KEY) === "1")
+    } catch {}
+    preloadSounds(["fosforoA", "fosforoB", "fosforoSaca", "jingleMatch"])
+  }, [])
+  useEffect(() => {
+    if (!active) stopSpeaking()
+  }, [active])
+  useEffect(() => stopSpeaking, [])
+  const toggleVoice = () => {
+    const on = !voice
+    setVoice(on)
+    try {
+      localStorage.setItem(VOICE_KEY, on ? "1" : "0")
+    } catch {}
+    if (on) speakSoon(scoreSpeech(s), 0)
+    else stopSpeaking()
+  }
+
+  /** Aplica un cambio de puntos con su sonido (y la voz, si está prendida). */
+  const apply = (next: ScorerState, sound: SoundName) => {
+    if (next === s) return
+    setS(next)
+    playSound(sound)
+    if (scorerWinner(next) !== null && scorerWinner(s) === null) playSound("jingleMatch", { delay: 150 })
+    if (voice) speakSoon(scoreSpeech(next))
+  }
+
   const winner = scorerWinner(s)
   const hasPoints = s.score[0] + s.score[1] > 0
 
@@ -235,6 +273,19 @@ export function Anotador({ active }: { active: boolean }) {
             </button>
           ))}
         </div>
+        {voiceAvailable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleVoice}
+            aria-pressed={voice}
+            aria-label={voice ? "Dejar de decir los puntos en voz alta" : "Decir los puntos en voz alta"}
+            title={voice ? "La voz dice los puntos" : "Voz apagada"}
+            className={cn("ml-auto rounded-full", voice ? "bg-primary/15 text-primary" : "text-muted-foreground")}
+          >
+            <Speech className="size-5" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -263,8 +314,8 @@ export function Anotador({ active }: { active: boolean }) {
             key={team}
             s={s}
             team={team}
-            onAdd={() => setS((x) => addPoint(x, team))}
-            onRemove={() => setS((x) => removePoint(x, team))}
+            onAdd={() => apply(addPoint(s, team), team === 0 ? "fosforoA" : "fosforoB")}
+            onRemove={() => apply(removePoint(s, team), "fosforoSaca")}
             onRename={(name) => setS((x) => renameTeam(x, team, name))}
           />
         ))}
