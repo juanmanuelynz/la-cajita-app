@@ -58,6 +58,7 @@ import { sortPlayerStats, type SortBy } from "@/lib/stats"
 import type { RankingScope } from "@/components/tabs/ranking-tab"
 import type { AuthRole } from "@/lib/auth"
 import { AjustesCard } from "@/components/ajustes-card"
+import { SplashScreen } from "@/components/splash-screen"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 
 ChartJS.register(
@@ -143,6 +144,11 @@ function LaCajitaPoker() {
   }, [activeTab, emblaApi, tabs])
 
   const [loading, setLoading] = useState(false)
+  // Splash: tapa todo hasta que termina la primera carga (rol + datos), así no
+  // se ve la ficha, media pantalla y la ficha otra vez. Después se va con un fundido.
+  const [booted, setBooted] = useState(false)
+  const [splashLeaving, setSplashLeaving] = useState(false)
+  const [splashDone, setSplashDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [matchToDelete, setMatchToDelete] = useState<string | null>(null)
   const [activeMatchToDelete, setActiveMatchToDelete] = useState<string | null>(null)
@@ -294,8 +300,21 @@ function LaCajitaPoker() {
           ? err.message
           : "No se pudo conectar a la base de datos. Verifica tu conexión.",
       )
+    } finally {
+      setBooted(true)
     }
   }, [loadAllData, loadCasualData])
+
+  useEffect(() => {
+    if (!booted || splashDone) return
+    // Un cuadro con el splash encima de la app ya armada, y recién ahí el fundido.
+    const raf = requestAnimationFrame(() => setSplashLeaving(true))
+    const t = setTimeout(() => setSplashDone(true), 400)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t)
+    }
+  }, [booted, splashDone])
 
   useEffect(() => {
     void initializeApp()
@@ -541,6 +560,8 @@ function LaCajitaPoker() {
     [allTimeStats, rankingSortBy],
   )
 
+  if (!booted) return <SplashScreen />
+
   if (
     (role === null && connectionStatus !== false) ||
     (loading &&
@@ -784,22 +805,14 @@ function LaCajitaPoker() {
 
       <PWAInstall />
       <OfflineIndicator />
+      {!splashDone && <SplashScreen leaving={splashLeaving} />}
     </div>
   )
 }
 
 export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <ChipSpinner className="w-8 h-8 mx-auto mb-4" />
-            <p>Cargando...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<SplashScreen />}>
       <LaCajitaPoker />
     </Suspense>
   )
