@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
 import { Aprender } from "@/components/truco/aprender"
 import { Anotador } from "@/components/truco/anotador"
+import { Jugar } from "@/components/truco/jugar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
@@ -66,7 +67,7 @@ export default function TrucoPage() {
   const screens: Record<TrucoTab, React.ReactNode> = {
     aprender: <Aprender onPractice={() => select("practicar")} />,
     practicar: <Proximamente title="Practicar" text="¿Qué carta gana?, ¿Cuántos tantos tenés? y ¿Cuántos puntos son?, con tu progreso." />,
-    jugar: <Proximamente title="Jugar" text="Mano a mano contra la máquina, a 15 o a 30, sin flor." />,
+    jugar: <Jugar active={tab === "jugar"} />,
     anotar: <Anotador active={tab === "anotar"} />,
     config: (
       <div className="pt-4 pb-8">

@@ -4,7 +4,8 @@ Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
 27/11/2026. **Hecho:** pasos 1 (motor + máquina + tests), 2 (ruta `/truco`), 3
-(carta española y Aprender) y 4 (anotador). Lo demás está por construir.
+(carta española y Aprender), 4 (anotador) y la primera parte del 5 (la mesa
+contra la máquina, con estadísticas). Lo demás está por construir.
 
 ## Decisiones
 
@@ -133,8 +134,9 @@ Ajustes):
   repartir de `hole-cards.tsx`.
 - Tirar una carta: `cardDeal` y la carta vuela del lugar a la baza.
 - Cantar (truco, envido, quiero): globo con un "pop" y `latchClick`.
-- Ganar la mano: `chipsStack`; ganar la partida: `jingleMatch` + la
-  celebración compartida (`components/celebration.tsx`).
+- Sumar puntos: los fósforos del anotador (`fosforoA` vos, `fosforoB` la
+  máquina), no fichas; ganar la partida: `jingleMatch`. (Cambiado el
+  27/11/2026: el plan decía `chipsStack` y la celebración con fichas.)
 - Error (tocar algo que no se puede): `error`.
 
 Si falta algún sonido propio del truco (por ejemplo una voz), se busca uno CC0
@@ -213,5 +215,8 @@ acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
   `CREDITS.txt`; nada inventado sin preguntar. Los "Sonidos y animaciones" de
   arriba que usan fichas (`chipsStack`) hay que cambiarlos.
 - **Para Jugar (paso 5), pedido el 27/11/2026** tras mirar otras apps:
-  estadísticas contra la máquina (partidas, % ganadas, envidos) y rivales con
-  niveles o personalidad. La flor como opción, más adelante.
+  estadísticas contra la máquina (hechas: `lib/truco/play-stats.ts`, se
+  guardan en `la-cajita:truco:estadisticas`) y rivales con niveles o
+  personalidad (falta: segunda parte del paso 5, midiendo cada nivel con un
+  estudio máquina contra máquina como `scripts/lab/bot-levels.ts`). La flor
+  como opción, más adelante.

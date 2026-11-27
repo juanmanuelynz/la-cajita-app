@@ -1022,3 +1022,21 @@
     transform: translateY(0);
   }
 }
+
+/* Truco · Jugar: paño de la mesa con el azul de la paleta (las mismas
+   variables que el dorso de las cartas) y el globito de los cantos. */
+.truco-felt {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--back-from, #059669) 85%, white 15%), transparent 75%),
+    linear-gradient(160deg, var(--back-from, #059669), var(--back-to, #064e3b));
+  box-shadow: inset 0 0 30px rgb(0 0 0 / 0.35);
+}
+.animate-bubble-pop {
+  animation: bubble-pop 220ms ease-out;
+}
+@keyframes bubble-pop {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
