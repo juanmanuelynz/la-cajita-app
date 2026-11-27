@@ -22,7 +22,17 @@ const TRUCO_BACK = {
   "--back-leaf": "#f3d27a",
 } as CSSProperties
 
-export function BravasFan({ animated = false, className }: { animated?: boolean; className?: string }) {
+export function BravasFan({
+  animated = false,
+  reversed = false,
+  className,
+}: {
+  animated?: boolean
+  /** Del 7 de oro al 1 de espada (el ancho de espada queda adelante, a la derecha). */
+  reversed?: boolean
+  className?: string
+}) {
+  const cards = reversed ? [...BRAVAS].reverse() : BRAVAS
   const place = (i: number) =>
     ({
       "--fan": `translateX(${(i - 1.5) * 26}px) rotate(${(i - 1.5) * 11}deg)`,
@@ -32,7 +42,7 @@ export function BravasFan({ animated = false, className }: { animated?: boolean;
   return (
     <div style={TRUCO_BACK} className={cn("relative h-28 w-56", className)}>
       <SpanishCardBack size="lg" className="absolute bottom-0 left-1/2 -ml-8 origin-bottom -translate-x-10 -rotate-[34deg]" />
-      {BRAVAS.map((c, i) => (
+      {cards.map((c, i) => (
         <div
           key={`${c.num}-${c.suit}`}
           className={cn("absolute bottom-0 left-1/2 -ml-8 origin-bottom", animated && "animate-fan-open")}

@@ -1043,13 +1043,15 @@
 
 
 
-/* Letra del logo "LA CAJITA" (components/logo-type.tsx): mayúsculas con mucho
-   aire entre letras, en dorado (más oscuro en tema claro para que se lea). */
+/* Letra del logo "LA CAJITA" (components/logo-type.tsx): Bebas Neue (elegida
+   el 27/11/2026) con aire entre letras, en dorado (más oscuro en tema claro). */
 .logo-type {
-  font-weight: 600;
+  font-family: var(--font-logo), var(--font-card), sans-serif;
+  font-weight: 400;
+  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.45em;
-  margin-right: -0.45em;
+  letter-spacing: 0.22em;
+  margin-right: -0.22em;
   color: #a87412;
 }
 .dark .logo-type {

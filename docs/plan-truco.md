@@ -243,7 +243,7 @@ Reglas confirmadas (las fuentes no coinciden en los valores):
   para iPhone y 32). El fondo de apertura de Android (`background_color` del
   manifest) es el verde del paño.
 - **Logo** "LA CAJITA" (`components/logo-type.tsx`, clase `.logo-type`):
-  mayúsculas con mucho aire, en dorado. En los dos encabezados; Truco ya no
+  Bebas Neue con aire entre letras, en dorado. En los dos encabezados; Truco ya no
   dice "Truco" y sus palos van en dos tintas (espada y basto claros, copa y oro
   dorados), como ♠♥♦♣ en Poker.
 - **Splash** de Poker "S2": paño verde de borde a borde con la ficha del ícono

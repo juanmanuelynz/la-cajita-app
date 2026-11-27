@@ -1,12 +1,14 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import { Inter, Oswald } from "next/font/google";
+import { Bebas_Neue, Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 // Tipografía condensada para el valor de las cartas de Entrenar.
 const oswald = Oswald({ subsets: ["latin"], weight: ["600"], variable: "--font-card" });
+// Letra del logo "LA CAJITA" (components/logo-type.tsx).
+const bebas = Bebas_Neue({ subsets: ["latin"], weight: ["400"], variable: "--font-logo" });
 
 export const metadata: Metadata = {
   title: "La Cajita Poker",
@@ -71,7 +73,7 @@ export default function RootLayout({
         {/* Apple Splash Screen */}
         <link rel="apple-touch-startup-image" href="/icon-512.png" />
       </head>
-      <body className={`${inter.className} ${oswald.variable}`}>
+      <body className={`${inter.className} ${oswald.variable} ${bebas.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

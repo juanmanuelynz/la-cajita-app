@@ -91,11 +91,11 @@ export default function TrucoPage() {
       <div className="ios-pwa-top-gap border-b bg-background text-foreground flex-shrink-0">
         {/* Los cuatro palos españoles alrededor del logo, en dos tintas como ♠♥♦♣ en Poker. */}
         <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
-          <SuitGlyph suit="espada" className="size-5" />
-          <SuitGlyph suit="copa" className="size-5 text-primary" />
-          <LogoType className="text-base" />
-          <SuitGlyph suit="oro" className="size-5 text-primary" />
-          <SuitGlyph suit="basto" className="size-5" />
+          <SuitGlyph suit="espada" className="size-3.5" />
+          <SuitGlyph suit="copa" className="size-3.5 text-primary" />
+          <LogoType className="text-[26px]" />
+          <SuitGlyph suit="oro" className="size-3.5 text-primary" />
+          <SuitGlyph suit="basto" className="size-3.5" />
         </div>
       </div>
 

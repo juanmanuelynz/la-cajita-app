@@ -707,7 +707,7 @@ function LaCajitaPoker() {
           {/* Palos como texto (\uFE0E), no emoji: en el iPhone ♠ y ♣ salían negros sobre el fondo oscuro. Mismo coral que las cartas. */}
           <span aria-hidden>{"♠\uFE0E"}</span>
           <span aria-hidden className={SUIT_RED}>{"♥\uFE0E"}</span>
-          <LogoType className="text-base" />
+          <LogoType className="text-[26px]" />
           <span aria-hidden className={SUIT_RED}>{"♦\uFE0E"}</span>
           <span aria-hidden>{"♣\uFE0E"}</span>
         </div>

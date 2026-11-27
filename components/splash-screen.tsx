@@ -51,7 +51,7 @@ export function SplashScreen({ leaving = false, children }: { leaving?: boolean;
         <span aria-hidden className="text-[#f4a39b]">
           {"♥︎"}
         </span>
-        <LogoType className="text-lg !text-[#e2ab3c]" />
+        <LogoType className="text-[32px] !text-[#e2ab3c]" />
         <span aria-hidden className="text-[#f4a39b]">
           {"♦︎"}
         </span>
@@ -70,12 +70,12 @@ export function TrucoSplash({ leaving = false }: { leaving?: boolean }) {
       className="bg-[radial-gradient(ellipse_at_50%_40%,#3a72c2,#122a52_75%)] text-[#f4ecd8]"
     >
       <span role="status" aria-label="Cargando">
-        <BravasFan animated className="mb-6 scale-125" />
+        <BravasFan animated reversed className="mb-6 scale-125" />
       </span>
       <div className="flex items-center gap-4">
         <SuitGlyph suit="espada" className="size-5" />
         <SuitGlyph suit="copa" className="size-5 text-[#e2ab3c]" />
-        <LogoType className="text-lg !text-[#e2ab3c]" />
+        <LogoType className="text-[32px] !text-[#e2ab3c]" />
         <SuitGlyph suit="oro" className="size-5 text-[#e2ab3c]" />
         <SuitGlyph suit="basto" className="size-5" />
       </div>

@@ -48,8 +48,6 @@ import { SpanishCard, SpanishCardBack } from "./spanish-card"
 
 const GAME_KEY = "la-cajita:truco:partida"
 const TARGET_KEY = "la-cajita:truco:objetivo"
-/** Si la próxima partida es con flor ("1") o sin ("0"). */
-const FLOR_KEY = "la-cajita:truco:flor"
 const STATS_KEY = "la-cajita:truco:estadisticas"
 /** Nivel elegido para la próxima partida, y el de la partida guardada. */
 const LEVEL_KEY = "la-cajita:truco:nivel"
@@ -448,7 +446,6 @@ export function Jugar({ active }: { active: boolean }) {
   useEffect(() => {
     setGame(load(GAME_KEY, parseGame))
     setTargetState(load(TARGET_KEY, (r) => (r === "15" ? 15 : 30)))
-    setWithFlor(load(FLOR_KEY, (r) => r === "1"))
     setStats(load(STATS_KEY, parseStats))
     setLevelState(load(LEVEL_KEY, parseLevel))
     setGameLevel(load(GAME_LEVEL_KEY, parseLevel))
@@ -531,12 +528,8 @@ export function Jugar({ active }: { active: boolean }) {
       localStorage.setItem(LEVEL_KEY, lv)
     } catch {}
   }
-  const chooseFlor = (on: boolean) => {
-    setWithFlor(on)
-    try {
-      localStorage.setItem(FLOR_KEY, on ? "1" : "0")
-    } catch {}
-  }
+  // Cada partida nueva arranca sin flor (no se recuerda la última elección).
+  const chooseFlor = (on: boolean) => setWithFlor(on)
   const chooseTarget = (t: 15 | 30) => {
     setTargetState(t)
     try {
