@@ -13,6 +13,8 @@ const bebas = Bebas_Neue({ subsets: ["latin"], weight: ["400"], variable: "--fon
 export const metadata: Metadata = {
   title: "La Cajita Poker",
   description: "Aplicación para gestionar partidas de poker y torneos",
+  // En metadata (no como <meta> a mano) para que /truco lo pueda reemplazar.
+  applicationName: "La Cajita Poker",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -60,7 +62,6 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="La Cajita Poker" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="La Cajita" />

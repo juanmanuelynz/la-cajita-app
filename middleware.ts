@@ -20,6 +20,8 @@ export async function middleware(request: NextRequest) {
   const role = await verifyToken(token, secret)
   if (!role) {
     const url = new URL("/login", request.url)
+    // Que el login (y su SEO, que es lo que ve quien comparte el link) sea el de Truco.
+    if (pathname === "/truco" || pathname.startsWith("/truco/")) url.searchParams.set("app", "truco")
     return NextResponse.redirect(url)
   }
   return openLastApp(request) ?? NextResponse.next()

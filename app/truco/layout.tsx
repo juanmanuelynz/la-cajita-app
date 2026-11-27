@@ -1,8 +1,6 @@
-import type { Metadata } from "next"
+import { TRUCO_METADATA } from "./metadata"
 
-export const metadata: Metadata = {
-  title: "La Cajita Truco",
-}
+export const metadata = TRUCO_METADATA
 
 export default function TrucoLayout({ children }: { children: React.ReactNode }) {
   return children
