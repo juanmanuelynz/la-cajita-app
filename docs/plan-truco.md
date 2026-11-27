@@ -82,7 +82,8 @@ recuerda en `la-cajita:truco:tab`.
 | Anotar | Anotador con fósforos, malas/buenas, pantalla siempre prendida (ver abajo) | artefacto, cambiado |
 | Configuración | Ajustes (tema, sonidos — el mismo `AjustesCard`) + "Quiero jugar Poker" + salir | nuevo |
 
-Fuera de esta versión: flor, parejas 2 vs 2, jugar online.
+Fuera de esta versión: parejas 2 vs 2, jugar online. (La flor se sumó como
+opción de Jugar el 27/11/2026, ver "Flor" abajo.)
 
 ### Anotador con fósforos
 
@@ -214,6 +215,25 @@ Cada paso se sube por separado para poder probarlo.
 El estado de la partida es un objeto plano (como `lib/poker/table.ts`): cada
 acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
 `rnd` vivía dentro del estado y no se podía guardar).
+
+## Flor (27/11/2026)
+
+Opción por partida en Jugar ("Sin flor / Con flor", guardada en
+`la-cajita:truco:flor`; la partida guarda la suya en `GameState.flor`).
+Reglas confirmadas (las fuentes no coinciden en los valores):
+
+- Quien tiene flor la canta antes de tirar su primera carta (no puede hacer
+  otra cosa antes; también para contestar un envido o un truco) y anula el
+  envido de los dos. Si el otro no tiene flor, suma 3.
+- Si los dos tienen, el otro contesta: "con flor me achico" (el primero suma 3),
+  "contraflor" (querida: la mejor flor suma 6; no querida: el que la cantó suma
+  4) o "contraflor al resto" (querida: lo que le falta al que va ganando; no
+  querida: 4, como dice el reglamento bonaerense). Empate: gana el mano.
+- Puntos de flor: 20 + las tres cartas (figuras 0), de 20 a 38.
+- La máquina siempre canta su flor; con dos flores decide por sus puntos
+  (`florDecision` en `lib/truco/ai.ts`, igual en los tres niveles). Sin flor,
+  "media" sigue idéntica.
+- La lección 7 cuenta estas reglas. Tests en `tests/truco.test.ts`.
 
 ## Ícono, logo y splash (27/11/2026)
 

@@ -11,6 +11,7 @@ import {
   envidoPoints,
   envidoQuerido,
   envidoRaises,
+  florPoints,
   handWinner,
   LADDER,
   legal,
@@ -27,8 +28,12 @@ import {
 const c = (num: number, suit: Suit): TrucoCard => ({ num, suit })
 
 /** Partida a medida: el jugador 0 es mano y las cartas son las que se pasan. */
-function game(hand0: TrucoCard[], hand1: TrucoCard[], over: { target?: number; score?: [number, number]; mano?: Player } = {}): GameState {
-  const g = newGame({ target: over.target ?? 30, mano: over.mano ?? 0 }, seededRng(1))
+function game(
+  hand0: TrucoCard[],
+  hand1: TrucoCard[],
+  over: { target?: number; score?: [number, number]; mano?: Player; flor?: boolean } = {},
+): GameState {
+  const g = newGame({ target: over.target ?? 30, mano: over.mano ?? 0, flor: over.flor ?? false }, seededRng(1))
   g.hand.dealt = [hand0.slice(), hand1.slice()]
   g.hand.cards = [hand0.slice(), hand1.slice()]
   if (over.score) g.score = over.score
@@ -337,6 +342,106 @@ describe("niveles de la máquina", () => {
           }
           const p = actor(g)!
           g = act(g, p, decide(g, p, rng, level)) // tira si no es legal
+        }
+        expect(g.winner).not.toBeNull()
+      }
+    }
+  })
+})
+
+describe("flor (partidas con flor)", () => {
+  const FLOR_ORO = [c(7, "oro"), c(6, "oro"), c(5, "oro")] // 38
+  const FLOR_COPA = [c(4, "copa"), c(12, "copa"), c(1, "copa")] // 25
+  const SIN_FLOR = [c(4, "basto"), c(5, "espada"), c(12, "basto")]
+
+  it("cuenta los puntos de flor", () => {
+    expect(florPoints([c(7, "basto"), c(5, "basto"), c(11, "basto")])).toBe(32) // el ejemplo de la lección
+    expect(florPoints(FLOR_ORO)).toBe(38)
+    expect(florPoints(SIN_FLOR)).toBeNull()
+  })
+
+  it("sin la opción de flor, tres del mismo palo es solo envido", () => {
+    const g = game(FLOR_ORO, SIN_FLOR)
+    expect(legal(g, 0).flor).toBe(false)
+    expect(legal(g, 0).envido).toEqual(["envido", "real", "falta"])
+  })
+
+  it("quien tiene flor la canta antes que nada, suma 3 y no hay envido", () => {
+    let g = game(FLOR_ORO, SIN_FLOR, { flor: true })
+    expect(legal(g, 0)).toMatchObject({ flor: true, play: false, envido: [], truco: null })
+    g = act(g, 0, { type: "flor" })
+    expect(g.score).toEqual([3, 0])
+    expect(legal(g, 0)).toMatchObject({ play: true, envido: [] })
+    g = act(g, 0, { type: "play", index: 0 })
+    expect(legal(g, 1).envido).toEqual([]) // el otro tampoco puede cantar envido
+  })
+
+  it("la flor anula un envido cantado", () => {
+    // La máquina (1) es mano sin flor y canta envido; vos tenés flor.
+    let g = game(FLOR_ORO, SIN_FLOR, { flor: true, mano: 1 })
+    g = act(g, 1, { type: "envido", call: "envido" })
+    expect(legal(g, 0)).toMatchObject({ flor: true, quiero: false, noQuiero: false })
+    g = act(g, 0, { type: "flor" })
+    expect(g.score).toEqual([3, 0])
+    expect(g.hand.envido.done).toBe(true)
+    expect(actor(g)).toBe(1) // sigue la mano
+  })
+
+  it("la flor va primero que el truco", () => {
+    let g = game(FLOR_ORO, SIN_FLOR, { flor: true, mano: 1 })
+    g = act(g, 1, { type: "truco" })
+    g = act(g, 0, { type: "flor" })
+    expect(g.score).toEqual([3, 0])
+    expect(g.hand.pending).toEqual({ kind: "truco", by: 1, level: 1 })
+    expect(legal(g, 0)).toMatchObject({ quiero: true, noQuiero: true })
+  })
+
+  it("los dos con flor: con flor me achico, contraflor y contraflor al resto", () => {
+    const both = () => game(FLOR_ORO, FLOR_COPA, { flor: true }) // vos 38, la máquina 25
+    // Me achico: el primero suma 3.
+    let g = act(both(), 0, { type: "flor" })
+    expect(legal(g, 1)).toMatchObject({ achico: true, contraflor: true, contraflorResto: true, quiero: false })
+    expect(act(g, 1, { type: "achico" }).score).toEqual([3, 0])
+    // Contraflor querida: el de más flor suma 6.
+    g = act(act(both(), 0, { type: "flor" }), 1, { type: "contraflor" })
+    expect(legal(g, 0)).toMatchObject({ quiero: true, noQuiero: true, contraflorResto: true })
+    const q = act(g, 0, { type: "quiero" })
+    expect(q.score).toEqual([6, 0])
+    expect(q.hand.flor.points).toEqual([38, 25])
+    // Contraflor no querida: el que la cantó suma 4.
+    expect(act(g, 0, { type: "noQuiero" }).score).toEqual([0, 4])
+    // Contraflor al resto querida: lo que le falta al que va ganando.
+    let r = game(FLOR_ORO, FLOR_COPA, { flor: true, score: [10, 18] })
+    r = act(act(r, 0, { type: "flor" }), 1, { type: "contraflorResto" })
+    expect(legal(r, 0)).toMatchObject({ quiero: true, noQuiero: true, contraflorResto: false })
+    expect(act(r, 0, { type: "quiero" }).score).toEqual([22, 18]) // 10 + (30 − 18)
+    expect(act(r, 0, { type: "noQuiero" }).score).toEqual([10, 22]) // 18 + 4
+  })
+
+  it("empate de flor: gana el mano", () => {
+    const a = [c(7, "oro"), c(6, "oro"), c(12, "oro")] // 33
+    const b = [c(7, "copa"), c(6, "copa"), c(11, "copa")] // 33
+    let g = game(a, b, { flor: true, mano: 1 })
+    g = act(g, 1, { type: "flor" })
+    g = act(g, 0, { type: "contraflor" })
+    g = act(g, 1, { type: "quiero" })
+    expect(g.hand.flor.winner).toBe(1)
+    expect(g.score).toEqual([0, 6])
+  })
+
+  it("máquina contra máquina con flor: las partidas terminan con acciones legales", () => {
+    for (const level of BOT_LEVELS) {
+      for (let seed = 1; seed <= (level === "dificil" ? 4 : 20); seed++) {
+        const rng = seededRng(seed * 7 + 3)
+        let g = newGame({ target: 30, mano: (seed % 2) as Player, flor: true }, rng)
+        while (!g.over) {
+          if (g.hand.over) {
+            g = dealHand(g, rng)
+            continue
+          }
+          const p = actor(g)!
+          g = act(g, p, decide(g, p, rng, level))
+          expect(Math.max(...g.score)).toBeLessThanOrEqual(30)
         }
         expect(g.winner).not.toBeNull()
       }

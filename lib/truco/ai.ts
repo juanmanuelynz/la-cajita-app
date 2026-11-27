@@ -16,6 +16,7 @@ import {
   deck,
   envidoPoints,
   faltaValue,
+  florPoints,
   handWinner,
   legal,
   rank,
@@ -243,12 +244,36 @@ function envidoDecision(g: GameState, p: Player, l: Legal, rng: Rng, pr: Profile
   return null
 }
 
+/**
+ * Flor (igual en todos los niveles): siempre la canta. Si los dos tienen, decide
+ * por sus puntos de flor (de 20 a 38; el mano gana los empates, así que cuenta 1 más).
+ */
+function florDecision(g: GameState, p: Player, l: Legal): TrucoAction | null {
+  if (l.flor) return { type: "flor" }
+  const pd = g.hand.pending
+  if (!pd || pd.kind !== "flor") return null
+  const pts = (florPoints(g.hand.dealt[p]) ?? 0) + (g.mano === p ? 1 : 0)
+  if (pd.call === "flor") {
+    if (pts >= 36) return { type: "contraflorResto" }
+    if (pts >= 33) return { type: "contraflor" }
+    return { type: "achico" }
+  }
+  if (pd.call === "contraflor") {
+    if (pts >= 36 && l.contraflorResto) return { type: "contraflorResto" }
+    return { type: pts >= 32 ? "quiero" : "noQuiero" }
+  }
+  return { type: pts >= 34 ? "quiero" : "noQuiero" }
+}
+
 /** La acción de la máquina para el jugador `p` (al que le toca). */
 export function decide(g: GameState, p: Player, rng: Rng = Math.random, level: BotLevel = "media"): TrucoAction {
   const pr = PROFILES[level]
   const l = legal(g, p)
   const pd = g.hand.pending
   const chance = (x: number) => rng() < x
+
+  const flor = florDecision(g, p, l)
+  if (flor) return flor
 
   const env = envidoDecision(g, p, l, rng, pr)
   if (pd && pd.kind === "envido") return env!

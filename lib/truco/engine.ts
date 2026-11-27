@@ -11,6 +11,13 @@
 // - Si te cantan envido, podés subirlo (real / falta) aunque ya hayas tirado tu
 //   primera carta; lo que no podés es cantarlo vos primero.
 // - Irse al mazo da solo lo que vale la mano, sin puntos de envido.
+// - Flor (opcional por partida, `flor: true` en newGame; decidido el 27/11/2026):
+//   quien tiene flor la canta antes de tirar su primera carta (no puede hacer
+//   otra cosa antes) y anula el envido. Si el otro no tiene, suma 3. Si los dos
+//   tienen, el otro contesta "con flor me achico" (el primero suma 3),
+//   "contraflor" (querida: el de más flor suma 6; no querida: el que la cantó
+//   suma 4) o "contraflor al resto" (querida: lo que le falta al que va
+//   ganando; no querida: 4). Empate de flor: gana el mano.
 
 import { shuffle, type Rng } from "../poker/cards"
 
@@ -125,6 +132,17 @@ export function envidoExplain(hand: readonly TrucoCard[]): string {
   return `Ningún palo repetido: vale la carta más alta, ${envidoPoints(hand)}`
 }
 
+/** Puntos de flor (tres del mismo palo: 20 + las tres), o null si no hay flor. */
+export function florPoints(hand: readonly TrucoCard[]): number | null {
+  if (hand.length !== 3 || !hand.every((c) => c.suit === hand[0].suit)) return null
+  return 20 + hand.reduce((t, c) => t + envidoValue(c), 0)
+}
+
+export type FlorCall = "flor" | "contraflor" | "resto"
+export const FLOR_LABEL: Record<FlorCall, string> = { flor: "Flor", contraflor: "Contraflor", resto: "Contraflor al resto" }
+/** Flor sin contraflor: 3. Contraflor querida: 6. Contraflor (o al resto) no querida: 4. */
+export const FLOR_POINTS = { flor: 3, contraflor: 6, noQuerida: 4 } as const
+
 export const ENVIDO_LABEL: Record<EnvidoCall, string> = { envido: "Envido", real: "Real envido", falta: "Falta envido" }
 const ENVIDO_VAL: Record<Exclude<EnvidoCall, "falta">, number> = { envido: 2, real: 3 }
 
@@ -196,7 +214,10 @@ export interface Trick {
   winner: TrickResult | null
 }
 
-export type Pending = { kind: "truco"; by: Player; level: 1 | 2 | 3 } | { kind: "envido"; by: Player }
+export type Pending =
+  | { kind: "truco"; by: Player; level: 1 | 2 | 3 }
+  | { kind: "envido"; by: Player }
+  | { kind: "flor"; by: Player; call: FlorCall }
 
 export interface HandState {
   /** Las tres cartas que recibió cada uno (para contar el envido). */
@@ -208,8 +229,10 @@ export interface HandState {
   /** Nivel querido y quién puede subirlo (null = cualquiera, todavía no se cantó). */
   truco: { level: TrucoLevel; canRaise: Player | null }
   envido: { calls: EnvidoCall[]; done: boolean; points: [number, number] | null; winner: Player | null }
+  /** Flor (solo en partidas con flor): quién la cantó, si terminó y, si se compararon, los puntos. */
+  flor: { sung: [boolean, boolean]; done: boolean; points: [number, number] | null; winner: Player | null }
   pending: Pending | null
-  /** Truco que quedó esperando respuesta mientras se resuelve el envido. */
+  /** Truco que quedó esperando respuesta mientras se resuelve el envido o la flor. */
   suspended: Pending | null
   over: boolean
   winner: Player | null
@@ -218,6 +241,8 @@ export interface HandState {
 
 export interface GameState {
   target: number
+  /** Se juega con flor (las partidas guardadas de antes no lo tienen: sin flor). */
+  flor?: boolean
   score: [number, number]
   mano: Player
   log: LogEntry[]
@@ -234,6 +259,10 @@ export type TrucoAction =
   | { type: "quiero" }
   | { type: "noQuiero" }
   | { type: "mazo" }
+  | { type: "flor" }
+  | { type: "contraflor" }
+  | { type: "contraflorResto" }
+  | { type: "achico" }
 
 export interface Legal {
   play: boolean
@@ -243,6 +272,12 @@ export interface Legal {
   quiero: boolean
   noQuiero: boolean
   mazo: boolean
+  /** Cantar flor, y contestar la flor del otro teniendo flor. */
+  flor: boolean
+  contraflor: boolean
+  contraflorResto: boolean
+  /** "Con flor me achico". */
+  achico: boolean
 }
 
 const clone = <T,>(x: T): T => structuredClone(x)
@@ -254,9 +289,13 @@ function say(g: GameState, who: Player | null, text: string, kind: LogKind = "in
 }
 
 /** Partida nueva; `mano` es quien es mano en la primera. */
-export function newGame({ target = 30, mano = 0 }: { target?: number; mano?: Player } = {}, rng: Rng = Math.random): GameState {
+export function newGame(
+  { target = 30, mano = 0, flor = false }: { target?: number; mano?: Player; flor?: boolean } = {},
+  rng: Rng = Math.random,
+): GameState {
   const g = {
     target,
+    flor,
     score: [0, 0],
     mano: other(mano),
     log: [],
@@ -290,6 +329,7 @@ function deal(g: GameState, rng: Rng): GameState {
     turn: g.mano,
     truco: { level: 0, canRaise: null },
     envido: { calls: [], done: false, points: null, winner: null },
+    flor: { sung: [false, false], done: false, points: null, winner: null },
     pending: null,
     suspended: null,
     over: false,
@@ -308,10 +348,24 @@ export function actor(g: GameState): Player | null {
   return g.hand.pending ? other(g.hand.pending.by) : g.hand.turn
 }
 
+/** Si `p` tiene flor en esta partida (con flor). */
+export function hasFlor(g: GameState, p: Player): boolean {
+  return !!g.flor && florPoints(g.hand.dealt[p]) !== null
+}
+
+/** Tiene flor y todavía no la cantó, en la primera baza antes de tirar: es lo único que puede hacer. */
+function mustSingFlor(g: GameState, p: Player): boolean {
+  const h = g.hand
+  const f = h.flor ?? { sung: [false, false], done: false }
+  return hasFlor(g, p) && !f.sung[p] && !f.done && h.tricks.length === 1 && !h.tricks[0].cards[p]
+}
+
 function canEnvido(g: GameState, p: Player): EnvidoCall[] {
   const h = g.hand
   const pd = h.pending
   if (h.envido.done || h.tricks.length > 1) return []
+  // Con flor no hay envido: ni si la tenés vos ni si ya se cantó.
+  if (g.flor && (hasFlor(g, p) || h.flor.sung[0] || h.flor.sung[1])) return []
   if (pd && pd.by === p) return []
   // Contestar un envido: se puede subir aunque ya hayas tirado tu carta.
   if (pd && pd.kind === "envido") return envidoRaises(h.envido.calls)
@@ -323,10 +377,29 @@ function canEnvido(g: GameState, p: Player): EnvidoCall[] {
 }
 
 export function legal(g: GameState, p: Player): Legal {
-  const none: Legal = { play: false, envido: [], truco: null, quiero: false, noQuiero: false, mazo: false }
+  const none: Legal = {
+    play: false,
+    envido: [],
+    truco: null,
+    quiero: false,
+    noQuiero: false,
+    mazo: false,
+    flor: false,
+    contraflor: false,
+    contraflorResto: false,
+    achico: false,
+  }
   if (actor(g) !== p) return none
   const h = g.hand
   const pd = h.pending
+  // Contestar la flor del otro (solo pasa si los dos tienen flor).
+  if (pd && pd.kind === "flor") {
+    if (pd.call === "flor") return { ...none, achico: true, contraflor: true, contraflorResto: true }
+    if (pd.call === "contraflor") return { ...none, quiero: true, noQuiero: true, contraflorResto: true }
+    return { ...none, quiero: true, noQuiero: true }
+  }
+  // Con flor sin cantar, lo primero es cantarla (también para contestar un envido o un truco).
+  if (mustSingFlor(g, p)) return { ...none, flor: true }
   const out: Legal = { ...none, envido: canEnvido(g, p) }
   if (pd) {
     out.quiero = out.noQuiero = true
@@ -421,7 +494,9 @@ function apply(g: GameState, p: Player, action: TrucoAction, l: Legal): void {
       if (!l.quiero || !h.pending) throw new Error("No hay nada que querer")
       const pd = h.pending
       say(g, p, "Quiero.", "call")
-      if (pd.kind === "truco") {
+      if (pd.kind === "flor") {
+        resolveFlor(g, pd.call === "resto" ? faltaValue(g.score, g.target) : FLOR_POINTS.contraflor, pd.call)
+      } else if (pd.kind === "truco") {
         h.truco = { level: pd.level, canRaise: p }
         h.pending = null
         say(
@@ -439,7 +514,13 @@ function apply(g: GameState, p: Player, action: TrucoAction, l: Legal): void {
       if (!l.noQuiero || !h.pending) throw new Error("No hay nada que rechazar")
       const pd = h.pending
       say(g, p, "No quiero.", "call")
-      if (pd.kind === "truco") {
+      if (pd.kind === "flor") {
+        h.flor.done = true
+        h.pending = null
+        say(g, null, `${FLOR_LABEL[pd.call]} no querida: ${pd.by === 0 ? "sumás" : "la máquina suma"} ${FLOR_POINTS.noQuerida}.`, "points")
+        addScore(g, pd.by, FLOR_POINTS.noQuerida)
+        resume(g)
+      } else if (pd.kind === "truco") {
         const pts = pd.level === 1 ? 1 : trucoValue((pd.level - 1) as TrucoLevel)
         endHand(g, pd.by, pts, ` (${TRUCO_LABEL[pd.level].toLowerCase()} no querido)`)
       } else {
@@ -449,6 +530,50 @@ function apply(g: GameState, p: Player, action: TrucoAction, l: Legal): void {
         addScore(g, pd.by, pts)
         resume(g)
       }
+      return
+    }
+    case "flor": {
+      if (!l.flor) throw new Error("No podés cantar flor ahora")
+      if (h.pending?.kind === "envido") {
+        h.envido = { ...h.envido, calls: [], done: true }
+        say(g, null, "La flor anula el envido.", "explain")
+      } else if (h.pending?.kind === "truco") {
+        h.suspended = h.pending
+        say(g, null, "La flor va primero: el truco queda esperando respuesta.", "explain")
+      }
+      h.pending = null
+      h.envido.done = true
+      h.flor.sung[p] = true
+      say(g, p, "¡Flor!", "call")
+      if (hasFlor(g, o)) {
+        h.pending = { kind: "flor", by: p, call: "flor" }
+        return
+      }
+      h.flor.done = true
+      say(g, null, `Flor: ${p === 0 ? "sumás" : "la máquina suma"} ${FLOR_POINTS.flor}.`, "points")
+      addScore(g, p, FLOR_POINTS.flor)
+      resume(g)
+      return
+    }
+    case "achico": {
+      if (!l.achico || h.pending?.kind !== "flor") throw new Error("No hay flor que contestar")
+      const by = h.pending.by
+      h.flor.sung[p] = true
+      say(g, p, "Con flor me achico.", "call")
+      h.flor.done = true
+      h.pending = null
+      say(g, null, `${by === 0 ? "Sumás" : "La máquina suma"} ${FLOR_POINTS.flor} por la flor.`, "points")
+      addScore(g, by, FLOR_POINTS.flor)
+      resume(g)
+      return
+    }
+    case "contraflor":
+    case "contraflorResto": {
+      const resto = action.type === "contraflorResto"
+      if (!(resto ? l.contraflorResto : l.contraflor)) throw new Error("No podés cantar eso ahora")
+      h.flor.sung[p] = true
+      h.pending = { kind: "flor", by: p, call: resto ? "resto" : "contraflor" }
+      say(g, p, resto ? "¡Contraflor al resto!" : "¡Contraflor!", "call")
       return
     }
     case "mazo": {
@@ -474,6 +599,23 @@ function resolveEnvido(g: GameState) {
   h.envido = { ...h.envido, done: true, points: pts, winner: w }
   const sung = h.envido.calls.map((k) => ENVIDO_LABEL[k]).join(" + ")
   say(g, null, `${sung} querido: ${w === 0 ? "ganás" : "la máquina gana"} ${val} punto${val > 1 ? "s" : ""} con ${pts[w]}.`, "points")
+  addScore(g, w, val)
+  resume(g)
+}
+
+/** Contraflor querida: se dicen las flores (primero el mano) y el de más flor suma `val` (empate: el mano). */
+function resolveFlor(g: GameState, val: number, call: FlorCall) {
+  const h = g.hand
+  const pts: [number, number] = [florPoints(h.dealt[0]) ?? 0, florPoints(h.dealt[1]) ?? 0]
+  const m = g.mano
+  const pie = other(m)
+  say(g, m, `Tengo ${pts[m]} de flor.`, "call")
+  if (pts[pie] > pts[m]) say(g, pie, `${pts[pie]} son mejores.`, "call")
+  else say(g, pie, pts[pie] === pts[m] ? `${pts[pie]}: empate, gana el mano. Son buenas.` : "Son buenas.", "call")
+  const w = pts[pie] > pts[m] ? pie : m
+  h.flor = { ...h.flor, done: true, points: pts, winner: w }
+  h.pending = null
+  say(g, null, `${FLOR_LABEL[call]} querida: ${w === 0 ? "ganás" : "la máquina gana"} ${val} punto${val > 1 ? "s" : ""} con ${pts[w]}.`, "points")
   addScore(g, w, val)
   resume(g)
 }

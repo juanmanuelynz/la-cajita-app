@@ -28,6 +28,8 @@ import {
   dealHand,
   ENVIDO_LABEL,
   envidoPoints,
+  FLOR_LABEL,
+  florPoints,
   legal,
   newGame,
   TRUCO_LABEL,
@@ -46,6 +48,8 @@ import { SpanishCard, SpanishCardBack } from "./spanish-card"
 
 const GAME_KEY = "la-cajita:truco:partida"
 const TARGET_KEY = "la-cajita:truco:objetivo"
+/** Si la próxima partida es con flor ("1") o sin ("0"). */
+const FLOR_KEY = "la-cajita:truco:flor"
 const STATS_KEY = "la-cajita:truco:estadisticas"
 /** Nivel elegido para la próxima partida, y el de la partida guardada. */
 const LEVEL_KEY = "la-cajita:truco:nivel"
@@ -102,6 +106,10 @@ function statusText(g: GameState): string {
   const a = actor(g)
   const pd = h.pending
   if (a === 1) return pd ? "La máquina está pensando…" : "Juega la máquina…"
+  if (pd?.kind === "flor") {
+    return pd.call === "flor" ? "La máquina cantó flor y vos también tenés. ¿Qué contestás?" : `Te cantaron ${FLOR_LABEL[pd.call].toLowerCase()}. ¿Querés?`
+  }
+  if (legal(g, 0).flor) return "Tenés flor: cantala antes de jugar."
   if (pd) {
     const what = pd.kind === "truco" ? TRUCO_LABEL[pd.level] : ENVIDO_LABEL[h.envido.calls[h.envido.calls.length - 1]]
     return `Te cantaron ${what.toLowerCase()}. ¿Querés?`
@@ -235,6 +243,11 @@ function Table({
               Envido: vos {h.envido.points[0]}, máquina {h.envido.points[1]}
             </span>
           )}
+          {h.flor?.points && (
+            <span>
+              Flor: vos {h.flor.points[0]}, máquina {h.flor.points[1]}
+            </span>
+          )}
         </div>
         <div className="grid grid-cols-3 gap-2">
           {[0, 1, 2].map((i) => {
@@ -289,6 +302,18 @@ function Table({
 
       {!reveal && (
         <div className="flex min-h-11 flex-wrap justify-center gap-2">
+          {l.flor && <Button onClick={() => onAction({ type: "flor" })}>¡Flor!</Button>}
+          {l.contraflor && <Button onClick={() => onAction({ type: "contraflor" })}>Contraflor</Button>}
+          {l.contraflorResto && (
+            <Button variant="outline" className="border-primary text-primary" onClick={() => onAction({ type: "contraflorResto" })}>
+              Contraflor al resto
+            </Button>
+          )}
+          {l.achico && (
+            <Button variant="secondary" onClick={() => onAction({ type: "achico" })}>
+              Con flor me achico
+            </Button>
+          )}
           {l.quiero && <Button onClick={() => onAction({ type: "quiero" })}>Quiero</Button>}
           {l.noQuiero && (
             <Button variant="secondary" onClick={() => onAction({ type: "noQuiero" })}>
@@ -339,8 +364,12 @@ function Table({
               </p>
             )}
             {/* Sus cartas ya están a la vista en la mesa; los tantos, solo si no se jugó el envido. */}
-            {!h.envido.points && (
-              <p className="text-xs text-muted-foreground">La máquina tenía {envidoPoints(h.dealt[1])} de envido.</p>
+            {!h.envido.points && !h.flor?.points && (
+              <p className="text-xs text-muted-foreground">
+                {g.flor && florPoints(h.dealt[1]) !== null
+                  ? `La máquina tenía ${florPoints(h.dealt[1])} de flor.`
+                  : `La máquina tenía ${envidoPoints(h.dealt[1])} de envido.`}
+              </p>
             )}
             {g.over ? (
               <Button size="lg" className="mt-1" onClick={onNewGame}>
@@ -408,6 +437,7 @@ export function Jugar({ active }: { active: boolean }) {
   const [game, setGame] = useState<GameState | null>(null)
   const [atTable, setAtTable] = useState(false)
   const [target, setTargetState] = useState<15 | 30>(30)
+  const [withFlor, setWithFlor] = useState(false)
   const [stats, setStats] = useState<PlayStats>({ ...EMPTY_STATS })
   const [level, setLevelState] = useState<BotLevel>("media")
   const [gameLevel, setGameLevel] = useState<BotLevel>("media")
@@ -418,6 +448,7 @@ export function Jugar({ active }: { active: boolean }) {
   useEffect(() => {
     setGame(load(GAME_KEY, parseGame))
     setTargetState(load(TARGET_KEY, (r) => (r === "15" ? 15 : 30)))
+    setWithFlor(load(FLOR_KEY, (r) => r === "1"))
     setStats(load(STATS_KEY, parseStats))
     setLevelState(load(LEVEL_KEY, parseLevel))
     setGameLevel(load(GAME_LEVEL_KEY, parseLevel))
@@ -470,7 +501,7 @@ export function Jugar({ active }: { active: boolean }) {
   }
 
   const start = () => {
-    const g = newGame({ target, mano: Math.random() < 0.5 ? 0 : 1 })
+    const g = newGame({ target, mano: Math.random() < 0.5 ? 0 : 1, flor: withFlor })
     setGame(g)
     setGameLevel(level)
     try {
@@ -500,6 +531,12 @@ export function Jugar({ active }: { active: boolean }) {
       localStorage.setItem(LEVEL_KEY, lv)
     } catch {}
   }
+  const chooseFlor = (on: boolean) => {
+    setWithFlor(on)
+    try {
+      localStorage.setItem(FLOR_KEY, on ? "1" : "0")
+    } catch {}
+  }
   const chooseTarget = (t: 15 | 30) => {
     setTargetState(t)
     try {
@@ -521,7 +558,7 @@ export function Jugar({ active }: { active: boolean }) {
             Volver
           </Button>
           <div className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">
-            {BOT_LEVEL_LABEL[gameLevel]} · mano {game.hands} · a {game.target}
+            {BOT_LEVEL_LABEL[gameLevel]} · {game.flor ? "con" : "sin"} flor · mano {game.hands} · a {game.target}
           </div>
         </div>
         <Table g={game} onAction={human} onNextHand={nextHand} onNewGame={newGameFromEnd} onQuit={() => setConfirmQuit(true)} />
@@ -553,7 +590,7 @@ export function Jugar({ active }: { active: boolean }) {
           <div>
             <h2 className="text-xl font-bold">Mano a mano contra la máquina</h2>
             <p className="text-sm text-muted-foreground">
-              Sin flor. Elegí el nivel de la máquina. Abajo de la mesa vas a ver qué pasó en cada jugada y por qué.
+              Elegí a cuánto, si va con flor y el nivel de la máquina. Abajo de la mesa vas a ver qué pasó en cada jugada y por qué.
             </p>
           </div>
           {ongoing ? (
@@ -567,6 +604,7 @@ export function Jugar({ active }: { active: boolean }) {
             </div>
           ) : (
             <>
+              <div className="flex flex-wrap items-center gap-2">
               <div role="radiogroup" aria-label="A cuántos puntos" className="flex w-fit rounded-full bg-muted p-1">
                 {([15, 30] as const).map((t) => (
                   <button
@@ -582,6 +620,23 @@ export function Jugar({ active }: { active: boolean }) {
                     A {t}
                   </button>
                 ))}
+              </div>
+                <div role="radiogroup" aria-label="Con o sin flor" className="flex w-fit rounded-full bg-muted p-1">
+                  {([false, true] as const).map((on) => (
+                    <button
+                      key={String(on)}
+                      role="radio"
+                      aria-checked={withFlor === on}
+                      onClick={() => chooseFlor(on)}
+                      className={cn(
+                        "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+                        withFlor === on ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {on ? "Con flor" : "Sin flor"}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <div role="radiogroup" aria-label="Nivel de la máquina" className="grid grid-cols-3 rounded-full bg-muted p-1">

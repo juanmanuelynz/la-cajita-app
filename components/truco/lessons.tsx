@@ -285,19 +285,34 @@ export const LESSONS: Lesson[] = [
     body: () => (
       <>
         <p>
-          Algunos juegan <b>con flor</b>: se acuerda antes de empezar. La partida de esta app es sin flor, pero conviene
-          conocerla.
+          Algunos juegan <b>con flor</b>: se acuerda antes de empezar. En Jugar podés elegir si la partida va con flor o
+          sin flor.
         </p>
         <Example cards={[c(7, "basto"), c(5, "basto"), c(11, "basto")]}>
           Tres del mismo palo son <b>flor</b>: 20 + 7 + 5 + 0 = 32 de flor.
         </Example>
         <List>
-          <li>Quien tiene flor debe cantarla, y anula el envido. Vale 3 puntos.</li>
           <li>
-            Si los dos tienen flor, se puede cantar <b>contraflor</b> o <b>contraflor al resto</b>.
+            Quien tiene flor <b>la canta antes de tirar su primera carta</b>, y anula el envido. Si el otro no tiene, suma{" "}
+            <b>3</b>.
+          </li>
+          <li>
+            Si los dos tienen flor, el otro contesta: <b>con flor me achico</b> (el primero suma 3), <b>contraflor</b> o{" "}
+            <b>contraflor al resto</b>.
           </li>
         </List>
-        <p>Las reglas de la flor cambian mucho de un lugar a otro: acordalas antes de jugar.</p>
+        <PointsTable
+          rows={[
+            ["Flor (el otro no tiene)", "3", "—"],
+            ["Contraflor", "6 para la mejor flor", "4 para el que la cantó"],
+            ["Contraflor al resto", "lo que le falta al que va ganando", "4 para el que la cantó"],
+          ]}
+        />
+        <p>En empate de flor gana el mano.</p>
+        <Tip>
+          Las reglas de la flor cambian mucho de un lugar a otro (cuánto vale, si se suman los 20, qué pasa si no la
+          cantás): acordalas antes de jugar. Estas son las de La Cajita.
+        </Tip>
       </>
     ),
   },
