@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { AUTH_COOKIE_NAME, verifyToken } from "./lib/auth"
+import { LAST_APP_COOKIE } from "./lib/last-app"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -13,7 +14,7 @@ export async function middleware(request: NextRequest) {
   const secret = process.env.APP_SECRET
   // Fail-open si no hay secret configurado: evita lockear el entorno por error
   // de configuración. La protección real depende de que APP_SECRET esté seteado.
-  if (!secret) return NextResponse.next()
+  if (!secret) return openLastApp(request) ?? NextResponse.next()
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
   const role = await verifyToken(token, secret)
@@ -21,7 +22,19 @@ export async function middleware(request: NextRequest) {
     const url = new URL("/login", request.url)
     return NextResponse.redirect(url)
   }
-  return NextResponse.next()
+  return openLastApp(request) ?? NextResponse.next()
+}
+
+/**
+ * Abrir la app ("/") cuando la última vez estabas en Truco: directo a /truco,
+ * así se ve su splash y no el de Poker. Solo al abrir la página (no en las
+ * navegaciones ni precargas internas de Next, que no son "document").
+ */
+function openLastApp(request: NextRequest) {
+  if (request.nextUrl.pathname !== "/") return null
+  if (request.headers.get("sec-fetch-dest") !== "document") return null
+  if (request.cookies.get(LAST_APP_COOKIE)?.value !== "truco") return null
+  return NextResponse.redirect(new URL("/truco", request.url))
 }
 
 export const config = {

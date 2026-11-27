@@ -60,7 +60,9 @@ import type { AuthRole } from "@/lib/auth"
 import { AjustesCard } from "@/components/ajustes-card"
 import { TrucoPromo } from "@/components/truco/truco-promo"
 import { SplashScreen } from "@/components/splash-screen"
+import { LogoType } from "@/components/logo-type"
 import { getLastApp, setLastApp } from "@/lib/last-app"
+import { markAppBooted } from "@/lib/app-boot"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 
 ChartJS.register(
@@ -308,6 +310,7 @@ function LaCajitaPoker() {
   }, [loadAllData, loadCasualData])
 
   useEffect(() => {
+    if (booted) markAppBooted()
     if (!booted || splashDone) return
     // Un cuadro con el splash encima de la app ya armada, y recién ahí el fundido.
     const raf = requestAnimationFrame(() => setSplashLeaving(true))
@@ -704,7 +707,7 @@ function LaCajitaPoker() {
           {/* Palos como texto (\uFE0E), no emoji: en el iPhone ♠ y ♣ salían negros sobre el fondo oscuro. Mismo coral que las cartas. */}
           <span aria-hidden>{"♠\uFE0E"}</span>
           <span aria-hidden className={SUIT_RED}>{"♥\uFE0E"}</span>
-          <h1>La Cajita</h1>
+          <LogoType className="text-base" />
           <span aria-hidden className={SUIT_RED}>{"♦\uFE0E"}</span>
           <span aria-hidden>{"♣\uFE0E"}</span>
         </div>

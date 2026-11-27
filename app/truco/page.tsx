@@ -7,12 +7,15 @@ import { useEffect, useState } from "react"
 import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
 import { Aprender } from "@/components/truco/aprender"
-import { SuitPip } from "@/components/truco/spanish-card"
+import { SuitGlyph } from "@/components/truco/suit-glyph"
+import { LogoType } from "@/components/logo-type"
 import { Anotador } from "@/components/truco/anotador"
 import { Jugar } from "@/components/truco/jugar"
 import { Practicar } from "@/components/truco/practicar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { setLastApp } from "@/lib/last-app"
+import { appBooted, markAppBooted } from "@/lib/app-boot"
+import { TrucoSplash } from "@/components/splash-screen"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
@@ -36,6 +39,24 @@ export default function TrucoPage() {
   const [tab, setTab] = useState<TrucoTab>("aprender")
   useTrucoTheme()
   useEffect(() => setLastApp("truco"), [])
+
+  // Splash de Truco solo si la app arranca acá (si venís de Poker ya hubo uno).
+  // En el servidor y al hidratar arranca en "on", así está desde el primer HTML.
+  const [splash, setSplash] = useState<"on" | "leaving" | "off">(() =>
+    typeof window === "undefined" || !appBooted() ? "on" : "off",
+  )
+  useEffect(() => {
+    if (splash !== "on") return
+    markAppBooted()
+    const t1 = setTimeout(() => setSplash("leaving"), 1100)
+    const t2 = setTimeout(() => setSplash("off"), 1450)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
+    // Solo al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Vuelve a la última pestaña usada en este celular.
   useEffect(() => {
@@ -68,13 +89,13 @@ export default function TrucoPage() {
     <div className="relative h-[100dvh] flex flex-col">
       {/* Mismo encabezado que Poker: fondo sólido, ios-pwa-top-gap para la app instalada de iOS. */}
       <div className="ios-pwa-top-gap border-b bg-background text-foreground flex-shrink-0">
-        {/* Los cuatro palos españoles alrededor del nombre, como los de Poker. */}
+        {/* Los cuatro palos españoles alrededor del logo, en dos tintas como ♠♥♦♣ en Poker. */}
         <div className="container mx-auto flex items-center justify-around px-4 py-2 text-lg font-bold md:text-xl">
-          <SuitPip suit="espada" className="size-6" />
-          <SuitPip suit="copa" className="size-6" />
-          <h1 className="whitespace-nowrap">La Cajita Truco</h1>
-          <SuitPip suit="oro" className="size-6" />
-          <SuitPip suit="basto" className="size-6" />
+          <SuitGlyph suit="espada" className="size-5" />
+          <SuitGlyph suit="copa" className="size-5 text-primary" />
+          <LogoType className="text-base" />
+          <SuitGlyph suit="oro" className="size-5 text-primary" />
+          <SuitGlyph suit="basto" className="size-5" />
         </div>
       </div>
 
@@ -93,6 +114,7 @@ export default function TrucoPage() {
 
       <DockNav tabs={TABS} active={tab} centerId="anotar" onSelect={select} />
       <OfflineIndicator />
+      {splash !== "off" && <TrucoSplash leaving={splash === "leaving"} />}
     </div>
   )
 }

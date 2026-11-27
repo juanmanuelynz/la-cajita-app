@@ -215,6 +215,23 @@ El estado de la partida es un objeto plano (como `lib/poker/table.ts`): cada
 acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
 `rnd` vivía dentro del estado y no se podía guardar).
 
+## Ícono, logo y splash (27/11/2026)
+
+- **Ícono** nuevo "A · Ficha con hojita" (elegido entre tres): la ficha de La
+  Cajita con la hoja al centro sobre paño verde, sin texto y dentro de la zona
+  segura de Android (`public/favicon.svg` es la fuente; PNG de 512, 192, 180
+  para iPhone y 32). El fondo de apertura de Android (`background_color` del
+  manifest) es el verde del paño.
+- **Logo** "LA CAJITA" (`components/logo-type.tsx`, clase `.logo-type`):
+  mayúsculas con mucho aire, en dorado. En los dos encabezados; Truco ya no
+  dice "Truco" y sus palos van en dos tintas (espada y basto claros, copa y oro
+  dorados), como ♠♥♦♣ en Poker.
+- **Splash** de Poker "S2": paño verde de borde a borde con la ficha del ícono
+  girando. **Splash de Truco** propio (paño azul, las bravas que se abren en
+  abanico) cuando la app arranca en Truco: una cookie `la_cajita_app` le avisa
+  al middleware que abra "/" directo en /truco, así no se ve el de Poker. Al
+  pasar de una app a la otra no se repite (`lib/app-boot.ts`).
+
 ## Paso 7 (27/11/2026)
 
 Revisado a 390 px en oscuro y en claro con el build de producción: nada se

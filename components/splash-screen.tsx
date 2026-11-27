@@ -1,57 +1,84 @@
-// Pantalla de carga de La Cajita: el ícono de la app (el mismo que muestra el
-// celular al abrirla, así no hay salto), el nombre con los palos y una ficha
-// girando. Se muestra desde el primer HTML del servidor hasta que están los
-// datos, y se va con un fundido (`leaving`) para que la app aparezca entera.
-
 "use client"
 
-import { useEffect, type ReactNode } from "react"
-import { ChipSpinner } from "@/components/poker-chip"
-import { SUIT_RED } from "@/components/training/playing-card"
+// Pantallas de carga de La Cajita. Poker: paño verde de borde a borde (el mismo
+// color que Android usa al abrir la app instalada, ver manifest.json) con la
+// ficha del ícono girando y el logo. Truco: paño azul con las cuatro bravas en
+// abanico. Se muestran desde el primer HTML y se van con un fundido (`leaving`).
+
+import type { CSSProperties, ReactNode } from "react"
+import { ChipLogo } from "@/components/chip-logo"
+import { LogoType } from "@/components/logo-type"
+import { BravasFan } from "@/components/truco/bravas-fan"
+import { SuitGlyph } from "@/components/truco/suit-glyph"
 import { cn } from "@/lib/utils"
 
-/** El splash se arma varias veces seguidas (servidor, carga, fundido): el ícono entra animado solo la primera. */
-let shownOnce = false
-
-export function SplashScreen({ leaving = false, children }: { leaving?: boolean; children?: ReactNode }) {
-  const animate = !shownOnce
-  useEffect(() => {
-    shownOnce = true
-  }, [])
+function SplashFrame({
+  leaving,
+  className,
+  style,
+  children,
+}: {
+  leaving: boolean
+  className: string
+  style?: CSSProperties
+  children: ReactNode
+}) {
   return (
     <div
       aria-busy={!leaving}
       aria-hidden={leaving}
+      style={style}
       className={cn(
-        "fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-background px-6 text-foreground transition-opacity duration-300",
+        "fixed inset-0 z-[60] flex flex-col items-center justify-center gap-8 px-6 transition-opacity duration-300",
+        className,
         leaving && "pointer-events-none opacity-0",
       )}
     >
-      <div className="relative">
-        <div aria-hidden className="absolute inset-0 -z-10 scale-125 rounded-full bg-primary/25 blur-3xl" />
-        {/* eslint-disable-next-line @next/next/no-img-element -- tiene que estar en el primer HTML, sin esperar a next/image */}
-        <img
-          src="/icon-splash.webp"
-          alt=""
-          width={160}
-          height={160}
-          fetchPriority="high"
-          className={cn("size-40 rounded-[28%] shadow-2xl", animate && "animate-splash-in")}
-        />
-      </div>
-      <div className="flex items-center gap-3 text-xl font-bold">
+      {children}
+    </div>
+  )
+}
+
+/** Splash de Poker: la ficha gira sobre su eje mientras carga. */
+export function SplashScreen({ leaving = false, children }: { leaving?: boolean; children?: ReactNode }) {
+  return (
+    <SplashFrame leaving={leaving} className="bg-[radial-gradient(ellipse_at_50%_40%,#1f9a6b,#063d2b_75%)] text-[#fbf6ea]">
+      <span role="status" aria-label="Cargando" className="block size-56 [perspective:600px]">
+        <ChipLogo className="block size-full animate-chip-flip drop-shadow-[0_18px_24px_rgb(0_0_0/0.45)] [animation-duration:2.2s]" />
+      </span>
+      <div className="flex items-center gap-4 text-xl">
         <span aria-hidden>{"♠︎"}</span>
-        <span aria-hidden className={SUIT_RED}>
+        <span aria-hidden className="text-[#f4a39b]">
           {"♥︎"}
         </span>
-        <h1>La Cajita</h1>
-        <span aria-hidden className={SUIT_RED}>
+        <LogoType className="text-lg !text-[#e2ab3c]" />
+        <span aria-hidden className="text-[#f4a39b]">
           {"♦︎"}
         </span>
         <span aria-hidden>{"♣︎"}</span>
       </div>
-      <ChipSpinner className="size-7 opacity-80" />
       {children}
-    </div>
+    </SplashFrame>
+  )
+}
+
+/** Splash de Truco (al abrir la app en Truco): las bravas se abren en abanico. */
+export function TrucoSplash({ leaving = false }: { leaving?: boolean }) {
+  return (
+    <SplashFrame
+      leaving={leaving}
+      className="bg-[radial-gradient(ellipse_at_50%_40%,#3a72c2,#122a52_75%)] text-[#f4ecd8]"
+    >
+      <span role="status" aria-label="Cargando">
+        <BravasFan animated className="mb-6 scale-125" />
+      </span>
+      <div className="flex items-center gap-4">
+        <SuitGlyph suit="espada" className="size-5" />
+        <SuitGlyph suit="copa" className="size-5 text-[#e2ab3c]" />
+        <LogoType className="text-lg !text-[#e2ab3c]" />
+        <SuitGlyph suit="oro" className="size-5 text-[#e2ab3c]" />
+        <SuitGlyph suit="basto" className="size-5" />
+      </div>
+    </SplashFrame>
   )
 }
