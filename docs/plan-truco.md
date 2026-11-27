@@ -114,6 +114,9 @@ opción de Jugar el 27/11/2026, ver "Flor" abajo.)
   recuerda en `la-cajita:truco:voz`): la voz del celular (Web Speech, es-AR)
   dice "Nosotros 12, Ellos 9." o "¡Ganó …!", una sola vez cuando se dejan de
   tocar puntos (`lib/truco/speech.ts`, `scoreSpeech` en `scorer.ts`).
+- "Empezar de cero" (27/11/2026) también borra las partidas ganadas si se
+  elige "Borrar todo" (`resetAll`); "Solo los puntos" deja las ganadas. Se
+  activa con puntos o con partidas ganadas.
 - Descartado: historial de partidas (hoy se anota "nosotros y ellos" y listo).
 
 ### Look and feel

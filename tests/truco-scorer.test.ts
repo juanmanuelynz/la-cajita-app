@@ -6,6 +6,7 @@ import {
   parseScorer,
   removePoint,
   renameTeam,
+  resetAll,
   scoreSpeech,
   scorerWinner,
   setTarget,
@@ -80,5 +81,13 @@ describe("anotador de truco", () => {
     expect(scoreSpeech(s)).toBe("Nosotros 3, Los primos 0.")
     s = times(s, 15, (x) => addPoint(x, 1))
     expect(scoreSpeech(s)).toBe("¡Ganó Los primos! 15 a 3.")
+  })
+
+  it("empezar todo de cero borra también las partidas ganadas y deja los nombres", () => {
+    let s = renameTeam(times(freshScorer({ target: 15 }), 15, (x) => addPoint(x, 1)), 0, "Los primos")
+    s = addPoint(freshScorer(s), 0)
+    expect(s.wins).toEqual([0, 1])
+    const r = resetAll(s)
+    expect(r).toMatchObject({ score: [0, 0], wins: [0, 0], names: ["Los primos", "Ellos"], target: 15, counted: false })
   })
 })

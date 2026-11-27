@@ -24,6 +24,7 @@ import {
   addPoint,
   freshScorer,
   halves,
+  resetAll,
   parseScorer,
   removePoint,
   renameTeam,
@@ -247,6 +248,7 @@ export function Anotador({ active }: { active: boolean }) {
 
   const winner = scorerWinner(s)
   const hasPoints = s.score[0] + s.score[1] > 0
+  const hasWins = s.wins[0] + s.wins[1] > 0
 
   const chooseTarget = (t: 15 | 30) => {
     if (t === s.target) return
@@ -289,7 +291,7 @@ export function Anotador({ active }: { active: boolean }) {
         <Button
           variant="ghost"
           size="sm"
-          disabled={!hasPoints}
+          disabled={!hasPoints && !hasWins}
           onClick={() => setConfirm({ kind: "reset" })}
           className="gap-1.5 text-muted-foreground"
         >
@@ -332,20 +334,35 @@ export function Anotador({ active }: { active: boolean }) {
               {confirm?.kind === "target" ? `¿Pasar a jugar a ${confirm.target}?` : "¿Empezar de cero?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Se borran los puntos de esta partida. Los nombres y las partidas ganadas quedan.
+              {confirm?.kind === "target"
+                ? "Se borran los puntos de esta partida. Los nombres y las partidas ganadas quedan."
+                : `Podés borrar solo los puntos de esta partida, o también las partidas ganadas (${s.wins[0]} a ${s.wins[1]}). Los nombres quedan.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (confirm?.kind === "target") setS(setTarget(s, confirm.target))
-                else setS(freshScorer(s))
-                setConfirm(null)
-              }}
-            >
-              Borrar puntos
-            </AlertDialogAction>
+            {confirm?.kind === "reset" && hasWins && (
+              <AlertDialogAction
+                onClick={() => {
+                  setS(resetAll(s))
+                  setConfirm(null)
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Borrar todo
+              </AlertDialogAction>
+            )}
+            {(confirm?.kind === "target" || hasPoints) && (
+              <AlertDialogAction
+                onClick={() => {
+                  if (confirm?.kind === "target") setS(setTarget(s, confirm.target))
+                  else setS(freshScorer(s))
+                  setConfirm(null)
+                }}
+              >
+                {confirm?.kind === "target" ? "Borrar puntos" : "Solo los puntos"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

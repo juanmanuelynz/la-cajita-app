@@ -27,6 +27,11 @@ export function freshScorer(prev?: Partial<ScorerState>): ScorerState {
   }
 }
 
+/** Empezar todo de cero: puntos y partidas ganadas en 0; conserva nombres y objetivo. */
+export function resetAll(s: ScorerState): ScorerState {
+  return { ...freshScorer(s), wins: [0, 0] }
+}
+
 /** El equipo que llegó al final, o null. */
 export function scorerWinner(s: ScorerState): Team | null {
   if (s.score[0] >= s.target) return 0
