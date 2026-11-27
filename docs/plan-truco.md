@@ -55,10 +55,24 @@ Pestañas con `IconTabsList` (mismo estilo que el resto):
 | Aprender | Las 8 lecciones (baraja, mano, jerarquía, envido, truco, partida, flor, señas) | artefacto, texto tal cual |
 | Practicar | ¿Qué carta gana?, ¿Cuántos tantos?, ¿Cuántos puntos son? — con progreso en la base | artefacto + DB |
 | Jugar | Mano a mano contra la máquina, a 15 o 30, sin flor, con el registro "Qué pasó en esta mano" | artefacto |
-| Anotar | Anotador de palitos, malas/buenas, deshacer, pantalla siempre prendida | artefacto |
+| Anotar | Anotador con fósforos, malas/buenas, pantalla siempre prendida (ver abajo) | artefacto, cambiado |
 | Configuración | Ajustes (tema, sonidos — el mismo `AjustesCard`) + "Quiero jugar Poker" + salir | nuevo |
 
 Fuera de esta versión: flor, parejas 2 vs 2, jugar online.
+
+### Anotador con fósforos
+
+- Los puntos se anotan con **fósforos** dibujados (no palitos): de a 5, cuatro
+  en cuadrado y el quinto cruzado en diagonal. A 30, las malas arriba y las
+  buenas abajo, separadas por una línea.
+- **Tocar** la columna de un equipo suma 1 fósforo.
+- **Mantener apretado medio segundo** saca 1 fósforo (solo uno, nunca todo).
+  Mientras se mantiene, el último fósforo se va apagando; si se suelta antes,
+  no pasa nada. En Android vibra (`navigator.vibrate`); en iPhone no se puede.
+- **Sin botones de +N / −N**: los puntos grandes (por ejemplo una falta
+  envido) se suman tocando varias veces, como en la mesa de verdad.
+- "Empezar de cero" queda a un costado, con confirmación (`AlertDialog`).
+  "A 15 / A 30" y los nombres de los equipos se mantienen.
 
 ### Look and feel
 
@@ -104,7 +118,7 @@ y se suma a `CREDITS.txt`; no se inventa nada sin preguntar.
 - `lib/truco/lessons.tsx` — contenido de las lecciones.
 - `lib/truco/quiz-ids.ts` — lista única de ids de ejercicios (la usan el
   validador del servidor y la UI).
-- `components/truco/` — carta española, mesa, anotador, palitos, lecciones,
+- `components/truco/` — carta española, mesa, anotador, fósforos, lecciones,
   ejercicios.
 - `tests/truco.test.ts` — Vitest: jerarquía (14 escalones), tantos de envido
   (casos de las lecciones: 33, 25, 6), valores de envido querido/no querido
