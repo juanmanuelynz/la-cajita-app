@@ -25,11 +25,14 @@ const TRUCO_BACK = {
 export function BravasFan({
   animated = false,
   reversed = false,
+  backOnly = false,
   className,
 }: {
   animated?: boolean
   /** Del 7 de oro al 1 de espada (el ancho de espada queda adelante, a la derecha). */
   reversed?: boolean
+  /** Solo el dorso de atrás (el login lo deja así y el splash abre las cartas encima). */
+  backOnly?: boolean
   className?: string
 }) {
   const cards = reversed ? [...BRAVAS].reverse() : BRAVAS
@@ -43,15 +46,16 @@ export function BravasFan({
     // translate-x-3: la carta de atrás asoma a la izquierda; así el conjunto queda centrado.
     <div style={TRUCO_BACK} className={cn("relative h-28 w-56 translate-x-3", className)}>
       <SpanishCardBack size="lg" className="absolute bottom-0 left-1/2 -ml-8 origin-bottom -translate-x-10 -rotate-[34deg]" />
-      {cards.map((c, i) => (
-        <div
-          key={`${c.num}-${c.suit}`}
-          className={cn("absolute bottom-0 left-1/2 -ml-8 origin-bottom", animated && "animate-fan-open")}
-          style={place(i)}
-        >
-          <SpanishCard card={c} size="lg" className="shadow-xl" />
-        </div>
-      ))}
+      {!backOnly &&
+        cards.map((c, i) => (
+          <div
+            key={`${c.num}-${c.suit}`}
+            className={cn("absolute bottom-0 left-1/2 -ml-8 origin-bottom", animated && "animate-fan-open")}
+            style={place(i)}
+          >
+            <SpanishCard card={c} size="lg" className="shadow-xl" />
+          </div>
+        ))}
     </div>
   )
 }
