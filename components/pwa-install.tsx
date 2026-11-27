@@ -1,9 +1,20 @@
 "use client"
 
+// Aviso para instalar la app (Poker y Truco, ya con la sesión abierta: en el
+// iPhone, agregarla desde el login la dejaba con la barra del navegador).
+//
+// Qué se puede saber y qué no:
+// - Abierta como app instalada (display-mode standalone): no se ofrece instalar.
+//   Si además es una instalación de antes del ícono nuevo, en el iPhone se
+//   sugiere volver a agregarla (Android actualiza el ícono solo).
+// - En Safari no hay forma de saber si ya la tenés en la pantalla de inicio
+//   (la app instalada guarda sus cosas aparte). Por eso hay "Ya la tengo".
+// - En Android, Chrome solo ofrece instalar si todavía no está instalada.
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Download, Share, X } from "lucide-react"
+import { ICON_VERSION, INSTALL_KEY, OLD_INSTALL } from "@/lib/install-mark"
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -16,72 +27,75 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = "pwa-install-dismissed-at"
 const DISMISS_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000
+/** "Ya la tengo": no vuelve a aparecer en este navegador. */
+const NEVER = "never"
 
-function isWithinDismissCooldown() {
+type Mode = "ios" | "android" | "reinstall"
+
+function read(key: string) {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY)
-    if (!raw) return false
-    const dismissedAt = Number(raw)
-    if (!Number.isFinite(dismissedAt)) return false
-    return Date.now() - dismissedAt < DISMISS_COOLDOWN_MS
+    return localStorage.getItem(key)
   } catch {
-    return false
+    return null
   }
 }
 
-function detectIos() {
-  if (typeof navigator === "undefined") return false
-  const ua = navigator.userAgent
-  const isIos = /iphone|ipad|ipod/i.test(ua)
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    // @ts-expect-error iOS-only Safari property
-    window.navigator.standalone === true
-  return isIos && !isStandalone
+function write(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // sin storage: el aviso puede volver a aparecer
+  }
 }
+
+function dismissed() {
+  const raw = read(DISMISS_KEY)
+  if (!raw) return false
+  if (raw === NEVER) return true
+  const at = Number(raw)
+  return Number.isFinite(at) && Date.now() - at < DISMISS_COOLDOWN_MS
+}
+
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isStandalone = () =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  // @ts-expect-error propiedad solo de Safari en iOS
+  window.navigator.standalone === true
 
 export function PWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
-  const [isIos, setIsIos] = useState(false)
+  const [mode, setMode] = useState<Mode | null>(null)
 
   useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true)
+    if (isStandalone()) {
+      // La marca la graba el script de app/layout.tsx (lib/install-mark.ts).
+      const mark = read(INSTALL_KEY)
+      if (mark === ICON_VERSION) return
+      // Android actualiza el ícono solo; en el iPhone hay que volver a agregarla.
+      if (mark === OLD_INSTALL && isIos()) {
+        if (!dismissed()) setMode("reinstall")
+      } else write(INSTALL_KEY, ICON_VERSION)
       return
     }
 
-    if (isWithinDismissCooldown()) {
-      return
-    }
+    if (dismissed()) return
 
-    if (detectIos()) {
-      setIsIos(true)
-      setShowInstallPrompt(true)
+    if (isIos()) {
+      setMode("ios")
       return
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShowInstallPrompt(true)
+      setMode("android")
     }
-
     const handleAppInstalled = () => {
-      setIsInstalled(true)
-      setShowInstallPrompt(false)
+      setMode(null)
       setDeferredPrompt(null)
-      try {
-        localStorage.removeItem(DISMISS_KEY)
-      } catch {
-        // ignore
-      }
     }
-
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
     window.addEventListener("appinstalled", handleAppInstalled)
-
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
       window.removeEventListener("appinstalled", handleAppInstalled)
@@ -90,91 +104,93 @@ export function PWAInstall() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return
-
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
-
     if (outcome === "accepted") {
       setDeferredPrompt(null)
-      setShowInstallPrompt(false)
+      setMode(null)
     }
   }
 
-  const handleDismiss = () => {
-    setShowInstallPrompt(false)
-    try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()))
-    } catch {
-      // ignore
-    }
+  /** Más tarde: vuelve en 14 días. */
+  const later = () => {
+    setMode(null)
+    write(DISMISS_KEY, String(Date.now()))
   }
 
-  if (isInstalled || !showInstallPrompt) {
-    return null
+  /** Ya la tengo / dejarla así: no vuelve a aparecer. */
+  const never = () => {
+    setMode(null)
+    if (mode === "reinstall") write(INSTALL_KEY, ICON_VERSION)
+    else write(DISMISS_KEY, NEVER)
   }
+
+  if (!mode) return null
+
+  const iosSteps = (
+    <ol className="mb-3 list-decimal space-y-1 pl-4 text-sm text-muted-foreground">
+      <li>
+        Tocá <Share className="mb-0.5 inline h-4 w-4" /> <span className="font-semibold">Compartir</span> y{" "}
+        <span className="font-semibold">&ldquo;Agregar a inicio&rdquo;</span>.
+      </li>
+      <li>
+        Dejá prendido <span className="font-semibold">&ldquo;Abrir como app web&rdquo;</span>.
+      </li>
+    </ol>
+  )
 
   return (
-    <Card className="fixed bottom-4 left-4 right-4 z-50 bg-gray-800/95 border-green-600/50 backdrop-blur-sm md:left-auto md:right-4 md:w-96">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">♠️</span>
-              <h3 className="font-semibold text-green-400">Instalar La Cajita</h3>
-            </div>
+    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 rounded-2xl border border-primary/40 bg-card/95 p-4 text-card-foreground shadow-xl backdrop-blur-sm md:left-auto md:right-4 md:w-96">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <h3 className="mb-2 font-semibold text-primary">
+            {mode === "reinstall" ? "La Cajita tiene ícono nuevo" : "Instalá La Cajita"}
+          </h3>
 
-            {isIos ? (
-              <>
-                <p className="text-sm text-gray-300 mb-3">
-                  En iPhone tocá{" "}
-                  <Share className="inline w-4 h-4 mb-0.5" /> Compartir y luego{" "}
-                  <span className="font-semibold">&ldquo;Añadir a pantalla de inicio&rdquo;</span>.
-                </p>
-                <Button
-                  onClick={handleDismiss}
-                  size="sm"
-                  variant="outline"
-                  className="border-gray-600 text-gray-300"
-                >
-                  Entendido
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-300 mb-3">
-                  Instala la app para acceso rápido y uso sin conexión
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleInstallClick}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Instalar
-                  </Button>
-                  <Button
-                    onClick={handleDismiss}
-                    size="sm"
-                    variant="outline"
-                    className="border-gray-600 text-gray-300"
-                  >
-                    Ahora no
-                  </Button>
-                </div>
-              </>
+          {mode === "reinstall" && (
+            <>
+              <p className="mb-2 text-sm text-muted-foreground">
+                Para verlo, borrá la app de la pantalla de inicio y volvé a agregarla desde Safari (después
+                de poner el PIN):
+              </p>
+              {iosSteps}
+            </>
+          )}
+
+          {mode === "ios" && (
+            <>
+              <p className="mb-2 text-sm text-muted-foreground">Así se abre a pantalla completa, como una app:</p>
+              {iosSteps}
+            </>
+          )}
+
+          {mode === "android" && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Instalala para abrirla rápido, a pantalla completa y sin conexión.
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {mode === "android" && (
+              <Button onClick={handleInstallClick} size="sm">
+                <Download className="mr-1 h-4 w-4" />
+                Instalar
+              </Button>
+            )}
+            <Button onClick={later} size="sm" variant="outline">
+              Más tarde
+            </Button>
+            {mode !== "android" && (
+              <Button onClick={never} size="sm" variant="ghost">
+                {mode === "reinstall" ? "Dejarla así" : "Ya la tengo"}
+              </Button>
             )}
           </div>
-          <Button
-            onClick={handleDismiss}
-            size="sm"
-            variant="ghost"
-            className="text-gray-400 hover:text-white p-1"
-          >
-            <X className="w-4 h-4" />
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+        <Button onClick={later} size="sm" variant="ghost" className="p-1 text-muted-foreground" aria-label="Cerrar">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   )
 }

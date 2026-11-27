@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { INSTALL_MARK_SCRIPT } from "@/lib/install-mark";
 
 const inter = Inter({ subsets: ["latin"] });
 // Tipografía condensada para el valor de las cartas de Entrenar.
@@ -61,6 +62,8 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Marca de la app instalada, antes que nada de la app (ver lib/install-mark.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_MARK_SCRIPT }} />
         {/* PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

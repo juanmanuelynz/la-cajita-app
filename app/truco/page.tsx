@@ -21,6 +21,7 @@ import { AjustesCard } from "@/components/ajustes-card"
 import { PokerPromo } from "@/components/poker-promo"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { PWAInstall } from "@/components/pwa-install"
 import { getSessionRole } from "@/lib/database"
 
 type TrucoTab = "aprender" | "practicar" | "jugar" | "anotar" | "config"
@@ -124,6 +125,7 @@ export default function TrucoPage() {
       </div>
 
       <DockNav tabs={TABS} active={tab} centerId="anotar" onSelect={select} />
+      <PWAInstall />
       <OfflineIndicator />
       {splash !== "off" && <TrucoSplash leaving={splash === "leaving"} />}
     </div>

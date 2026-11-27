@@ -90,7 +90,12 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
           ],
     );
     const t1 = setTimeout(() => setRevealed(true), REVEAL_AT_MS);
-    const t2 = setTimeout(() => window.location.replace(toTruco ? "/truco" : "/"), OPEN_DURATION_MS);
+    // El login se muestra en la dirección que se abrió: se recarga esa misma
+    // (la sesión de Truco, siempre a /truco; el middleware igual lo asegura).
+    const here = window.location.pathname;
+    const target =
+      here === "/login" ? (toTruco ? "/truco" : "/") : state.app === "truco" && !here.startsWith("/truco") ? "/truco" : here + window.location.search;
+    const t2 = setTimeout(() => window.location.replace(target), OPEN_DURATION_MS);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);

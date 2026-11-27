@@ -6,9 +6,15 @@ import { LAST_APP_COOKIE } from "./lib/last-app"
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // /login es la única ruta pública dentro del matcher.
-  if (pathname.startsWith("/login")) {
-    return NextResponse.next()
+  // /login ya no es una dirección propia: el PIN se pide en la misma dirección
+  // que se abrió (ver abajo). En el iPhone, agregar a inicio desde /login dejaba
+  // la app con la barra del navegador; así siempre se agrega desde / o /truco.
+  // Los links viejos a /login (y el cerrar sesión) van a la app que corresponde.
+  if (pathname === "/login" || pathname.startsWith("/login/")) {
+    if (request.method !== "GET") return NextResponse.next()
+    const truco =
+      request.nextUrl.searchParams.get("app") === "truco" || request.cookies.get(LAST_APP_COOKIE)?.value === "truco"
+    return NextResponse.redirect(new URL(truco ? "/truco" : "/", request.url))
   }
 
   const secret = process.env.APP_SECRET
@@ -19,10 +25,12 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
   const role = await verifyToken(token, secret, rolePins())
   if (!role) {
+    // Sin sesión: se muestra el login sin cambiar la dirección (rewrite, no
+    // redirect). Desde /truco, el login (y su SEO, que es lo que ve quien
+    // comparte el link) es el de Truco.
     const url = new URL("/login", request.url)
-    // Que el login (y su SEO, que es lo que ve quien comparte el link) sea el de Truco.
     if (isTruco(pathname)) url.searchParams.set("app", "truco")
-    return NextResponse.redirect(url)
+    return NextResponse.rewrite(url)
   }
   // La sesión de Truco (TRUCO_PIN) solo entra a /truco.
   if (role === "truco" && !isTruco(pathname)) {

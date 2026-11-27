@@ -69,5 +69,6 @@ export async function login(
 export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete(AUTH_COOKIE_NAME)
-  redirect("/login")
+  // Vuelve a la app (sin sesión, ahí mismo se pide el PIN).
+  redirect("/")
 }

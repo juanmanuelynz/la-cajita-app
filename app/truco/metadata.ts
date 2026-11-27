@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 // SEO de La Cajita Truco. Lo usan /truco y el login cuando viene de /truco
-// (sin sesión, quien lee el link, como WhatsApp o Google, termina en /login).
+// (sin sesión, quien lee el link, como WhatsApp o Google, ve el login en /truco).
 const title = "La Cajita Truco"
 const description =
   "Aprendé, practicá y anotá tus partidas de truco: lecciones, ejercicios, anotador con fósforos y partidas contra la máquina."
