@@ -3,7 +3,8 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Todavía no hay código:** esto es lo que se va a construir.
+27/11/2026. **Hecho:** paso 1 (motor + máquina + tests). Lo demás está por
+construir.
 
 ## Decisiones
 
@@ -146,3 +147,21 @@ Cada paso se sube por separado para poder probarlo.
 - Truco y Poker son apps separadas: cada entrenamiento tiene sus niveles
   propios.
 - Encabezado: "La Cajita Truco".
+
+## Reglas del motor que no estaban en las lecciones (27/11/2026)
+
+- **Después de una baza parda tira primero el mano** (el artefacto hacía
+  tirar al que había empezado la parda). La lección "Cómo es una mano" tiene
+  que decirlo cuando se haga Aprender (paso 3).
+- **Si te cantan envido podés subirlo** (real / falta) aunque ya hayas tirado
+  tu primera carta; lo que no podés es cantarlo vos primero (el artefacto solo
+  dejaba querer o no querer).
+- **Irse al mazo** da solo lo que vale la mano, sin puntos de envido (como el
+  artefacto).
+- Sin cambios respecto del artefacto: no se canta envido después de tirar tu
+  primera carta ni con un truco ya querido; al truco (no al retruco) se le
+  puede contestar con envido.
+
+El estado de la partida es un objeto plano (como `lib/poker/table.ts`): cada
+acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
+`rnd` vivía dentro del estado y no se podía guardar).
