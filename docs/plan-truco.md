@@ -3,9 +3,7 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Hecho:** pasos 1 a 6 (motor, ruta, Aprender, anotador, jugar contra la
-máquina y Practicar con progreso en la base). Falta el paso 7 (probar en el
-celular y actualizar `CLAUDE.md`).
+27/11/2026. **Hecho:** los 7 pasos (27/11/2026). Quedan los pendientes del final.
 
 ## Decisiones
 
@@ -210,6 +208,13 @@ Cada paso se sube por separado para poder probarlo.
 El estado de la partida es un objeto plano (como `lib/poker/table.ts`): cada
 acción devuelve uno nuevo y el azar entra por un `rng` (en el artefacto el
 `rnd` vivía dentro del estado y no se podía guardar).
+
+## Paso 7 (27/11/2026)
+
+Revisado a 390 px en oscuro y en claro con el build de producción: nada se
+sale de la pantalla y no hay errores. La mesa de Jugar se achicó (cartas de la
+máquina y de las bazas en `sm`, las tuyas en `lg`) para que todos los botones
+entren arriba de la barra sin scrollear. `CLAUDE.md` tiene la sección Truco.
 
 ## Pendientes (27/11/2026)
 

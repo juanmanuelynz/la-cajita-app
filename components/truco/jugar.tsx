@@ -213,9 +213,9 @@ function Table({
         </div>
         <div className="flex gap-1.5">
           {reveal
-            ? h.cards[1].map((c, i) => <SpanishCard key={i} card={c} size="md" />)
+            ? h.cards[1].map((c, i) => <SpanishCard key={i} card={c} size="sm" />)
             : h.cards[1].map((_, i) => (
-                <SpanishCardBack key={`${g.hands}-${i}`} size="md" className="card-deal" />
+                <SpanishCardBack key={`${g.hands}-${i}`} size="sm" className="card-deal" />
               ))}
         </div>
         <Bubble text={bubbleFor(g, 1)} side="top" />
@@ -239,14 +239,14 @@ function Table({
               <div key={i} className={cn("flex flex-col items-center gap-1.5", !t && "opacity-40")}>
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-white/70">{["1ª", "2ª", "3ª"][i]}</span>
                 {t?.cards[1] ? (
-                  <SpanishCard key={`${g.hands}-${i}-1`} card={t.cards[1]} size="md" highlight={w === 1} className="card-deal" />
+                  <SpanishCard key={`${g.hands}-${i}-1`} card={t.cards[1]} size="sm" highlight={w === 1} className="card-deal" />
                 ) : (
-                  <div className="h-16 w-11 rounded-[9px] border border-dashed border-white/25" />
+                  <div className="h-[52px] w-9 rounded-[7px] border border-dashed border-white/25" />
                 )}
                 {t?.cards[0] ? (
-                  <SpanishCard key={`${g.hands}-${i}-0`} card={t.cards[0]} size="md" highlight={w === 0} className="card-deal" />
+                  <SpanishCard key={`${g.hands}-${i}-0`} card={t.cards[0]} size="sm" highlight={w === 0} className="card-deal" />
                 ) : (
-                  <div className="h-16 w-11 rounded-[9px] border border-dashed border-white/25" />
+                  <div className="h-[52px] w-9 rounded-[7px] border border-dashed border-white/25" />
                 )}
                 <span className="min-h-[1em] text-[10px] font-bold uppercase tracking-wide text-primary">
                   {w === null || w === undefined ? "" : w === -1 ? "parda" : w === 0 ? "vos" : "máquina"}
@@ -260,16 +260,16 @@ function Table({
       {/* Vos (abajo) */}
       <div className="relative flex flex-col items-center gap-1.5">
         <Bubble text={bubbleFor(g, 0)} side="bottom" />
-        <div className="flex min-h-[120px] items-end justify-center gap-2">
+        <div className="flex min-h-24 items-end justify-center gap-2">
           {h.cards[0].map((c, i) => (
             <button
               key={`${g.hands}-${c.num}-${c.suit}`}
               disabled={!l.play}
               onClick={() => onAction({ type: "play", index: i })}
               aria-label={`Jugar ${cardName(c)}`}
-              className="rounded-[12px] transition-transform enabled:active:-translate-y-2 enabled:hover:-translate-y-2 disabled:cursor-default"
+              className="rounded-[10px] transition-transform enabled:active:-translate-y-2 enabled:hover:-translate-y-2 disabled:cursor-default"
             >
-              <SpanishCard card={c} size="xl" className="card-deal" />
+              <SpanishCard card={c} size="lg" className="card-deal" />
             </button>
           ))}
         </div>
