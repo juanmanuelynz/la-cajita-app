@@ -83,8 +83,6 @@ const PIP_STYLE = {
   xl: "w-12 h-12",
 } as const
 
-const FIGURE: Record<number, string> = { 10: "Sota", 11: "Caballo", 12: "Rey" }
-
 export function SpanishCard({
   card,
   size = "md",
@@ -123,11 +121,8 @@ export function SpanishCard({
           {card.num}
         </span>
       )}
-      {/* El nombre de la figura va debajo del palo, en el centro (no choca con el índice de abajo). */}
-      <span className="flex flex-col items-center gap-0.5">
-        <SuitPip suit={card.suit} className={PIP_STYLE[size]} />
-        {big && FIGURE[card.num] && <span className="font-serif text-[9px] italic">{FIGURE[card.num]}</span>}
-      </span>
+      {/* Sin el nombre de la figura, como los naipes de verdad: el 10, 11 y 12 ya lo dicen. */}
+      <SuitPip suit={card.suit} className={PIP_STYLE[size]} />
     </div>
   )
 }
