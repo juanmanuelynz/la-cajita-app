@@ -57,6 +57,9 @@ export function useTrainingProgress(playerId: string | null, version: number) {
   return progress
 }
 
+/** Jugadores que no aparecen en "¿Quién sos?" (Entrenar y Practicar), por nombre sin importar mayúsculas. */
+export const HIDDEN_TRAINEES = ["nano", "tito"]
+
 export function Avatar({ name, className }: { name: string; className?: string }) {
   const initials = name
     .trim()
@@ -109,7 +112,8 @@ function GoalRing({ done, goal }: { done: number; goal: number }) {
   )
 }
 
-function PlayerDrawer({
+/** "¿Quién entrena?": elegir o crear el jugador (Entrenar de poker y Practicar de Truco). */
+export function PlayerDrawer({
   open,
   onOpenChange,
   players,

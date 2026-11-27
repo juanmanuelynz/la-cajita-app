@@ -35,6 +35,16 @@ const MIGRATIONS = [
   // 14-training-street-seat.sql: calle y lugar de cada respuesta (nullables).
   "ALTER TABLE training_answers ADD COLUMN IF NOT EXISTS street TEXT",
   "ALTER TABLE training_answers ADD COLUMN IF NOT EXISTS seat TEXT",
+  // 15-truco.sql: progreso de Practicar en La Cajita Truco.
+  `CREATE TABLE IF NOT EXISTS truco_answers (
+    id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    player_id  UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    quiz       TEXT NOT NULL,
+    correct    BOOLEAN NOT NULL,
+    local_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS truco_answers_player_date ON truco_answers (player_id, local_date)",
 ]
 
 const url = process.env.DATABASE_URL

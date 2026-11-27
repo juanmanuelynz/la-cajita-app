@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { DRILL_IDS } from "./poker/drill-ids"
+import { TRUCO_QUIZ_IDS } from "./truco/quiz-ids"
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/
 
@@ -144,5 +145,14 @@ export const DailyResultSchema = z
   })
   .refine((r) => r.score <= r.total, "El puntaje no puede superar el total")
 
+/** Una respuesta de Practicar en La Cajita Truco. */
+export const TrucoAnswerSchema = z.object({
+  playerId: z.string().uuid(),
+  quiz: z.enum(TRUCO_QUIZ_IDS),
+  correct: z.boolean(),
+  localDate: z.string().regex(dateRegex),
+})
+
 export type TrainingAnswerInput = z.infer<typeof TrainingAnswerSchema>
+export type TrucoAnswerInput = z.infer<typeof TrucoAnswerSchema>
 export type DailyResultInput = z.infer<typeof DailyResultSchema>

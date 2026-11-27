@@ -5,12 +5,12 @@
 
 import { useEffect, useState } from "react"
 import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FosforoIcon } from "@/components/truco/fosforo-icon"
 import { Aprender } from "@/components/truco/aprender"
 import { SuitPip } from "@/components/truco/spanish-card"
 import { Anotador } from "@/components/truco/anotador"
 import { Jugar } from "@/components/truco/jugar"
+import { Practicar } from "@/components/truco/practicar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
@@ -30,21 +30,6 @@ const TABS: DockTab<TrucoTab>[] = [
 ]
 
 const TAB_KEY = "la-cajita:truco:tab"
-
-function Proximamente({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="pt-4 pb-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{text}</p>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
 
 export default function TrucoPage() {
   const [tab, setTab] = useState<TrucoTab>("aprender")
@@ -67,7 +52,7 @@ export default function TrucoPage() {
 
   const screens: Record<TrucoTab, React.ReactNode> = {
     aprender: <Aprender onPractice={() => select("practicar")} />,
-    practicar: <Proximamente title="Practicar" text="¿Qué carta gana?, ¿Cuántos tantos tenés? y ¿Cuántos puntos son?, con tu progreso." />,
+    practicar: <Practicar />,
     jugar: <Jugar active={tab === "jugar"} />,
     anotar: <Anotador active={tab === "anotar"} />,
     config: (

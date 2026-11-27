@@ -7,7 +7,7 @@ import type { Player } from "@/lib/types"
 import { isGameFree, levelFor, type DrillId, type TrainingSeat, type TrainingStreet, type WeakSpot } from "@/lib/poker/training"
 import { difficultyForLevel, type Difficulty } from "@/lib/poker/difficulty"
 import { TrainingContext } from "@/components/training/drill-shell"
-import { TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
+import { HIDDEN_TRAINEES, TrainerCard, useTrainingProgress } from "@/components/training/progress-panel"
 import { PracticeSession } from "@/components/training/practice-session"
 import { PreflopVsDrill } from "@/components/training/preflop-vs-drill"
 import { DailyChallenge } from "@/components/training/daily-challenge"
@@ -272,8 +272,6 @@ function DrillMenu({
 
 const PLAYER_KEY = "la-cajita:entrenar:jugador"
 
-/** Jugadores que no aparecen en "¿Quién sos?" de Entrenar (por nombre, sin importar mayúsculas). */
-const HIDDEN_IN_ENTRENAR = ["nano", "tito"]
 
 export function EntrenarTab({
   players: allPlayers,
@@ -284,7 +282,7 @@ export function EntrenarTab({
   onCreatePlayer?: (name: string) => Promise<Player>
 }) {
   const players = useMemo(
-    () => allPlayers.filter((p) => !HIDDEN_IN_ENTRENAR.includes(p.name.trim().toLowerCase())),
+    () => allPlayers.filter((p) => !HIDDEN_TRAINEES.includes(p.name.trim().toLowerCase())),
     [allPlayers],
   )
   const [game, setGame] = useState<GameId>("holdem")

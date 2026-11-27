@@ -9,6 +9,7 @@ import type {
   ActiveMatch,
   Tournament,
   TrainingProgress,
+  TrucoProgress,
   DailyResult,
 } from "./types"
 import {
@@ -22,8 +23,10 @@ import {
   UpdateActiveMatchSchema,
   UuidSchema,
   TrainingAnswerSchema,
+  TrucoAnswerSchema,
   type DailyResultInput,
   type TrainingAnswerInput,
+  type TrucoAnswerInput,
 } from "./validators"
 import { POINTS_DISTRIBUTION } from "./constants"
 import { rankMatchPlayers } from "./ranking"
@@ -741,3 +744,43 @@ export async function getDailyLeaderboard(date: string): Promise<DailyResult[]> 
   `
   return rows as DailyResult[]
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// La Cajita Truco: progreso de Practicar (aparte del Entrenar de poker)
+// Roles: admin e invitado (cualquiera con sesión válida).
+// ────────────────────────────────────────────────────────────────────────────
+
+export async function recordTrucoAnswer(input: TrucoAnswerInput): Promise<void> {
+  await getCurrentRole()
+  const a = TrucoAnswerSchema.parse(input)
+  await sql`
+    INSERT INTO truco_answers (player_id, quiz, correct, local_date)
+    VALUES (${a.playerId}, ${a.quiz}, ${a.correct}, ${a.localDate})
+  `
+}
+
+export async function getTrucoProgress(playerId: string, today: string): Promise<TrucoProgress> {
+  await getCurrentRole()
+  const id = UuidSchema.parse(playerId)
+  const day = DateSchema.parse(today)
+  const [quizzes, days, todayRows] = (await sql.transaction([
+    sql`
+      SELECT quiz AS key, COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM truco_answers WHERE player_id = ${id} GROUP BY quiz
+    `,
+    sql`
+      SELECT DISTINCT local_date::text AS day FROM truco_answers
+      WHERE player_id = ${id} ORDER BY day DESC LIMIT 400
+    `,
+    sql`
+      SELECT COUNT(*) FILTER (WHERE correct)::int AS right, COUNT(*)::int AS total
+      FROM truco_answers WHERE player_id = ${id} AND local_date = ${day}
+    `,
+  ])) as Array<Array<Record<string, unknown>>>
+  return {
+    byQuiz: Object.fromEntries(quizzes.map((r) => [String(r.key), { right: Number(r.right), total: Number(r.total) }])),
+    days: days.map((r) => String(r.day)),
+    today: { right: Number(todayRows[0]?.right ?? 0), total: Number(todayRows[0]?.total ?? 0) },
+  }
+}
+

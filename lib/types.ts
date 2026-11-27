@@ -95,6 +95,16 @@ export interface TrainingProgress {
   today: TrainingTally
 }
 
+/** Progreso de Practicar en La Cajita Truco (aparte del Entrenar de poker). */
+export interface TrucoProgress {
+  /** Aciertos por ejercicio (clave: id de lib/truco/quiz-ids.ts). */
+  byQuiz: Record<string, TrainingTally>
+  /** Fechas (YYYY-MM-DD) en que practicó, de la más nueva a la más vieja. */
+  days: string[]
+  /** Respuestas de hoy. */
+  today: TrainingTally
+}
+
 export interface DailyResult {
   player_id: string
   name: string

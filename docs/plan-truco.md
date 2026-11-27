@@ -3,9 +3,9 @@
 Una app hermana de truco argentino en **`/truco`**, adentro de La Cajita, con su
 mismo look. Parte del artefacto "Truco argentino" (26/11/2026): motor de reglas
 mano a mano sin flor, la máquina, lecciones, ejercicios y anotador. Acordado el
-27/11/2026. **Hecho:** pasos 1 (motor + máquina + tests), 2 (ruta `/truco`), 3
-(carta española y Aprender), 4 (anotador) y 5 (jugar contra la máquina, con
-estadísticas y tres niveles). Lo demás está por construir.
+27/11/2026. **Hecho:** pasos 1 a 6 (motor, ruta, Aprender, anotador, jugar contra la
+máquina y Practicar con progreso en la base). Falta el paso 7 (probar en el
+celular y actualizar `CLAUDE.md`).
 
 ## Decisiones
 
@@ -39,6 +39,15 @@ estadísticas y tres niveles). Lo demás está por construir.
 - Server Actions nuevas en `lib/database.ts`: `recordTrucoAnswer` (fire-and-
   forget, como `recordTrainingAnswer`) y `getTrucoProgress` (aciertos/total por
   ejercicio y racha). Las dos permitidas para admin e invitado.
+- Hecho así (27/11/2026): lista de ids en `lib/truco/quiz-ids.ts`, ejercicios
+  puros en `lib/truco/quizzes.ts` (tests en `tests/truco-quizzes.test.ts`),
+  pantalla en `components/truco/practicar.tsx`. Se puede practicar sin elegir
+  nombre (no se guarda). El selector "¿Quién entrena?" es el mismo de Entrenar
+  (`PlayerDrawer` y `HIDDEN_TRAINEES`, exportados de `progress-panel.tsx`).
+  Meta del día: 10 respuestas; nivel por aciertos con títulos que suben por la
+  jerarquía (Cuatro de copa, Siete falso, Un tres, Siete de espada, Ancho de
+  espada), en `lib/truco/training.ts`. Migración y consultas probadas contra
+  un Postgres 16 local.
 - **Son dos apps separadas:** el entrenamiento de Truco tiene su propio nivel,
   su meta diaria y su progreso; no suma ni resta nada al Entrenar de poker
   (ni a `levelFor`, ni a `DAILY_GOAL`, ni a Nano).
