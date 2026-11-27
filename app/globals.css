@@ -203,60 +203,12 @@
   }
 }
 
-/* Paletas de La Cajita Truco (app/truco): van como clase en <html> mientras
-   estás en /truco, así también las toman los diálogos (que se dibujan fuera de
-   la página). Sacadas de la baraja española; se elige una (por ahora hay un
-   selector de prueba en Ajustes de Truco). */
+/* Paleta de La Cajita Truco (app/truco): "Oro y espada", colores de la baraja
+   española (oro de principal sobre el azul de la espada; elegida el
+   27/11/2026). Va como clase .truco en <html> mientras estás en /truco, así
+   también la toman los diálogos (que se dibujan fuera de la página). */
 @layer base {
-  /* A · Naipe: bermellón del marco de las cartas, papel crema y oro. */
-  html.truco-a {
-    --background: #f6efdf;
-    --foreground: #2a2119;
-    --card: #fffaf0;
-    --card-foreground: #2a2119;
-    --popover: #fffaf0;
-    --popover-foreground: #2a2119;
-    --primary: #b8432f;
-    --primary-foreground: #ffffff;
-    --secondary: #ebe1c6;
-    --secondary-foreground: #2a2119;
-    --muted: #ece3cd;
-    --muted-foreground: #6d5f4e;
-    --accent: #e3aa37;
-    --accent-foreground: #2a2119;
-    --border: #e4d8bf;
-    --input: #e4d8bf;
-    --ring: #b8432f;
-    --back-from: #b8432f;
-    --back-to: #6e1d12;
-    --back-glow: rgb(239 120 90 / 0.45);
-    --back-leaf: #fbeee0;
-  }
-  html.dark.truco-a {
-    --background: #1d1612;
-    --foreground: #f3ead6;
-    --card: #28201a;
-    --card-foreground: #f3ead6;
-    --popover: #28201a;
-    --popover-foreground: #f3ead6;
-    --primary: #c8432f;
-    --primary-foreground: #fff7ec;
-    --secondary: #3a2e25;
-    --secondary-foreground: #f3ead6;
-    --muted: #33281f;
-    --muted-foreground: #b3a48d;
-    --accent: #e3aa37;
-    --accent-foreground: #2a2119;
-    --border: #3d3128;
-    --input: #3d3128;
-    --ring: #c8432f;
-    --back-from: #b8432f;
-    --back-to: #6e1d12;
-    --back-glow: rgb(239 120 90 / 0.45);
-    --back-leaf: #fbeee0;
-  }
-  /* B · Oro y espada: oro de principal sobre el azul de la espada. */
-  html.truco-b {
+  html.truco {
     --background: #f2f0ea;
     --foreground: #1b2335;
     --card: #ffffff;
@@ -279,7 +231,7 @@
     --back-glow: rgb(110 160 240 / 0.45);
     --back-leaf: #f3d27a;
   }
-  html.dark.truco-b {
+  html.dark.truco {
     --background: #131a29;
     --foreground: #eef0f6;
     --card: #1b2335;
@@ -301,53 +253,6 @@
     --back-to: #16325e;
     --back-glow: rgb(110 160 240 / 0.45);
     --back-leaf: #f3d27a;
-  }
-  /* C · Boliche: granate de la copa y oro, como una mesa de bar de noche. */
-  html.truco-c {
-    --background: #f7efe9;
-    --foreground: #2b181d;
-    --card: #fffaf6;
-    --card-foreground: #2b181d;
-    --popover: #fffaf6;
-    --popover-foreground: #2b181d;
-    --primary: #a8352f;
-    --primary-foreground: #ffffff;
-    --secondary: #efe0d8;
-    --secondary-foreground: #2b181d;
-    --muted: #f1e4dd;
-    --muted-foreground: #7a5d5a;
-    --accent: #c48a22;
-    --accent-foreground: #ffffff;
-    --border: #ead8cf;
-    --input: #ead8cf;
-    --ring: #a8352f;
-    --back-from: #9a2a3b;
-    --back-to: #4c0f19;
-    --back-glow: rgb(230 100 120 / 0.4);
-    --back-leaf: #f0cf80;
-  }
-  html.dark.truco-c {
-    --background: #1f1115;
-    --foreground: #f6e9e4;
-    --card: #2b181d;
-    --card-foreground: #f6e9e4;
-    --popover: #2b181d;
-    --popover-foreground: #f6e9e4;
-    --primary: #dba442;
-    --primary-foreground: #24130a;
-    --secondary: #3d222a;
-    --secondary-foreground: #f6e9e4;
-    --muted: #351e24;
-    --muted-foreground: #c0a2a0;
-    --accent: #b23a48;
-    --accent-foreground: #ffffff;
-    --border: #45262d;
-    --input: #45262d;
-    --ring: #dba442;
-    --back-from: #9a2a3b;
-    --back-to: #4c0f19;
-    --back-glow: rgb(230 100 120 / 0.4);
-    --back-leaf: #f0cf80;
   }
 }
 
@@ -951,7 +856,7 @@
 
 /* Dorso de La Cajita (CardBack y las cartas de Nueva partida): paño esmeralda
    con un brillo detrás de la hojita, tramado fino en diagonal y un filete.
-   Los colores son variables: Truco los cambia con su paleta (.truco-*). */
+   Los colores son variables: Truco los cambia con su paleta (.truco). */
 .card-back-felt {
   position: relative;
   display: flex;

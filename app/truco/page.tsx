@@ -4,26 +4,24 @@
 // misma sesión (admin e invitado); se entra y se sale desde Configuración.
 
 import { useEffect, useState } from "react"
-import { Settings } from "lucide-react"
+import { Brain, GraduationCap, Settings, Swords } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CardBack } from "@/components/training/playing-card"
-import { BastoIcon, CopaIcon, EspadaIcon, FosforoIcon } from "@/components/truco/suit-icons"
-import { TRUCO_PALETTES, useTrucoPalette } from "@/hooks/use-truco-palette"
-import { cn } from "@/lib/utils"
+import { FosforoIcon } from "@/components/truco/fosforo-icon"
+import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { AjustesCard } from "@/components/ajustes-card"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 import { OfflineIndicator } from "@/components/offline-indicator"
 
 type TrucoTab = "aprender" | "practicar" | "jugar" | "anotar" | "config"
 
-// Íconos propios (palos y fósforo), como Poker tiene su pica; Ajustes con el
-// engranaje, igual que Poker. Anotar va al centro, como Partidas en Poker.
+// Íconos que dicen qué hace cada pestaña, como en Poker: Practicar con el
+// mismo cerebro que Entrenar. Anotar va al centro con el fósforo propio, como
+// Partidas con la pica en Poker.
 const TABS: DockTab<TrucoTab>[] = [
-  { id: "aprender", label: "Aprender", short: "Aprender", icon: BastoIcon },
-  { id: "practicar", label: "Practicar", short: "Practicar", icon: CopaIcon },
+  { id: "aprender", label: "Aprender", short: "Aprender", icon: GraduationCap },
+  { id: "practicar", label: "Practicar", short: "Practicar", icon: Brain },
   { id: "anotar", label: "Anotador", short: "Anotar", icon: FosforoIcon },
-  { id: "jugar", label: "Jugar contra la máquina", short: "Jugar", icon: EspadaIcon },
+  { id: "jugar", label: "Jugar contra la máquina", short: "Jugar", icon: Swords },
   { id: "config", label: "Configuración", short: "Ajustes", icon: Settings },
 ]
 
@@ -44,50 +42,9 @@ function Proximamente({ title, text }: { title: string; text: string }) {
   )
 }
 
-/** Selector de prueba de la paleta, con una muestra (dorso, botones). Se saca cuando se elija una. */
-function PaletaDePrueba({ palette, onChoose }: { palette: string; onChoose: (p: (typeof TRUCO_PALETTES)[number]["id"]) => void }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Paleta (de prueba)</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-2">
-          {TRUCO_PALETTES.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onChoose(p.id)}
-              className={cn(
-                "rounded-xl border px-2 py-2 text-left text-sm transition-colors",
-                palette === p.id ? "border-primary bg-primary/15" : "border-border",
-              )}
-            >
-              <span className="block font-semibold">
-                {p.id.toUpperCase()} · {p.name}
-              </span>
-              <span className="block text-xs text-muted-foreground">{p.desc}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-3">
-          <CardBack size="md" />
-          <CardBack size="sm" />
-          <CardBack size="xs" />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Button>¡Truco!</Button>
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Envido</Button>
-          <Button variant="secondary">Mazo</Button>
-        </div>
-        <p className="text-sm text-muted-foreground">Vos 12 · La máquina 9 · a 30 (en las malas)</p>
-      </CardContent>
-    </Card>
-  )
-}
-
 export default function TrucoPage() {
   const [tab, setTab] = useState<TrucoTab>("aprender")
-  const [palette, setPalette] = useTrucoPalette()
+  useTrucoTheme()
 
   // Vuelve a la última pestaña usada en este celular.
   useEffect(() => {
@@ -110,9 +67,8 @@ export default function TrucoPage() {
     jugar: <Proximamente title="Jugar" text="Mano a mano contra la máquina, a 15 o a 30, sin flor." />,
     anotar: <Proximamente title="Anotar" text="Anotador con fósforos para las partidas de verdad." />,
     config: (
-      <div className="space-y-4 pt-4 pb-8">
+      <div className="pt-4 pb-8">
         <AjustesCard app="truco" />
-        <PaletaDePrueba palette={palette} onChoose={setPalette} />
       </div>
     ),
   }
