@@ -690,10 +690,11 @@ export function BotTable({
   }
 
   // Los bots juegan solos, con una pausa para poder seguirlos.
+  // Mientras está abierto "¿Terminar la mesa?" la mesa queda en pausa.
   const toAct = table?.hand?.toAct ?? null
   const busy = useRef(false)
   useEffect(() => {
-    if (!table || toAct === null || toAct === HERO) return
+    if (!table || toAct === null || toAct === HERO || confirmEnd) return
     const id = setTimeout(() => {
       if (busy.current) return
       busy.current = true
@@ -707,7 +708,7 @@ export function BotTable({
       }
     }, BOT_DELAY_MS)
     return () => clearTimeout(id)
-  }, [table, toAct, reads])
+  }, [table, toAct, reads, confirmEnd])
 
   const onAct = useCallback((a: Action) => setTable((t) => (t ? act(t, a) : t)), [])
 
