@@ -51,8 +51,12 @@ construir.
 ### Secciones de `/truco`
 
 La misma barra flotante de abajo que Poker (`components/dock-nav.tsx`, la
-comparten las dos), con Jugar como botón grande del centro (decidido el
-27/11/2026; antes decía `IconTabsList` arriba). Las pantallas quedan montadas
+comparten las dos), con **Anotar** como botón grande del centro, como
+Partidas en Poker (decidido el 27/11/2026; antes decía `IconTabsList`
+arriba). Orden: Aprender, Practicar, Anotar, Jugar, Ajustes. Íconos propios
+(`components/truco/suit-icons.tsx`): basto Aprender, copa Practicar, fósforo
+Anotar, espada Jugar; Ajustes con el engranaje, igual que Poker (propuesta,
+falta confirmar qué se cambia). Las pantallas quedan montadas
 al cambiar de pestaña, para no perder una partida, y la última pestaña se
 recuerda en `la-cajita:truco:tab`.
 
@@ -85,6 +89,15 @@ Fuera de esta versión: flor, parejas 2 vs 2, jugar online.
 - Se tira el CSS del artefacto (paño verde, papel crema) y se usan los tokens
   de La Cajita (`--background`, `--card`, `--primary`…), shadcn (`Card`,
   `Button`, `AlertDialog`) y modo oscuro por defecto.
+- **Paleta propia, no la de Poker** (pedido el 27/11/2026): colores de la
+  baraja española, como clase `truco-*` en `<html>` mientras estás en `/truco`
+  (`hooks/use-truco-palette.ts`, tokens en `app/globals.css`). Hay tres en
+  prueba —A Naipe (bermellón, crema y oro), B Oro y espada (oro sobre azul),
+  C Boliche (oro y granate)— con un selector temporal en Ajustes de Truco;
+  cuando se elija una, se deja esa y se saca el selector.
+- El dorso (`CardBack`, `.card-back-felt`) toma sus colores de variables
+  (`--back-from`, `--back-to`, `--back-glow`, `--back-leaf`): en Poker sigue
+  el paño verde, en Truco el color de la paleta, siempre con la hojita.
 - **Cartas españolas** como componente React nuevo
   (`components/truco/spanish-card.tsx`), con el mismo marco y sombra que
   `PlayingCard` de Entrenar y el **dorso de La Cajita** (`CardBack`, paño verde
