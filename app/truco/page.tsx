@@ -15,7 +15,6 @@ import { Jugar } from "@/components/truco/jugar"
 import { Practicar } from "@/components/truco/practicar"
 import { useTrucoTheme } from "@/hooks/use-truco-theme"
 import { setLastApp } from "@/lib/last-app"
-import { appBooted, markAppBooted } from "@/lib/app-boot"
 import { TrucoSplash } from "@/components/splash-screen"
 import { AjustesCard } from "@/components/ajustes-card"
 import { PokerPromo } from "@/components/poker-promo"
@@ -51,22 +50,16 @@ export default function TrucoPage() {
       .catch(() => {})
   }, [])
 
-  // Splash de Truco solo si la app arranca acá (si venís de Poker ya hubo uno).
-  // En el servidor y al hidratar arranca en "on", así está desde el primer HTML.
-  const [splash, setSplash] = useState<"on" | "leaving" | "off">(() =>
-    typeof window === "undefined" || !appBooted() ? "on" : "off",
-  )
+  // Splash de Truco cada vez que se llega (también desde Poker, como al revés).
+  // Arranca en "on" desde el primer HTML.
+  const [splash, setSplash] = useState<"on" | "leaving" | "off">("on")
   useEffect(() => {
-    if (splash !== "on") return
-    markAppBooted()
     const t1 = setTimeout(() => setSplash("leaving"), 1100)
     const t2 = setTimeout(() => setSplash("off"), 1450)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
     }
-    // Solo al montar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Vuelve a la última pestaña usada en este celular.

@@ -256,7 +256,8 @@ Reglas confirmadas (las fuentes no coinciden en los valores):
   girando. **Splash de Truco** propio (paño azul, las bravas que se abren en
   abanico) cuando la app arranca en Truco: una cookie `la_cajita_app` le avisa
   al middleware que abra "/" directo en /truco, así no se ve el de Poker. Al
-  pasar de una app a la otra no se repite (`lib/app-boot.ts`).
+  pasar de una app a la otra se muestra el splash de la que llega (en los dos
+  sentidos, a pedido el 27/11/2026).
 
 ## Paso 7 (27/11/2026)
 

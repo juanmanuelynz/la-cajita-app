@@ -62,7 +62,6 @@ import { TrucoPromo } from "@/components/truco/truco-promo"
 import { SplashScreen } from "@/components/splash-screen"
 import { LogoType } from "@/components/logo-type"
 import { getLastApp, setLastApp } from "@/lib/last-app"
-import { markAppBooted } from "@/lib/app-boot"
 import { DockNav, type DockTab } from "@/components/dock-nav"
 
 ChartJS.register(
@@ -310,7 +309,6 @@ function LaCajitaPoker() {
   }, [loadAllData, loadCasualData])
 
   useEffect(() => {
-    if (booted) markAppBooted()
     if (!booted || splashDone) return
     // Un cuadro con el splash encima de la app ya armada, y recién ahí el fundido.
     const raf = requestAnimationFrame(() => setSplashLeaving(true))
