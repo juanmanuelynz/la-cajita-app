@@ -248,6 +248,12 @@ Reglas confirmadas (las fuentes no coinciden en los valores):
   segura de Android (`public/favicon.svg` es la fuente; PNG de 512, 192, 180
   para iPhone y 32). El fondo de apertura de Android (`background_color` del
   manifest) es el verde del paño.
+  El de iPhone (180) lleva la ficha 1,2 veces más grande (28/11/2026, a
+  pedido): iOS no recorta como Android, así que no necesita la zona segura. Se
+  genera de `favicon.svg` envolviendo todo menos el fondo en
+  `<g transform="translate(256 256) scale(1.2) translate(-256 -256)">`.
+  `ICON_VERSION` pasó a "3" para que los iPhone que ya la tenían la vuelvan a
+  agregar.
 - **Logo** "LA CAJITA" (`components/logo-type.tsx`, clase `.logo-type`):
   Bebas Neue con aire entre letras, en dorado. En los dos encabezados; Truco ya no
   dice "Truco" y sus palos van en dos tintas (espada y basto claros, copa y oro
