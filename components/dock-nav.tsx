@@ -40,15 +40,15 @@ export function DockNav<T extends string>({
         <div
           aria-hidden
           style={NOTCH_MASK}
-          className="absolute inset-x-5 top-6 -bottom-2 -z-10 rounded-[2rem] bg-black/25 blur-xl dark:bg-black/60"
+          className="absolute inset-x-5 top-6 -bottom-2 -z-10 rounded-[2rem] bg-black/30 blur-xl dark:bg-black/70"
         />
         <div
           aria-hidden
           style={NOTCH_MASK}
           className={cn(
             "absolute inset-0 -z-10 rounded-[2rem]",
-            "border border-foreground/10 bg-background/55 backdrop-blur-xl backdrop-saturate-150",
-            "shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]",
+            "border border-foreground/15 bg-secondary/90 dark:bg-[color-mix(in_oklch,var(--secondary)_88%,var(--foreground))]/90 backdrop-blur-xl backdrop-saturate-150",
+            "shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]",
           )}
         />
         {tabs.map((tab) => {
