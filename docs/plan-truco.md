@@ -248,9 +248,10 @@ Reglas confirmadas (las fuentes no coinciden en los valores):
   segura de Android (`public/favicon.svg` es la fuente; PNG de 512, 192, 180
   para iPhone y 32). El fondo de apertura de Android (`background_color` del
   manifest) es el verde del paño.
-  El de iPhone (180) lleva la ficha 1,32 veces más grande (28/11/2026, a
-  pedido): iOS no recorta como Android, así que no necesita la zona segura. Se
-  genera de `favicon.svg` envolviendo todo menos el fondo en
+  Los de iPhone (180) y Android (192 y 512) llevan la ficha 1,32 veces más
+  grande (28/11/2026, a pedido); en Android sigue entrando en la zona segura
+  (radio 198 de 512, la zona segura es 205). Se generan de `favicon.svg`
+  envolviendo todo menos el fondo en
   `<g transform="translate(256 256) scale(1.32) translate(-256 -256)">`.
   `ICON_VERSION` pasó a "3" para que los iPhone que ya la tenían la vuelvan a
   agregar.
