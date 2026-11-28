@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react"
 import { LogoType } from "@/components/logo-type"
 import { MATCH_HEAD, MATCH_STICK } from "./fosforos"
-import { SuitGlyph } from "./suit-glyph"
+import { LeafMark } from "@/components/leaf-mark"
 
 // Cajita de fósforos en 3D con CSS, para el login de Truco (el de Poker es el
 // maletín de fichas, components/chip-case.tsx). Cerrada flota y se balancea;
@@ -61,17 +61,17 @@ function LooseMatch() {
   )
 }
 
-/** La etiqueta de la tapa: LA CAJITA entre una espada y un basto. */
+/** La etiqueta de la tapa: LA CAJITA entre dos hojitas y, abajo, TRUCO. */
 function Label() {
   return (
     <div className="mbox-label">
       <div className="mbox-label-inner">
         <div className="flex items-center gap-2">
-          <SuitGlyph suit="espada" className="size-4 text-[#2f62ad]" />
+          <LeafMark className="h-5 w-5 text-[#2f62ad]" />
           <LogoType as="span" className="text-[22px] text-[#16325e]" />
-          <SuitGlyph suit="basto" className="size-4 text-[#2f62ad]" />
+          <LeafMark className="h-5 w-5 text-[#2f62ad]" />
         </div>
-        <span className="mbox-label-sub">Fósforos de truco</span>
+        <span className="mbox-label-sub">Truco</span>
       </div>
     </div>
   )

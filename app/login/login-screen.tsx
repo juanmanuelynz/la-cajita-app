@@ -29,6 +29,9 @@ const PIN_LENGTH = 6;
 // Ahí recién se navega, y el splash arranca a girar la ficha o abrir el abanico.
 const REVEAL_AT_MS = 1150;
 const OPEN_DURATION_MS = 1800;
+// Alto de la escena: la cajita de fichas (size-56) y el abanico de Truco.
+const POKER_SCENE_H = 224;
+const TRUCO_SCENE_H = 136;
 
 export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
   // La cookie de la última app la lee el servidor; si no llegó, queda lo que
@@ -136,25 +139,33 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
           arriba, 32px y el logo, centrados. El PIN va debajo y al entrar se
           pliega, así la escena termina donde la muestra el splash. */}
       <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-4">
-        {truco ? (
-          <div className="relative">
-            <div className={revealClass}>
-              <BravasFan backOnly className="mb-6 scale-125" />
+        {/* Misma altura para las dos escenas, así el PIN no se mueve al cambiar
+            de app. Al entrar, la de Truco vuelve a su alto (el abanico, h-28 +
+            mb-6) junto con el PIN plegándose, y termina donde la pone el splash. */}
+        <div
+          className="flex items-center justify-center transition-[height] duration-500"
+          style={{ height: truco && opened ? TRUCO_SCENE_H : POKER_SCENE_H }}
+        >
+          {truco ? (
+            <div className="relative">
+              <div className={revealClass}>
+                <BravasFan backOnly className="mb-6 scale-125" />
+              </div>
+              <div className={boxClass}>
+                <MatchBox open={opened} />
+              </div>
             </div>
-            <div className={boxClass}>
-              <MatchBox open={opened} />
+          ) : (
+            <div className="relative size-56">
+              <div className={cn("size-full", revealClass)}>
+                <ChipLogo className={SPLASH_CHIP_CLASS} />
+              </div>
+              <div className={boxClass}>
+                <ChipCase open={opened} />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="relative size-56">
-            <div className={cn("size-full", revealClass)}>
-              <ChipLogo className={SPLASH_CHIP_CLASS} />
-            </div>
-            <div className={boxClass}>
-              <ChipCase open={opened} />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {truco ? <TrucoLogoRow className="mt-8" /> : <PokerLogoRow className="mt-8" />}
 
