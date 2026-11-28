@@ -3,19 +3,26 @@
 // base de datos. Lo usa "Mesa de práctica" y lo usaría la mesa online.
 //
 // Reglas (se elige al crear la mesa: con luz o con ciegas):
-// - Con luz (como en La Cajita): luz igual para todos, sin ciegas. Va al pozo
-//   pero no es una apuesta, así que antes del flop se puede pasar. En todas las
-//   calles habla primero el de la izquierda del que reparte.
+// - Con luz (como en La Cajita, confirmado por el grupo el 28/11/2026): antes
+//   de repartir, cada uno elige si entra a la mano; los que entran ponen la luz
+//   (igual para todos) y solo ellos reciben cartas. Sin ciegas. La luz va al
+//   pozo pero no es una apuesta, así que antes del flop se puede pasar. Habla
+//   primero "la mano" (el primero a la izquierda del que reparte), salvo que
+//   alguien haya apostado: el último que apostó o subió habla primero en las
+//   calles siguientes, hasta que otro apueste o suba; si se fue o está all-in,
+//   el siguiente a su izquierda.
 // - Con ciegas: la chica la pone el de la izquierda del que reparte y la grande
 //   el siguiente. Antes del flop habla primero el de la izquierda de la grande y
 //   la grande habla última (si nadie subió, puede pasar). Después del flop,
-//   como con luz. Mano a mano, el que reparte pone la chica.
+//   el primero a la izquierda del botón. Mano a mano, el que reparte pone la chica.
 // - Sin límite. La apuesta mínima es la luz (o la ciega grande); la subida
 //   mínima, lo que subió el último. Un all-in que no llega a la subida mínima
 //   no le reabre la subida a quien ya habló.
 // - Pozos laterales: se arman al final con lo que puso cada uno en la mano.
-// - Cajitas: se piden con una cuarta parte de la cajita o menos y entran antes
-//   de la mano siguiente.
+// - Cajitas: se piden entre manos, con una cuarta parte de la cajita o menos, y
+//   entran antes de la mano siguiente.
+// - Se quema una carta antes del flop, del turn y del river cuando alcanzan las
+//   cartas para los que juegan la mano.
 //
 // El estado es un objeto plano (se puede guardar en localStorage); cada función
 // devuelve uno nuevo sin tocar el anterior.
@@ -139,6 +146,10 @@ export interface HandState {
   toAct: number | null
   /** Índice en `players` del primero que habla antes del flop (con ciegas, el de la izquierda de la grande). */
   preflopStart: number
+  /** Con luz: el último que apostó o subió (habla primero en las calles siguientes). */
+  aggressor?: number | null
+  /** Si se queman cartas en esta mano (alcanzan para todos). Manos viejas sin el campo: `config.burn`. */
+  burn?: boolean
   log: ActionLog[]
   result: HandResult | null
 }
@@ -219,6 +230,8 @@ export function startHand(
   t: TableState,
   rng: Rng = Math.random,
   fixed?: { holes: Record<number, Card[]>; board: Card[] },
+  /** Con luz: asientos que no entran a esta mano (no ponen luz ni reciben cartas). */
+  sitOut: readonly number[] = [],
 ): TableState {
   if (t.hand && !t.hand.result) throw new Error("La mano anterior no terminó")
   const out = clone(t)
@@ -239,11 +252,16 @@ export function startHand(
   while (out.seats[button].stack <= 0)
 
   // Orden de reparto y de habla: desde la izquierda del botón; el botón último.
+  // Con luz, sin los que no entran (el botón reparte igual aunque no juegue).
+  const away = out.config.structure === "luz" ? new Set(sitOut) : new Set<number>()
   const order: number[] = []
   for (let i = 1; i <= out.seats.length; i++) {
     const s = (button + i) % out.seats.length
-    if (out.seats[s].stack > 0) order.push(s)
+    if (out.seats[s].stack > 0 && !away.has(s)) order.push(s)
   }
+  if (order.length < 2) throw new Error("Hacen falta al menos 2 jugadores en la mano")
+  const deckSize = variant.deck === "short" ? 36 : 52
+  const burn = out.config.burn || (!fixed && order.length * holeCount + 5 + 3 <= deckSize)
 
   let deck: Card[]
   let holes: Record<number, Card[]>
@@ -308,6 +326,8 @@ export function startHand(
     lastRaise: minBet(cfg),
     toAct: null,
     preflopStart,
+    aggressor: null,
+    burn,
     log: [],
     result: null,
   }
@@ -327,10 +347,12 @@ const canAct = (p: HandPlayer) => !p.folded && !p.allIn
 
 /**
  * Primero en hablar en la calle: el primero de la lista (que arranca a la
- * izquierda del botón); antes del flop con ciegas, el de la izquierda de la grande.
+ * izquierda del botón); antes del flop con ciegas, el de la izquierda de la
+ * grande; con luz, después del flop, desde el último que apostó o subió.
  */
 function firstToAct(h: HandState): number | null {
-  const start = h.street === "preflop" ? h.preflopStart : 0
+  const aggressorIdx = h.aggressor == null ? -1 : h.players.findIndex((p) => p.seat === h.aggressor)
+  const start = h.street === "preflop" ? h.preflopStart : Math.max(0, aggressorIdx)
   const ordered = [...h.players.slice(start), ...h.players.slice(0, start)]
   const active = ordered.filter(canAct)
   if (active.length === 0) return null
@@ -430,6 +452,7 @@ export function act(t: TableState, action: Action): TableState {
         for (const o of h.players) if (o !== p && canAct(o)) o.acted = false
       }
       h.currentBet = to
+      if (out.config.structure === "luz") h.aggressor = p.seat
       h.log.push({ seat: p.seat, street: h.street, action: p.allIn ? "allIn" : "raise", amount: added, to })
       break
     }
@@ -485,7 +508,7 @@ function closeStreet(t: TableState) {
       return
     }
     h.street = next
-    deal(h, BOARD_AFTER[next] - h.board.length, t.config.burn)
+    deal(h, BOARD_AFTER[next] - h.board.length, h.burn ?? t.config.burn)
     h.currentBet = 0
     h.lastRaise = minBet(t.config)
     for (const p of h.players) {

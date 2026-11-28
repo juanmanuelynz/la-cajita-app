@@ -2,8 +2,9 @@
 // Omaha y Manhattan), pedidas el 28/11/2026. Las reglas generales son las de
 // cualquier mesa de casino (orden de habla, mínimos, all-in, quién muestra
 // primero: las mismas que usa la Mesa de práctica, lib/poker/table.ts); lo
-// propio de La Cajita (Manhattan, short deck) sale del evaluador. Lo de jugar
-// con luz va aparte, cuando el grupo confirme cómo se juega.
+// propio de La Cajita (Manhattan, short deck) sale del evaluador. La última,
+// "Cómo jugamos nosotros: con luz", son las reglas de la casa que confirmó el
+// grupo el 28/11/2026 (las mismas que la Mesa de práctica con luz).
 
 import type { ReactNode } from "react"
 import type { Lesson } from "@/components/lessons-menu"
@@ -335,6 +336,70 @@ export function pokerLessons({ picker, variant }: { picker: ReactNode; variant: 
           {picker}
           <PreflopRanges variant={variant} />
           <OmahaPrinciples variant={variant} />
+        </>
+      ),
+    },
+    {
+      title: "Cómo jugamos nosotros: con luz",
+      summary: "Las reglas de la casa en La Cajita",
+      practice: { drill: "luz", label: "Practicar: Con luz" },
+      body: () => (
+        <>
+          <p>
+            En La Cajita no hay ciegas: se juega con <b>luz</b>. Todo lo demás (las jugadas, cómo se arma la mano en
+            cada juego, el all-in, mostrar las cartas) es igual que en las lecciones anteriores.
+          </p>
+          <H>La luz</H>
+          <List>
+            <li>
+              <b>Antes de repartir</b>, cada uno decide si entra a la mano. Los que entran ponen la luz; los que no,
+              no reciben cartas.
+            </li>
+            <li>
+              La luz es <b>la misma para todos durante toda la noche</b>.
+            </li>
+            <li>
+              La luz va al pozo pero no es una apuesta: antes del flop <b>se puede pasar</b>.
+            </li>
+          </List>
+          <H>Quién habla primero</H>
+          <List>
+            <li>
+              Siempre arranca <b>la mano</b>: el primero a la izquierda del que reparte (entre los que entraron).
+            </li>
+            <li>
+              Cuando alguien apuesta, en las rondas siguientes <b>habla primero él</b>, hasta que otro apueste o le
+              suba: ahí pasa a hablar primero ese.
+            </li>
+            <li>Si el que tiene que hablar primero se fue o está all-in, habla el siguiente a su izquierda.</li>
+          </List>
+          <div className="rounded-xl bg-muted p-3 text-sm">
+            Antes del flop pasan Ana y Beto, y Caro apuesta. En el flop habla primero <b>Caro</b>. Si en el flop pasan
+            todos, en el turn sigue hablando primero Caro. Si en el turn Ana apuesta, en el river habla primero{" "}
+            <b>Ana</b>.
+          </div>
+          <H>Cuánto se apuesta</H>
+          <List>
+            <li>
+              <b>Sin límite</b>, en los tres juegos.
+            </li>
+            <li>
+              La apuesta mínima es <b>la luz</b>. Para subir, al menos lo mismo que la última subida.
+            </li>
+          </List>
+          <H>Las cajitas</H>
+          <List>
+            <li>Cada uno arranca con una cajita de fichas.</li>
+            <li>
+              Otra cajita se pide <b>entre manos, nunca durante una</b>, y solo cuando te queda <b>un cuarto de la
+              cajita o menos</b>.
+            </li>
+          </List>
+          <H>Quemar cartas</H>
+          <p>
+            Se quema una carta antes del flop, del turn y del river <b>cuando alcanzan las cartas</b>. Por ejemplo, en
+            Manhattan Short con 6 jugadores se reparten 30 cartas y quedan 6: alcanzan para la mesa pero no para quemar.
+          </p>
         </>
       ),
     },

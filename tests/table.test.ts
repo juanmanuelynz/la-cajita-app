@@ -401,3 +401,71 @@ describe("winningCards", () => {
     expect(Object.keys(back.hole)).toEqual(["0"])
   })
 })
+
+describe("reglas de la casa con luz (confirmadas el 28/11/2026)", () => {
+  const luzTable = (n: number) => table(Array(n).fill(10000), { structure: "luz", luz: 100 })
+  const order = (t: TableState) => t.hand!.players.map((p) => p.seat)
+
+  it("los que no entran no ponen luz ni reciben cartas, y habla primero la mano", () => {
+    let t = luzTable(4)
+    t = startHand(t, seededRng(3), undefined, [2])
+    const h = t.hand!
+    expect(h.button).toBe(0)
+    expect(order(t)).toEqual([1, 3, 0])
+    expect(t.seats[2].stack).toBe(10000)
+    expect(h.players.every((p) => p.committed === 100)).toBe(true)
+    expect(h.toAct).toBe(1)
+    expect(() => startHand(luzTable(3), seededRng(1), undefined, [1, 2])).toThrow()
+  })
+
+  it("con ciegas no se puede dejar de entrar", () => {
+    const t = startHand(table([10000, 10000, 10000], { structure: "ciegas" }), seededRng(3), undefined, [2])
+    expect(order(t)).toContain(2)
+  })
+
+  it("el último que apostó habla primero en las calles siguientes, hasta que otro apueste", () => {
+    let t = startHand(luzTable(4), seededRng(5))
+    // Orden: 1, 2, 3, 0. Antes del flop apuesta el 3; pagan todos.
+    t = act(t, { type: "check" }) // 1
+    t = act(t, { type: "check" }) // 2
+    t = act(t, { type: "raise", to: 300 }) // 3
+    t = act(t, { type: "call" }) // 0
+    t = act(t, { type: "call" }) // 1
+    t = act(t, { type: "call" }) // 2
+    expect(t.hand!.street).toBe("flop")
+    expect(t.hand!.toAct).toBe(3)
+    // En el flop pasan todos: en el turn sigue hablando primero el 3.
+    for (let i = 0; i < 4; i++) t = act(t, { type: "check" })
+    expect(t.hand!.street).toBe("turn")
+    expect(t.hand!.toAct).toBe(3)
+    // En el turn apuesta el 1 (después de que pasan 3 y 0): en el river habla primero el 1.
+    t = act(t, { type: "check" }) // 3
+    t = act(t, { type: "check" }) // 0
+    t = act(t, { type: "raise", to: 500 }) // 1
+    t = act(t, { type: "call" }) // 2
+    t = act(t, { type: "fold" }) // 3
+    t = act(t, { type: "call" }) // 0
+    expect(t.hand!.street).toBe("river")
+    expect(t.hand!.toAct).toBe(1)
+  })
+
+  it("si el que apostó quedó all-in, habla primero el siguiente a su izquierda", () => {
+    // El 2 tiene poco: apuesta todo antes del flop (después de la luz le quedan 400).
+    let t = startHand(table([10000, 10000, 500, 10000], { structure: "luz", luz: 100 }), seededRng(5))
+    t = act(t, { type: "check" }) // 1
+    t = act(t, { type: "raise", to: 400 }) // 2, all-in
+    t = act(t, { type: "call" }) // 3
+    t = act(t, { type: "call" }) // 0
+    t = act(t, { type: "call" }) // 1
+    expect(t.hand!.street).toBe("flop")
+    expect(t.hand!.toAct).toBe(3)
+  })
+
+  it("se queman cartas solo si alcanzan para todos", () => {
+    const burnOf = (n: number, v: { game: "manhattan" | "holdem"; deck: "short" | "long" }) =>
+      startHand(table(Array(n).fill(10000), { variants: [v] }), seededRng(1)).hand!.burn
+    expect(burnOf(5, { game: "manhattan", deck: "short" })).toBe(true) // 25 + 5 + 3 = 33 ≤ 36
+    expect(burnOf(6, { game: "manhattan", deck: "short" })).toBe(false) // 30 + 5 + 3 = 38 > 36
+    expect(burnOf(8, { game: "holdem", deck: "long" })).toBe(true)
+  })
+})

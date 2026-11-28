@@ -376,7 +376,7 @@ function SetupScreen({
 function actionText(t: TableState, seat: number): RingSeat["action"] | undefined {
   const h = t.hand!
   const p = h.players.find((x) => x.seat === seat)
-  if (!p) return { kind: "fold", text: "Afuera" }
+  if (!p) return { kind: "fold", text: t.seats[seat].stack > 0 ? "No entró" : "Afuera" }
   if (p.folded) return { kind: "fold", text: "Se fue" }
   const last = [...h.log].reverse().find((x) => x.seat === seat && x.street === h.street)
   if (!last) return undefined
@@ -715,7 +715,8 @@ export function BotTable({
 
   const onAct = useCallback((a: Action) => setTable((t) => (t ? act(t, a) : t)), [])
 
-  const nextHand = () => {
+  /** `sitOut`: con luz, no entrás a la mano (no ponés la luz y mirás). Los bots entran siempre. */
+  const nextHand = (sitOut = false) => {
     if (!table) return
     let t = table
     t.seats.forEach((_, i) => {
@@ -723,12 +724,12 @@ export function BotTable({
     })
     const withChips = t.seats.filter((s) => s.stack + s.pending > 0)
     if (t.seats[HERO].stack === 0 && t.seats[HERO].pending === 0) return // tiene que pedir cajita o terminar
-    if (withChips.length < 2) return
+    if (withChips.length < (sitOut ? 3 : 2)) return
     setThoughts([])
     setShowThoughts(false)
     setReview(null)
     setShowReview(false)
-    setTable(startHand(t))
+    setTable(startHand(t, Math.random, undefined, sitOut ? [HERO] : []))
   }
 
   const seats = useMemo(() => (table?.hand ? seatsFor(table, heroName) : []), [table, heroName])
@@ -755,6 +756,9 @@ export function BotTable({
   const heroPlayer = h.players.find((p) => p.seat === HERO)
   const winners = r ? Object.keys(r.won).map(Number) : []
   const winning = winningCards(h)
+  // Con luz podés no entrar a la mano siguiente, si quedan al menos dos bots con fichas.
+  const canSitOut =
+    table.config.structure === "luz" && table.seats.filter((s, i) => i !== HERO && s.stack + s.pending > 0).length >= 2
 
   return (
     <div className="space-y-3">
@@ -841,8 +845,13 @@ export function BotTable({
                 Pedir cajita
               </Button>
             )}
+            {!heroBroke && canSitOut && (
+              <Button variant="outline" className="flex-1" onClick={() => nextHand(true)}>
+                No entro
+              </Button>
+            )}
             {!heroBroke && (
-              <Button className="flex-1 font-bold" onClick={nextHand}>
+              <Button className="flex-1 font-bold" onClick={() => nextHand()}>
                 Siguiente mano
               </Button>
             )}
@@ -854,7 +863,7 @@ export function BotTable({
         <ActionBar key={h.log.length} t={table} onAct={onAct} />
       ) : (
         <div className="flex h-[52px] items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground">
-          {heroPlayer?.folded ? "Te fuiste: miran los bots…" : `Piensa ${table.seats[toAct ?? 0]?.name ?? ""}…`}
+          {!heroPlayer ? "No entraste a esta mano: miran los bots…" : heroPlayer.folded ? "Te fuiste: miran los bots…" : `Piensa ${table.seats[toAct ?? 0]?.name ?? ""}…`}
         </div>
       )}
 

@@ -45,8 +45,8 @@ se retoma ese plan; el motor de la mano y los bots de acá se reutilizan tal cua
   | Short (36) | Manhattan | 6 |
 
   Al armar la mesa no deja poner más bots de los que entran; en modo "se rota"
-  manda el juego más justo de la rotación. Si se quemaran cartas, Manhattan
-  Short bajaría a 5 (a confirmar; el motor lo soporta con una opción).
+  manda el juego más justo de la rotación. Se queman cartas solo cuando
+  alcanzan, así que Manhattan Short sigue en 6 (con 6 no se quema).
 - **Valor de la cajita** (arranca en $2.000).
 - **Con luz o con ciegas:** con luz (arranca en $100), como en La Cajita; con
   ciegas (arrancan en $100 la chica y $200 la grande), sin luz. Todo en
@@ -56,8 +56,14 @@ se retoma ese plan; el motor de la mano y los bots de acá se reutilizan tal cua
 
 Las mismas que la mesa online:
 
-- **Con luz:** igual para todos, sin ciegas. Habla primero el de la izquierda del
-  que reparte y el que reparte habla último. Si nadie apostó, se puede pasar.
+- **Con luz** (reglas de la casa, confirmadas por el grupo el 28/11/2026): antes
+  de repartir cada uno elige si entra; los que entran ponen la luz (igual para
+  todos toda la noche) y solo ellos reciben cartas. En la mesa, botón «No
+  entro» entre manos; los bots entran siempre. Sin ciegas; la apuesta mínima es
+  la luz. Habla primero la mano (el primero a la izquierda del que reparte);
+  desde el flop, el último que apostó o subió habla primero hasta que otro
+  apueste o suba (si se fue o está all-in, el siguiente a su izquierda). Si
+  nadie apostó, se puede pasar, también antes del flop.
 - **Con ciegas:** la chica la pone el de la izquierda del que reparte y la
   grande el siguiente. Antes del flop habla primero el de la izquierda de la
   grande y la grande última (si nadie subió, puede pasar o subir). Después del
@@ -66,9 +72,11 @@ Las mismas que la mesa online:
 - **All-in con pozos laterales.**
 - **Juegos** con las reglas de la casa del evaluador. Manhattan se juega como
   Omaha (flop, turn y river), con 5 cartas propias de las que se usan 2 o 3.
-- **Cajitas:** cada una suma su valor en fichas. Se puede pedir otra cuando te
-  queda **una cuarta parte de la cajita o menos**; entra antes de la mano
-  siguiente. Los bots piden solos cuando se quedan sin fichas.
+- **Cajitas:** cada una suma su valor en fichas. Se puede pedir otra **entre
+  manos** cuando te queda **una cuarta parte de la cajita o menos**; entra antes
+  de la mano siguiente.
+- **Quemar:** una carta antes del flop, del turn y del river, solo cuando
+  alcanzan las cartas para los que juegan la mano. Los bots piden solos cuando se quedan sin fichas.
 - **Sin reloj:** jugás a tu ritmo.
 
 ### Plata y progreso

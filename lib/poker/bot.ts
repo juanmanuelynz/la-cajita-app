@@ -339,6 +339,8 @@ export const EMPTY_READS: PlayerReads = { hands: 0, lastHand: 0, facedBet: 0, fo
 /** Suma lo que hizo `seat` en una mano terminada. */
 export function addHandToReads(r: PlayerReads, h: HandState, seat: number, structure: TableState["config"]["structure"]): PlayerReads {
   if (h.number === r.lastHand || !h.result) return r
+  // Con luz se puede no entrar a la mano: esa no cuenta.
+  if (!h.players.some((p) => p.seat === seat)) return { ...r, lastHand: h.number }
   const out = { ...r, hands: r.hands + 1, lastHand: h.number }
   const betOn = new Set<string>()
   if (structure === "ciegas") betOn.add("preflop") // la grande ya es una apuesta
