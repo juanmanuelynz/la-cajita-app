@@ -15,14 +15,14 @@ import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { IconTabsList } from "@/components/icon-tabs"
 import { WhoWinsDrill } from "@/components/training/who-wins-drill"
 import { UsableDrill } from "@/components/training/usable-drill"
-import { PreflopDrill, PreflopRanges } from "@/components/training/preflop"
+import { PreflopDrill } from "@/components/training/preflop"
 import { CompareDrill } from "@/components/training/compare-drill"
 import { LuzDrill } from "@/components/training/luz-drill"
-import { OmahaPrinciples } from "@/components/training/omaha-principles"
 import { OutsDrill } from "@/components/training/outs-drill"
 import { PotOddsDrill } from "@/components/training/pot-odds-drill"
 import { EquityCalculator } from "@/components/training/equity-calculator"
-import { HandRankings } from "@/components/training/hand-rankings"
+import { pokerLessons } from "@/components/training/poker-lessons"
+import { LessonsMenu } from "@/components/lessons-menu"
 import { GtoDrill } from "@/components/training/gto-drill"
 import { BetOrCheckDrill, CallDownDrill, SemiBluffDrill, ShoveDrill } from "@/components/training/ev-drills"
 import { BotTable, savedTableInfo } from "@/components/training/bot-table"
@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button"
 import {
   ArrowUp,
   Bot,
-  BookOpen,
+  GraduationCap,
   ChevronLeft,
   ChevronsUp,
   DoorOpen,
@@ -56,9 +56,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-type Subtab = "ejercicios" | "calculadora" | "manos"
+type Subtab = "ejercicios" | "calculadora" | "aprender"
 /** Cómo se pone plata antes de repartir: luz igual para todos (La Cajita) o ciegas (casino). */
-type Structure = "luz" | "ciegas"
 /** Lo que se elige en el menú. Te suben / te resuben guardan sus respuestas como `preflopVs`. */
 type DrillChoice = Exclude<DrillId, "preflopVs"> | "vsOpen" | "vs3bet"
 
@@ -291,7 +290,8 @@ export function EntrenarTab({
   /** Ejercicio abierto en pantalla propia (null: el menú). */
   const [drill, setDrill] = useState<DrillChoice | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
-  const [structure, setStructure] = useState<Structure>("luz")
+  /** Lección abierta en Aprender (se sacan las pestañas de arriba). */
+  const [inLesson, setInLesson] = useState(false)
   const [playerId, setPlayerId] = useState<string | null>(null)
   /** Práctica de "lo que más fallo" en curso (reemplaza la pantalla de ejercicios). */
   const [practice, setPractice] = useState<WeakSpot[] | null>(null)
@@ -304,7 +304,6 @@ export function EntrenarTab({
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null")
       if (saved?.game in GAMES) setGame(saved.game)
       if (saved?.deck === "long" || saved?.deck === "short") setDeck(saved.deck)
-      if (saved?.structure === "luz" || saved?.structure === "ciegas") setStructure(saved.structure)
       setPlayerId(localStorage.getItem(PLAYER_KEY))
     } catch {
       // sin storage: arrancamos con Hold'em Long y sin jugador
@@ -312,11 +311,11 @@ export function EntrenarTab({
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck, structure }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ game, deck }))
     } catch {
       // ignorar
     }
-  }, [game, deck, structure])
+  }, [game, deck])
 
   // Si el jugador guardado ya no existe (se borró), olvidarlo.
   useEffect(() => {
@@ -386,20 +385,10 @@ export function EntrenarTab({
   }, [drill, bots])
 
   const entry = drill ? ENTRIES.find((e) => e.id === drill)! : null
-  const inExercise = subtab === "ejercicios" && (!!drill || !!practice || challengeActive || bots)
+  const inExercise =
+    (subtab === "ejercicios" && (!!drill || !!practice || challengeActive || bots)) || (subtab === "aprender" && inLesson)
   const heroName = players.find((p) => p.id === playerId)?.name ?? "Vos"
   const vsSituation = drill === "vsOpen" || drill === "vs3bet" ? drill : null
-
-  const structurePicker = (
-    <Segmented
-      value={structure}
-      onChange={setStructure}
-      options={[
-        { id: "luz", label: "Con luz" },
-        { id: "ciegas", label: "Con ciegas" },
-      ]}
-    />
-  )
 
   /** Juego y mazo en una sola fila; el mazo es una pastilla que alterna. */
   const picker = (
@@ -421,6 +410,12 @@ export function EntrenarTab({
     </div>
   )
 
+  const lessons = pokerLessons({ picker, variant })
+  const openPractice = (id: DrillChoice) => {
+    setSubtab("ejercicios")
+    setDrill(id)
+  }
+
   return (
     <TrainingContext.Provider value={ctx}>
       <Tabs value={subtab} onValueChange={(v) => setSubtab(v as Subtab)} className="w-full">
@@ -431,7 +426,7 @@ export function EntrenarTab({
               tabs={[
                 { value: "ejercicios", label: "Ejercicios", icon: Dumbbell },
                 { value: "calculadora", label: "Calc", icon: Calculator },
-                { value: "manos", label: "Jugadas", icon: BookOpen },
+                { value: "aprender", label: "Aprender", icon: GraduationCap },
               ]}
             />
           </div>
@@ -515,23 +510,20 @@ export function EntrenarTab({
           <EquityCalculator variant={variant} />
         </TabsContent>
 
-        <TabsContent value="manos" className="pt-1 pb-8 space-y-3 mt-0">
-          {picker}
-          {structurePicker}
-          <HandRankings variant={variant} />
-          <OmahaPrinciples variant={variant} />
-          {structure === "ciegas" ? (
-            <PreflopRanges variant={variant} />
-          ) : (
-            <div className="space-y-1 text-sm">
-              <h3 className="font-semibold">Con qué manos apostar</h3>
-              <p className="text-xs text-muted-foreground">
-                Con luz no hay una tabla publicada de qué manos jugar, así que no mostramos una. Lo seguro: si nadie
-                apostó, nunca hagas fold (podés hacer check gratis), y para hacer call a una apuesta hacé la cuenta con
-                el pozo de luces (ejercicio «Antes del flop»). Elegí «Ciegas» para ver la tabla del juego de casino.
-              </p>
-            </div>
-          )}
+        <TabsContent value="aprender" className="pt-1 pb-8 mt-0">
+          <LessonsMenu
+            lessons={lessons}
+            storageKey="la-cajita:poker:lecciones-leidas"
+            backKey="poker-leccion"
+            title="Aprender a jugar"
+            subtitle="Las reglas del póker con ciegas: Hold'em, Omaha y Manhattan."
+            finish={{ label: "A practicar", onClick: () => setSubtab("ejercicios") }}
+            practice={(i) => {
+              const p = lessons[i].practice
+              return p ? { label: p.label, onClick: () => openPractice(p.drill) } : null
+            }}
+            onOpenChange={setInLesson}
+          />
         </TabsContent>
       </Tabs>
     </TrainingContext.Provider>

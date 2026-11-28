@@ -4,6 +4,7 @@
 // aunque ya hayas tirado tu carta, y los puntos se anotan con fósforos.
 
 import type { ReactNode } from "react"
+import type { Lesson } from "@/components/lessons-menu"
 import { LADDER, SUITS, type Suit, type TrucoCard } from "@/lib/truco/engine"
 import { SpanishCard, SuitPip } from "./spanish-card"
 import { Fosforos } from "./fosforos"
@@ -75,13 +76,6 @@ function Ladder() {
 
 const H = ({ children }: { children: ReactNode }) => <h4 className="pt-2 font-semibold">{children}</h4>
 const List = ({ children }: { children: ReactNode }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>
-
-export interface Lesson {
-  title: string
-  /** Una línea para el menú. */
-  summary: string
-  body: () => ReactNode
-}
 
 export const LESSONS: Lesson[] = [
   {
