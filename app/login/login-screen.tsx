@@ -17,7 +17,7 @@ import {
 } from "@/components/splash-screen";
 import { BravasFan } from "@/components/truco/bravas-fan";
 import { MatchBox } from "@/components/truco/match-box";
-import { getLastApp, type CajitaApp } from "@/lib/last-app";
+import { getLastApp, setLastApp, type CajitaApp } from "@/lib/last-app";
 import { cn } from "@/lib/utils";
 import { login } from "./actions";
 import { playSequence, playSound, preloadSounds } from "@/lib/sounds";
@@ -38,6 +38,23 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
     if (initialApp === "poker" && getLastApp() === "truco") setApp("truco");
   }, [initialApp]);
   const truco = app === "truco";
+
+  // Selector Poker | Truco: cambia la escena sin recargar y también la
+  // dirección (al entrar se recarga la dirección actual) y la última app.
+  // Desde una dirección de Poker (por ejemplo /partidas/5) se vuelve a ella.
+  const pokerPath = useRef<string | null>(null);
+  function chooseApp(next: CajitaApp) {
+    if (next === app) return;
+    const here = window.location.pathname;
+    const inTruco = here === "/truco" || here.startsWith("/truco/");
+    if (!inTruco && here !== "/login") pokerPath.current = here + window.location.search;
+    const path = next === "truco" ? "/truco" : pokerPath.current ?? "/";
+    if (path !== here + window.location.search) window.history.replaceState(null, "", path);
+    document.title = next === "truco" ? "La Cajita Truco" : "La Cajita Poker";
+    setLastApp(next);
+    setApp(next);
+    inputRef.current?.focus();
+  }
 
   const [pin, setPin] = useState("");
   const [state, formAction, isPending] = useActionState(login, { error: null });
@@ -148,6 +165,28 @@ export function LoginScreen({ initialApp }: { initialApp: CajitaApp }) {
           )}
         >
           <div className={cn("min-h-0", opened && "overflow-hidden")}>
+            <div
+              role="radiogroup"
+              aria-label="App"
+              className="mx-auto mb-4 grid w-56 grid-cols-2 rounded-full border border-white/15 bg-black/25 p-1 backdrop-blur-sm"
+            >
+              {(["poker", "truco"] as const).map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  role="radio"
+                  aria-checked={app === a}
+                  disabled={opened}
+                  onClick={() => chooseApp(a)}
+                  className={cn(
+                    "rounded-full py-1.5 text-sm font-semibold transition-colors",
+                    app === a ? "bg-[#e2ab3c] text-[#1b1718] shadow" : "text-white/70 hover:text-white",
+                  )}
+                >
+                  {a === "poker" ? "Poker" : "Truco"}
+                </button>
+              ))}
+            </div>
             <div
               key={shakeKey}
               className={cn(
