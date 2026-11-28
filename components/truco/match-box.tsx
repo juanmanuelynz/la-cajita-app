@@ -61,17 +61,18 @@ function LooseMatch() {
   )
 }
 
-/** La etiqueta de la tapa: LA CAJITA entre dos hojitas y, abajo, TRUCO. */
+/** La etiqueta de la tapa: una hojita (como el maletín de Poker) y LA CAJITA con TRUCO abajo. */
 function Label() {
   return (
     <div className="mbox-label">
       <div className="mbox-label-inner">
-        <div className="flex items-center gap-2">
-          <LeafMark className="h-5 w-5 text-[#2f62ad]" />
-          <LogoType as="span" className="text-[22px] text-[#16325e]" />
-          <LeafMark className="h-5 w-5 text-[#2f62ad]" />
+        <div className="flex items-center gap-2.5">
+          <LeafMark className="h-7 w-7 text-[#2f62ad]" />
+          <div className="flex flex-col items-center gap-1">
+            <LogoType as="span" className="text-[22px] text-[#16325e]" />
+            <span className="mbox-label-sub">Truco</span>
+          </div>
         </div>
-        <span className="mbox-label-sub">Truco</span>
       </div>
     </div>
   )
